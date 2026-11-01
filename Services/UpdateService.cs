@@ -183,12 +183,8 @@ public static class UpdateService
     {
         if (info.Available)
         {
-            var notes = string.IsNullOrWhiteSpace(info.Notes) ? "（无更新说明）" : info.Notes.Trim();
-            if (notes.Length > 600) notes = notes[..600] + "…";
-            var result = MessageBox.Show(
-                $"发现新版本 V{info.Latest}\n\n当前版本：V{info.Current}\n\n{notes}\n\n是否下载更新包？",
-                "检查更新", MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (result == MessageBoxResult.Yes)
+            var available = new UpdateAvailableWindow(info) { Owner = Application.Current?.MainWindow };
+            if (available.ShowDialog() == true)
                 _ = DownloadAndOfferAsync(info);
             return;
         }

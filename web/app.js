@@ -990,10 +990,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.79';
+  const APP_VERSION = 'V1.80';
   const UPDATES = [
     {
-      version: 'V1.79', date: '2026-11-04', title: '检索摘要开关', current: true,
+      version: 'V1.80', date: '2026-11-04', title: '更新提示窗口重做', current: true,
+      notes: [
+        '检查更新不再使用系统 MessageBox',
+        '新增深色版本对比窗口',
+        '显示当前版本、最新版本和更新说明'
+      ]
+    },
+    {
+      version: 'V1.79', date: '2026-11-04', title: '检索摘要开关',
       notes: [
         'CHM 检索结果增加“摘要”切换按钮',
         '默认显示简略摘要，可一键隐藏',
