@@ -119,7 +119,6 @@
     D.ATTRS.forEach(a => { s.attributes[a.key] = Object.assign({}, base.attributes[a.key], (raw.attributes || {})[a.key] || {}); });
     s.size = Object.assign({}, base.size, raw.size || {});
     s.derivedBonus = Object.assign({}, base.derivedBonus, raw.derivedBonus || {});
-    s.quickCheck = Object.assign({ a: 'res', b: 'com' }, raw.quickCheck || {});
     s.skills = {};
     D.SKILLS.forEach(def => {
       s.skills[def.key] = Object.assign(D.blankSkill(def.attr), (raw.skills || {})[def.key] || {});
@@ -158,8 +157,20 @@
       obj.id = a.id || (t ? 'atk_' + t.key : 'atk_' + uid());
       obj.name = a.name || (t ? t.name : '自定义');
       obj.desc = a.desc !== undefined ? a.desc : (t ? t.desc : '');
+      obj.attr2 = obj.attr2 || 'none';
       obj.attr = (a.attr === 'manual' || !a.attr) ? (t ? t.attr : 'str') : a.attr;
       obj.skill = (a.skill === 'manual' || !a.skill) ? (t ? t.skill : 'brawl') : a.skill;
+      if (a.kind === 'check') {
+        obj.attr = a.checkA || 'res';
+        obj.attr2 = a.checkB || 'com';
+        obj.skill = 'none';
+        obj.weapon = 0;
+        obj.power = 0;
+        obj.capAttr = 'none';
+        obj.capSkill = 'none';
+        obj.capWeapon = 0;
+        obj.capPower = 0;
+      }
       const hasNewCap = a.capAttr !== undefined || a.capSkill !== undefined ||
         a.capWeapon !== undefined || a.capPower !== undefined;
       if (!hasNewCap) {
@@ -979,10 +990,20 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.74.1';
+  const APP_VERSION = 'V1.75';
   const UPDATES = [
     {
-      version: 'V1.74.1', date: '2026-11-03', title: '技能“无”显示修复', current: true,
+      version: 'V1.75', date: '2026-11-03', title: '第二属性统一检定', current: true,
+      notes: [
+        '取消攻击预设里的“检定类型”，改为通用第二属性',
+        '主属性 + 第二属性 + 技能（可选无）即可组成双属性检定',
+        '决心 + 沉着可直接建一条攻击预设，不需要切换类型',
+        '移除战斗页重复的属性组合检定面板',
+        '自定义技能关键属性仍可选“无”'
+      ]
+    },
+    {
+      version: 'V1.74.1', date: '2026-11-03', title: '技能“无”显示修复',
       notes: [
         '修复自定义技能关键属性选择“无”后表格显示 none 的问题',
         '保留 V1.74 的回退与双属性检定改动'
@@ -2471,29 +2492,9 @@
 
   function attackRow(a, index) {
     const ca = computed.attacks[index];
-    if (ca.isCheck) {
-      return `<tr data-attack-row="${index}" class="check-row">
-        <td class="attack-name">
-          <div class="atk-name-line"><b>${esc(a.name)}</b>${a.note ? `<span class="atk-note">${esc(a.note)}</span>` : ''}</div>
-          <small>${esc(ca.checkAName)} + ${esc(ca.checkBName)} · 双属性检定</small>
-          <div class="atk-outcome">
-            <span>检定 DP <b>${fmt(ca.dp)}</b></span>
-            <span>附加 <b>+${ca.extraSuccess}</b></span>
-          </div>
-        </td>
-        <td><span class="atk-computed">${fmt(ca.dp)}</span></td>
-        <td><span class="derived-na">—</span></td>
-        <td><span class="atk-success">+${ca.extraSuccess}</span></td>
-        <td><span class="derived-na">—</span></td>
-        <td><div class="atk-row-actions">
-          <button class="icon-btn" data-action="edit-attack" data-index="${index}" title="编辑检定">${ic('edit')}</button>
-          <button class="icon-btn" data-action="copy-attack" data-index="${index}" title="复制检定">${ic('copy')}</button>
-          <button class="icon-btn" data-action="remove-attack" data-index="${index}" title="删除检定">${ic('trash')}</button>
-        </div></td>
-      </tr>`;
-    }
     const energyText = ca.energyState === 'none' ? '—' : ca.energyState === 'ok' ? '✓ 足够' : ca.energyState === 'short' ? '✗ 不足' : '! 未匹配';
     const energyClass = 'energy-' + ca.energyState;
+    const attrLine = ca.attr2Key ? `${ca.attrName} + ${ca.attr2Name}` : ca.attrName;
     const parts = [];
     if (ca.attackCount > 1) parts.push('×' + ca.attackCount + ' 次攻击');
     if (ca.actionCost) parts.push(ca.actionCost);
@@ -2516,7 +2517,7 @@
     return `<tr data-attack-row="${index}">
       <td class="attack-name">
         <div class="atk-name-line"><b>${esc(a.name)}</b>${a.note ? `<span class="atk-note">${esc(a.note)}</span>` : ''}</div>
-        <small>${esc(ca.attrName)} + ${esc(ca.skillName)}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''}</small>
+        <small>${esc(attrLine)}${ca.skillKey ? ' + ' + esc(ca.skillName) : ''}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''}</small>
         <div class="atk-outcome">
           <span>最终 DP <b>${fmt(ca.finalDP)}</b></span>
           <span>期望伤害 <b>${ca.attackCount > 1 ? `${fmt(C.round1(ca.expectedDamage).toFixed(1))} ×${ca.attackCount} = ${fmt(C.round1(ca.totalExpectedDamage).toFixed(1))}` : fmt(C.round1(ca.expectedDamage).toFixed(1))}</b></span>
@@ -2577,26 +2578,6 @@
             <tbody id="attack-rows">${state.attacks.map((a, i) => attackRow(a, i)).join('')}</tbody>
           </table>
         </div></div>
-      </div>
-
-      <div class="panel mt18">
-        <div class="panel-head"><div class="panel-title">属性组合检定</div><span class="panel-sub">双属性直接检定 · 例如决心 + 沉着</span></div>
-        <div class="panel-body">
-          <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
-            <label style="display:flex;flex-direction:column;gap:5px;color:#8D8679;font-size:10.5px;">属性 A
-              <select class="cell-input" data-quick-check="a">${attrOptions(computed.quickCheck.aKey)}</select>
-            </label>
-            <span style="color:#C9A35F;font-size:15px;padding-bottom:6px;">+</span>
-            <label style="display:flex;flex-direction:column;gap:5px;color:#8D8679;font-size:10.5px;">属性 B
-              <select class="cell-input" data-quick-check="b">${attrOptions(computed.quickCheck.bKey)}</select>
-            </label>
-            <div style="display:flex;gap:20px;align-items:center;margin-left:auto;padding:8px 14px;border:1px solid #3A3225;border-radius:6px;background:#171A20;">
-              <span style="color:#8D8679;font-size:10.5px;">检定 DP <b style="color:#D8B878;font-size:16px;margin-left:5px;" data-quick-dp>${fmt(computed.quickCheck.dp)}</b></span>
-              <span style="color:#8D8679;font-size:10.5px;">附加成功 <b style="color:#A9C982;font-size:14px;margin-left:5px;" data-quick-success>+${computed.quickCheck.success}</b></span>
-            </div>
-          </div>
-          <div class="matrix-wrap-note">用于决心 + 沉着、力量 + 敏捷等双属性检定；DP 为两项属性合计，附加成功为两项附加之和，不叠加技能。需要叠加技能时用下方攻击预设或「人物卡 → 技能检定」。</div>
-        </div>
       </div>
 
       <div class="panel mt18">
@@ -2773,22 +2754,11 @@
           <label class="field" style="flex:1 1 auto;"><span>关键词 / 备注</span><textarea id="ae-note" class="attack-note-input" rows="3" title="双击放大编辑" placeholder="双击放大编辑；也可拖拽右下角调整高度">${esc(a.note || '')}</textarea></label>
         </div>
         <div class="editor-section">
-          <div class="editor-section-title">检定类型</div>
-          <div class="editor-grid three">
-            <label class="field"><span>类型</span><select id="ae-kind">
-              <option value="attack" ${(a.kind || 'attack') === 'attack' ? 'selected' : ''}>攻击</option>
-              <option value="check" ${a.kind === 'check' ? 'selected' : ''}>双属性检定</option>
-            </select></label>
-            <label class="field"><span>属性 A</span><select id="ae-check-a">${attrOptions(a.checkA || 'res')}</select></label>
-            <label class="field"><span>属性 B</span><select id="ae-check-b">${attrOptions(a.checkB || 'com')}</select></label>
-          </div>
-          <div class="matrix-wrap-note">选择“双属性检定”时，只使用属性 A + 属性 B 计算检定 DP 与附加成功；下方攻击、伤害上限和消耗字段不会参与。</div>
-        </div>
-        <div class="editor-section">
           <div class="editor-section-title">攻击检定</div>
-          <div class="editor-grid four">
+          <div class="editor-grid five">
             <label class="field"><span>属性</span><select id="ae-attr">${attrOptions(a.attr)}</select></label>
-            <label class="field"><span>技能</span><select id="ae-skill">${skillSelectOptions(a.skill, false)}</select></label>
+            <label class="field"><span>第二属性</span><select id="ae-attr2"><option value="none">无</option>${attrOptions(a.attr2 || 'none')}</select></label>
+            <label class="field"><span>技能</span><select id="ae-skill">${skillSelectOptions(a.skill, true)}</select></label>
             <label class="field"><span>武器伤害</span><input id="ae-weapon" type="number" value="${esc(a.weapon || 0)}"></label>
             <label class="field"><span>威力</span><input id="ae-power" type="number" value="${esc(a.power || 0)}"></label>
           </div>
@@ -2878,9 +2848,7 @@
       const vals = {
         name,
         note: card.querySelector('#ae-note').value.trim(),
-        kind: card.querySelector('#ae-kind').value,
-        checkA: card.querySelector('#ae-check-a').value,
-        checkB: card.querySelector('#ae-check-b').value,
+        attr2: card.querySelector('#ae-attr2').value,
         attr: card.querySelector('#ae-attr').value,
         skill: card.querySelector('#ae-skill').value,
         weapon: C.num(card.querySelector('#ae-weapon').value),
@@ -5082,12 +5050,6 @@
     });
 
     document.addEventListener('change', e => {
-      if (e.target && e.target.matches('[data-quick-check]')) {
-        state.quickCheck = Object.assign({ a: 'res', b: 'com' }, state.quickCheck || {});
-        state.quickCheck[e.target.dataset.quickCheck] = e.target.value;
-        stateChanged({ rerender: true });
-        return;
-      }
       if (e.target && e.target.matches('[data-st-defense-source]')) {
         stLoadDefense(e.target.value);
         return;

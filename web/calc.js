@@ -161,16 +161,6 @@
     const fortitude = attrs.sta.total + (skills.survival ? skills.survival.total : 0) + num(db.fortitude);
     const willSave = will + num(db.willSave);
 
-    const qc = state.quickCheck || { a: 'res', b: 'com' };
-    const qaKey = attrs[qc.a] ? qc.a : 'res';
-    const qbKey = attrs[qc.b] ? qc.b : 'com';
-    const qa = attrs[qaKey];
-    const qb = attrs[qbKey];
-    const quickCheck = {
-      aKey: qaKey, bKey: qbKey, aName: D.ATTR_MAP[qaKey].name, bName: D.ATTR_MAP[qbKey].name,
-      dp: qa.total + qb.total, success: qa.success + qb.success
-    };
-
     const defense = defenseCalc(state);
     const targetRaw = (state.targetDefense && state.targetDefense.values) || {};
     const flags = {
@@ -183,26 +173,8 @@
       const attr = attrKey ? (attrs[attrKey] || { total: 0, legend: 0, success: 0 }) : {
         total: 0, legend: 0, success: 0
       };
-      if (a.kind === 'check') {
-        const caKey = attrs[a.checkA] ? a.checkA : 'res';
-        const cbKey = attrs[a.checkB] ? a.checkB : 'com';
-        const ca = attrs[caKey];
-        const cb = attrs[cbKey];
-        const dp = ca.total + cb.total;
-        const extraSuccess = ca.success + cb.success + num(a.extraSuccessBonus);
-        return Object.assign({}, a, {
-          isCheck: true, attrKey: caKey, attrName: D.ATTR_MAP[caKey].name,
-          checkAName: D.ATTR_MAP[caKey].name, checkBName: D.ATTR_MAP[cbKey].name,
-          skillKey: '', skillName: '无', skillTotal: 0, skillSuccess: 0,
-          capAttrName: '无', capSkillName: '无', capWeapon: 0, capPower: 0, capLegendBonus: 0,
-          explodeAt: 10, explodeFactor: 1 / 3, typedDP: 0, typedCap: 0,
-          attackCount: 1, actionCost: a.actionCost || '标准动作',
-          attackFlags: { flatfooted: false, contact: false }, totalExpectedDamage: 0,
-          dp, cap: 0, extraSuccess, effectiveDefense: 0, defenseSpent: [], finalDP: dp,
-          expectedSuccess: dp / 3, expectedDamage: 0, energyState: 'none',
-          poolName: '', poolCurrent: 0, poolMax: 0, energyCost: 0, willCost: num(a.willCost)
-        });
-      }
+      const attr2Key = a.attr2 && a.attr2 !== 'none' ? a.attr2 : '';
+      const attr2 = attr2Key ? (attrs[attr2Key] || { total: 0, legend: 0, success: 0 }) : { total: 0, legend: 0, success: 0 };
       const skillKey = a.skill && a.skill !== 'none' ? a.skill : '';
       const skill = skillKey ? (skillLookup[skillKey] || { total: 0, success: 0, name: '—', level: 0 }) : {
         total: 0, success: 0, name: '—', level: 0
@@ -220,12 +192,12 @@
       const typedCap = ['capInternal', 'capEnhance', 'capEnergy', 'capInstrument', 'capPerfect', 'capPractice']
         .reduce((s, k) => s + num(a[k]), 0) +
         (Array.isArray(a.capCustoms) ? a.capCustoms.reduce((s, x) => s + num(x && x.value), 0) : 0);
-      const dp = attr.total + skill.total + weapon + power + typedDP + other;
+      const dp = attr.total + attr2.total + skill.total + weapon + power + typedDP + other;
       const capWeapon = [0, 1, 2].includes(num(a.capWeapon)) ? num(a.capWeapon) : 0;
       const capPower = num(a.capPower) === 1 ? 1 : 0;
       const capLegendBonus = a.capLegend ? capAttr.legend * (capAttr.legend + 1) / 2 : 0;
       const cap = capAttr.total + capSkill.total + weapon * capWeapon + power * capPower + typedCap + num(a.capOther) + capLegendBonus;
-      const extraSuccess = attr.success + skill.success + num(a.extraSuccessBonus);
+      const extraSuccess = attr.success + attr2.success + skill.success + num(a.extraSuccessBonus);
       const explodeAt = [8, 9, 10].includes(num(a.explodeAt)) ? num(a.explodeAt) : 10;
       const explodeFactor = explodeAt === 8 ? 3 / 7 : explodeAt === 9 ? 3 / 8 : 1 / 3;
       const attackFlags = {
@@ -249,7 +221,9 @@
       return Object.assign({}, a, {
         attrKey, attrName: attrKey ? D.ATTR_MAP[attrKey].name : '无',
         attrTotal: attr.total, legend: attr.legend || 0,
-        skillKey, skillName: skill.name || '—',
+        attr2Key, attr2Name: attr2Key ? D.ATTR_MAP[attr2Key].name : '无',
+        attr2Total: attr2.total, attr2Legend: attr2.legend || 0,
+        skillKey, skillName: skillKey ? (skill.name || '—') : '无',
         skillTotal: skill.total, skillSuccess: skill.success,
         capAttrName: capAttrKey ? D.ATTR_MAP[capAttrKey].name : '无',
         capSkillName: capSkillKey ? (skillLookup[capSkillKey] || {}).name || '—' : '无',
@@ -309,7 +283,7 @@
 
     return {
       attrs, groups: D.ATTR_GROUPS.map(g => ({ name: g.name, en: g.en, attrs: g.attrs.map(k => Object.assign({}, D.ATTR_MAP[k], attrs[k])) })),
-      size, hp, will, speed, initiative, baseDefense, sensitive, fuzzy, quickCheck,
+      size, hp, will, speed, initiative, baseDefense, sensitive, fuzzy,
       reflex, fortitude, willSave, derivedBonus: db,
       defense, targetRaw, flags, attacks,
       skills, customSkills, allSkills, topSkills, skillLookup,

@@ -171,7 +171,7 @@
     return {
       id: 'atk_' + Math.random().toString(36).slice(2, 9),
       name: name || '新攻击', desc: '',
-      kind: 'attack', checkA: 'res', checkB: 'com',
+      attr2: 'none',
       attr: 'str', skill: 'brawl',
       capAttr: 'str', capSkill: 'brawl', capWeapon: 1, capPower: 0,
       capLegend: false, capOther: 0,
@@ -224,7 +224,6 @@
       defense: { manual, willCurrent: null, baseMode: 'low', baseA: 'agi', baseB: 'per', note: '' },
       damageReductions: [],
       targetDefense: { values: targetValues, flatfooted: false, contact: false, flatfootedGrade: 'none', contactGrade: 'none' },
-      quickCheck: { a: 'res', b: 'com' },
       health: { b: 0, l: 0, a: 0 },
       healthMode: 'fusion',
       attacks: [],
