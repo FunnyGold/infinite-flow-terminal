@@ -991,10 +991,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.86';
+  const APP_VERSION = 'V1.87';
   const UPDATES = [
     {
-      version: 'V1.86', date: '2026-11-04', title: '一轮战斗示例', current: true,
+      version: 'V1.87', date: '2026-11-04', title: '战斗示例读取真实攻击', current: true,
+      notes: [
+        '“看懂一轮战斗”优先读取第一个攻击预设',
+        '展示攻击 DP、对方防御、最终 DP 和期望伤害',
+        '没有攻击预设时才使用示例数字'
+      ]
+    },
+    {
+      version: 'V1.86', date: '2026-11-04', title: '一轮战斗示例',
       notes: [
         '新增“看懂一轮战斗”三步演示',
         '把先攻、命中、伤害和意志消耗串起来',
@@ -4448,8 +4456,19 @@
     const maxHp = Math.max(0, Math.round(Number(computed.hp) || 0));
     const maxWill = Math.max(0, Math.round(Number(computed.will) || 0));
     const currentWill = Math.max(0, Math.round(Number(computed.health?.willCurrent ?? maxWill) || 0));
-    const afterHp = Math.max(0, maxHp - 3);
-    const afterWill = Math.max(0, currentWill - 1);
+    const attack = (computed.attacks || [])[0] || null;
+    const rawDP = attack ? Math.max(0, Math.round(Number(attack.dp) || 0)) : 8;
+    const defense = attack ? Math.max(0, Math.round(Number(attack.effectiveDefense) || 0)) : 5;
+    const finalDP = attack ? Number(attack.finalDP) || 0 : 3;
+    const expected = attack ? Number(attack.expectedDamage) || 0 : 3;
+    const damage = Math.max(0, Math.round(expected * 10) / 10);
+    const willCost = attack ? Math.max(0, Math.round(Number(attack.willCost) || 0)) : 1;
+    const afterHp = Math.max(0, Math.round((maxHp - damage) * 10) / 10);
+    const afterWill = Math.max(0, currentWill - willCost);
+    const attackLabel = attack ? `「${esc(attack.name || '当前攻击')}」` : '示例攻击';
+    const sourceNote = attack
+      ? '这一页读取的是你当前的第一个攻击预设。'
+      : '你还没有攻击预设，下面用一组示例数字；实际战斗请先新建攻击预设。';
     return [
       {
         kicker: 'STEP 1 / 3',
@@ -4460,14 +4479,14 @@
       {
         kicker: 'STEP 2 / 3',
         title: '攻击看 DP 和对方防御',
-        body: `在战斗页选一个攻击预设，软件会自动算出最终 <b>DP</b>。示例：最终 DP <b>8</b>，对方防御 <b>5</b>，所以这一次命中。<br>这里的 8 和 5 只是示例，不是你的真实预设；实际战斗看战斗页每一行的最终 DP。`,
-        formula: '命中判断：攻击最终 DP 对抗对方防御'
+        body: `${attackLabel} 的攻击 DP 是 <b>${fmt(rawDP)}</b>，对方防御是 <b>${fmt(defense)}</b>。<br>软件先算 <b>最终 DP = ${fmt(rawDP)} − ${fmt(defense)} = ${fmt(finalDP)}</b>，再按最终 DP 计算期望伤害。<br><span style="color:#7f7668;">${sourceNote}</span>`,
+        formula: `最终 DP = 攻击 DP ${fmt(rawDP)} − 对方防御 ${fmt(defense)} = ${fmt(finalDP)}`
       },
       {
         kicker: 'STEP 3 / 3',
-        title: '命中后扣生命，消耗看资源',
-        body: `假设这次造成 <b>3</b> 点伤害。满生命是 <b>${maxHp}</b>，扣完后是 <b>${afterHp}</b>。<br>如果这个攻击还消耗 1 点意志，当前意志会从 <b>${currentWill}</b> 变成 <b>${afterWill}</b>。`,
-        formula: `生命：${maxHp} − 3 = ${afterHp}　·　意志：${currentWill} − 1 = ${afterWill}`
+        title: '最终 DP 变成伤害，再看资源',
+        body: `这个例子的期望伤害是 <b>${fmt(damage)}</b>。满生命是 <b>${maxHp}</b>，扣完是 <b>${afterHp}</b>。<br>${willCost > 0 ? `如果这次攻击消耗 <b>${willCost}</b> 点意志，当前意志从 <b>${currentWill}</b> 变成 <b>${afterWill}</b>。` : '这个攻击不消耗意志；如果消耗能量，则看对应能量池。'}`,
+        formula: `生命：${maxHp} − ${fmt(damage)} = ${afterHp}　·　意志：${currentWill} − ${willCost} = ${afterWill}`
       }
     ];
   }
