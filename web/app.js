@@ -991,10 +991,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.87';
+  const APP_VERSION = 'V1.88';
   const UPDATES = [
     {
-      version: 'V1.87', date: '2026-11-04', title: '战斗示例读取真实攻击', current: true,
+      version: 'V1.88', date: '2026-11-04', title: '帮助入口移到总览', current: true,
+      notes: [
+        '总览右上角新增“帮助”按钮',
+        '关于页移除重复的帮助入口',
+        '帮助位置更靠近查阅规则书和进入战斗'
+      ]
+    },
+    {
+      version: 'V1.87', date: '2026-11-04', title: '战斗示例读取真实攻击',
       notes: [
         '“看懂一轮战斗”优先读取第一个攻击预设',
         '展示攻击 DP、对方防御、最终 DP 和期望伤害',
@@ -2109,6 +2117,7 @@
 
     return `
       ${pageHeader('CHARACTER OVERVIEW / 档案', '总览', '九属性、衍生值、防御与资源的即时快照。灰色数字会自动结算。', `
+        <button class="btn" data-action="help">${ic('info')} 帮助</button>
         <button class="btn gold" data-action="goto-rules">${ic('book')} 查阅规则书</button>
         <button class="btn primary" data-action="goto-combat">${ic('sword')} 进入战斗</button>`)}
       <section class="hero">
@@ -4623,7 +4632,7 @@
     },
     {
       title: '引导完成',
-      body: '你已经认识主要页面和数值了。以后随时可以从左下角<strong>帮助</strong>重新打开这份引导。<br>建议先完成一张基础角色卡，再逐步补资源、攻击预设和规则书检索。'
+      body: '你已经认识主要页面和数值了。以后随时可以从总览右上角的<strong>帮助</strong>重新打开这份引导。<br>建议先完成一张基础角色卡，再逐步补资源、攻击预设和规则书检索。'
     }
   ];
   let guideStepIndex = -1;
