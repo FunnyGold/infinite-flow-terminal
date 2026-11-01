@@ -1006,10 +1006,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.75';
+  const APP_VERSION = 'V1.76';
   const UPDATES = [
     {
-      version: 'V1.75', date: '2026-11-03', title: '桌面功能同步', current: true,
+      version: 'V1.76', date: '2026-11-04', title: '关于致谢更新', current: true,
+      notes: ['更新关于页致谢文案']
+    },
+    {
+      version: 'V1.75', date: '2026-11-03', title: '桌面功能同步',
       notes: [
         '攻击预设新增第二属性，支持决心 + 沉着',
         '自定义技能关键属性可选无',

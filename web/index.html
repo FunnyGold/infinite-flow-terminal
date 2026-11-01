@@ -49,9 +49,6 @@
         <span id="save-label">本地工作台 · 自动存档</span>
       </div>
       <div class="titlebar-right">
-        <button class="tb-action" data-action="check-update" title="检查更新">
-          <span>⟳</span><span>更新</span>
-        </button>
         <button class="tb-action" data-action="import" title="导入角色卡 JSON">
           <span data-icon="upload"></span><span>导入</span>
         </button>
@@ -73,7 +70,7 @@
           <div class="brand-mark">∞</div>
           <div class="brand-text">
             <div class="brand-title">无限流</div>
-            <div class="brand-sub">角色终端 <span>V1.75</span></div>
+            <div class="brand-sub">角色终端 <span>V1.76</span></div>
           </div>
         </div>
 
@@ -120,7 +117,7 @@
         <div class="side-tools">
           <button class="side-tool" data-action="changelog-open">
             <span class="side-tool-icon" data-icon="history"></span>
-            <span class="side-tool-text"><b>更新目录</b><small>当前 V1.75 · 72 个版本</small></span>
+            <span class="side-tool-text"><b>更新目录</b><small>当前 V1.76 · 73 个版本</small></span>
             <span class="side-tool-arrow">›</span>
           </button>
           <button class="side-tool" data-action="about-open">
@@ -154,8 +151,6 @@
         </div>
         <div class="side-foot">
           <span>单机运行 · 数据在本地</span>
-          <button class="text-btn" data-action="help" title="快速上手与快捷键">帮助</button>
-          <button class="text-btn" data-action="reset" title="清空当前角色卡">重置</button>
         </div>
       </aside>
 
@@ -186,15 +181,20 @@
       <div class="about-kicker">RULEBOOK CONTRIBUTORS · 致谢</div>
       <h2 class="about-title" id="about-title">致 谢</h2>
       <div class="about-divider" aria-hidden="true"><i></i><span>◆</span><i></i></div>
-      <p class="about-thanks">感谢 <b>滑稽金_金子</b>、<b>觉妖怪</b>、<b>啤酒鸦</b><br>和<b>广大群友</b>对本规则书的贡献</p>
-      <p class="about-note">每一份整理、校对、投稿与传播，都让无限流的世界更完整。</p>
+      <p class="about-thanks">感谢 <b>滑稽金_金子</b>、<b>觉妖怪</b>、<b>啤酒鸦</b> 和<b>广大群友</b>对群友版无限流规则书的贡献</p>
+      <p class="about-note">感谢 <b>滑稽金_金子</b> 对本软件的构建</p>
       <div class="about-signature">
         <span class="about-seal">∞</span>
         <span>无限流 · 角色终端</span>
         <span class="about-dot">·</span>
-        <span>V1.75</span>
+        <span>V1.76</span>
       </div>
-      <div class="about-actions"><button class="btn gold" data-action="about-close">返回</button></div>
+      <div class="about-actions">
+        <button class="btn" data-action="about-check-update">更新</button>
+        <button class="btn" data-action="about-help">帮助</button>
+        <button class="btn" data-action="about-reset">重置</button>
+        <button class="btn gold" data-action="about-close">返回</button>
+      </div>
     </div>
   </div>
 
@@ -204,7 +204,7 @@
       <div class="changelog-head">
         <div class="about-kicker">CHANGELOG · 更新目录</div>
         <h2 class="changelog-title" id="changelog-title">版本记录</h2>
-        <div class="changelog-sub">按每次更新递增 · 共 <b id="changelog-count">72</b> 个版本 · 当前 <span id="changelog-current">V1.75</span></div>
+        <div class="changelog-sub">按每次更新递增 · 共 <b id="changelog-count">73</b> 个版本 · 当前 <span id="changelog-current">V1.76</span></div>
         <div class="about-divider"><i></i><span>◆</span><i></i></div>
       </div>
       <div class="changelog-scroll" id="changelog-list"></div>

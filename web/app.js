@@ -990,10 +990,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.75';
+  const APP_VERSION = 'V1.76';
   const UPDATES = [
     {
-      version: 'V1.75', date: '2026-11-03', title: '第二属性统一检定', current: true,
+      version: 'V1.76', date: '2026-11-04', title: '关于页整合与致谢更新', current: true,
+      notes: [
+        '更新、帮助、重置移入关于页',
+        '更新致谢文案，补充软件构建感谢',
+        '战斗预设第二属性保持 V1.75 结构'
+      ]
+    },
+    {
+      version: 'V1.75', date: '2026-11-03', title: '第二属性统一检定',
       notes: [
         '取消攻击预设里的“检定类型”，改为通用第二属性',
         '主属性 + 第二属性 + 技能（可选无）即可组成双属性检定',
@@ -4710,6 +4718,9 @@
       case 'about-open': openAbout(); break;
       case 'check-update': post({ type: 'update.check' }); break;
       case 'about-close': closeAbout(); break;
+      case 'about-check-update': closeAbout(); post({ type: 'update.check' }); break;
+      case 'about-help': closeAbout(); showHelp(); break;
+      case 'about-reset': closeAbout(); doReset(); break;
       case 'chm-folder-info': showFolderInfo(); break;
       case 'toc-expand-all': expandAllToc(); break;
       case 'toc-collapse-all': collapseAllToc(); break;

@@ -1266,7 +1266,7 @@ html[data-theme="light"] .book-collapse-btn { color: #80653c; border-color: rgba
   color: #b99a64; font: 13px/1 Georgia, serif;
 }
 .about-dot { color: #4e4a43; }
-.about-actions { margin-top: 22px; }
+.about-actions { margin-top: 22px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 @media (max-width: 700px) {
   .about-layer { padding: 16px; }
   .about-stage { padding: 38px 22px 24px; }
