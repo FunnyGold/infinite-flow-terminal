@@ -990,10 +990,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.77';
+  const APP_VERSION = 'V1.78';
   const UPDATES = [
     {
-      version: 'V1.77', date: '2026-11-04', title: '规则书检索加速', current: true,
+      version: 'V1.78', date: '2026-11-04', title: '检索结果精简', current: true,
+      notes: [
+        'CHM 检索结果不再显示截断摘要',
+        '只保留书名、标题和页面路径',
+        '右侧仍显示完整规则书内容'
+      ]
+    },
+    {
+      version: 'V1.77', date: '2026-11-04', title: '规则书检索加速',
       notes: [
         '搜索改为并行扫描书库',
         '首次加载页面文本改为并行读取',
@@ -3756,7 +3764,6 @@
       r.results.map((h, i) => `<div class="toc-search-result" data-result-index="${i}">
         <div class="result-book">${esc(h.bookTitle)}</div>
         <div class="result-title">${highlightText(h.title, r.searchQuery)}</div>
-        <div class="result-snippet">${highlightText(h.snippet, r.searchQuery)}</div>
         <div class="result-meta">${esc(h.path)}</div>
       </div>`).join('');
   }
