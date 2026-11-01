@@ -40,11 +40,12 @@ dotnet build
 - 根目录：桌面端 WPF 源码
 - `mobile/` Android 源码
 
-当前仓库未选择开源许可证，源码可见但未授权开源使用。
 手机版构建需要 Android Studio / JDK 17。
-## 版权
 
-Copyright (c) 2026 FunnyGold. All rights reserved.
+## License
 
-本仓库未采用开源许可证，源码仅用于查看和个人评估。
-未经书面许可，不得复制、修改、分发或商用。
+MIT License
+
+Copyright (c) 2026 FunnyGold
+
+本项目代码采用 MIT License。第三方组件仍遵守其各自许可证，详见 `THIRD_PARTY_NOTICES.md`。
