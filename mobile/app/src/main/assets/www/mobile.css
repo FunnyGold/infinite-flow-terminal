@@ -1,0 +1,317 @@
+/* Android mobile layout overrides. The desktop stylesheet stays untouched. */
+@media (max-width: 760px) {
+  html, body { height: 100%; }
+  .app { height: 100dvh; min-height: 100dvh; }
+  .titlebar {
+    height: 52px; flex: 0 0 52px; flex-wrap: nowrap; gap: 6px;
+    padding: 7px 10px; align-items: center;
+  }
+  .titlebar-left { display: none; }
+  .titlebar-center { flex: 1 1 auto; order: 1; flex-wrap: nowrap; gap: 5px; min-width: 0; }
+  .titlebar-right { flex: 0 0 auto; order: 2; margin-left: 0; gap: 3px; }
+  .character-switcher { width: auto !important; max-width: none; flex: 1 1 0; min-width: 0; }
+  .character-switch-btn { width: 100%; height: 34px; justify-content: flex-start; }
+  .character-menu { width: 100%; left: 0; right: 0; }
+  .theme-toggle { flex: 0 0 32px; width: 32px; height: 32px; padding: 0; justify-content: center; }
+  .theme-toggle [data-theme-label] { display: none; }
+  .display-control { display: none; }
+  .save-dot, #save-label, .window-controls { display: none; }
+  .titlebar-right .tb-action { width: 32px; height: 32px; padding: 0; justify-content: center; }
+  .tb-action span:last-child { display: none; }
+  .tb-action svg { width: 16px; height: 16px; }
+  .titlebar-right .tb-action[data-action="import"],
+  .titlebar-right .tb-action[data-action="export"] { display: none; }
+  .titlebar-right .mobile-more { font-size: 19px; line-height: 1; color: var(--gold); }
+  .mobile-more-backdrop {
+    position: fixed; top: 0; right: 0; bottom: 0; left: 0;
+    background: rgba(0,0,0,.45); z-index: 240;
+  }
+  .mobile-more-sheet {
+    position: fixed; top: 60px; right: 10px; width: 176px; z-index: 250;
+    padding: 7px; border: 1px solid rgba(201,168,110,.34); border-radius: 9px;
+    background: #171c23; box-shadow: 0 18px 48px rgba(0,0,0,.55);
+  }
+  .mobile-more-title { padding: 6px 9px 8px; color: #8c8070; font-size: 9px; letter-spacing: .08em; }
+  .mobile-more-item {
+    display: block; width: 100%; text-align: left; padding: 10px 9px;
+    border: 0; border-radius: 6px; background: transparent; color: #d7cbb8; font-size: 11px;
+  }
+  .mobile-more-item:hover, .mobile-more-item:active { background: rgba(201,168,110,.12); color: var(--gold); }
+
+  .shell { flex-direction: column; min-height: 0; }
+  .sidebar { display: none; }
+  .main { padding: 14px 12px calc(90px + env(safe-area-inset-bottom)); }
+  .main.rules-mode { padding: 12px 10px calc(80px + env(safe-area-inset-bottom)); }
+  .page-head { flex-direction: column; align-items: stretch; gap: 10px; margin-bottom: 14px; }
+  .page-title { font-size: 23px; }
+  .page-desc { line-height: 1.65; }
+  .head-actions { width: 100%; flex-wrap: wrap; }
+  .head-actions .btn { flex: 1 1 auto; justify-content: center; }
+  .panel { border-radius: 9px; }
+  .panel-body { padding-left: 11px; padding-right: 11px; }
+  .modal-card { width: calc(100vw - 20px) !important; max-height: 88vh; overflow-y: auto; }
+  .modal-actions { flex-wrap: wrap; }
+  /* Older Android WebViews do not support the inset shorthand. */
+  .modal-layer, .about-layer, .changelog-layer, .guide-layer {
+    top: 0; right: 0; bottom: 0; left: 0;
+  }
+  .modal-layer, .about-layer, .changelog-layer { z-index: 200; }
+  .reader-loading { top: 0; right: 0; bottom: 0; left: 0; }
+
+  .mobile-nav {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 120;
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    height: calc(70px + env(safe-area-inset-bottom));
+    padding: 6px 4px calc(7px + env(safe-area-inset-bottom));
+    background: rgba(18,22,28,.97); border-top: 1px solid rgba(201,168,110,.22);
+    box-shadow: 0 -10px 30px rgba(0,0,0,.28);
+  }
+  .mobile-nav button {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 2px; min-width: 0; border: 0; border-radius: 7px;
+    background: transparent; color: #8c8170; padding: 2px;
+  }
+  .mobile-nav button .mi { font-size: 16px; line-height: 1; }
+  .mobile-nav button .mt { font-size: 9px; white-space: nowrap; transform: scale(.92); }
+  .mobile-nav button.active { color: var(--gold); background: rgba(201,168,110,.1); }
+  html[data-theme="light"] .mobile-nav { background: rgba(250,246,238,.98); }
+  html[data-theme="light"] .mobile-nav button { color: #7c6b53; }
+  html[data-theme="light"] .mobile-nav button.active { color: #8a6228; background: rgba(143,106,50,.12); }
+
+  /* rules page: reader first, side panel becomes a drawer */
+  .rules-mode .rules-head {
+    margin-bottom: 10px; display: flex; flex-direction: column;
+    align-items: stretch; gap: 8px;
+  }
+  .rules-mode .rules-head h1 {
+    font-size: 24px; white-space: nowrap; display: flex; align-items: baseline; gap: 8px;
+  }
+  .rules-mode .rules-head h1 small { font-size: 12px; }
+  .rules-mode .rules-head .page-desc { display: none; }
+  .rules-mode .rules-head .head-actions {
+    width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px;
+  }
+  .rules-mode .rules-head .head-actions .btn {
+    width: 100%; min-width: 0; height: 30px; padding: 0 5px; font-size: 9px;
+    white-space: nowrap; overflow: hidden; justify-content: center;
+  }
+  .rules-mode .rules-toolbar { display: block; }
+  .rules-search { width: 100%; min-width: 0; }
+  .rules-index-state { display: none !important; }
+  .rules-search .search-hint { display: none; }
+  .mobile-rules-toc { display: block; width: 72px; margin: 7px 0 0 auto; height: 27px; }
+  .rules-mode .rules-shell { margin-top: 8px; }
+  #view-rules.mobile-reading .rules-head { display: none; }
+  #view-rules.mobile-reading .rules-shell { margin-top: 0; }
+  #view-rules.mobile-reading .rules-toolbar { margin-bottom: 2px; }
+  .rules-shell { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .reader-pane { flex: 1; min-height: 0; border-radius: 9px; }
+  /* The desktop page animation leaves a transform on the view, which makes
+     position:fixed children use the view instead of the real viewport. */
+  #view-rules { animation: none !important; transform: none !important; }
+  .rules-side {
+    position: fixed; left: 0; top: 52px; bottom: 0;
+    width: min(88vw, 390px); z-index: 110;
+    padding: 10px 9px calc(84px + env(safe-area-inset-bottom)); background: #141920;
+    border-right: 1px solid rgba(201,168,110,.35);
+    box-shadow: 18px 0 45px rgba(0,0,0,.5);
+    transform: translateX(-103%); transition: transform .22s ease;
+  }
+  .rules-side.mobile-open { transform: translateX(0); }
+  .mobile-drawer-head {
+    display: flex; align-items: center; justify-content: space-between;
+    flex: 0 0 auto; gap: 8px; padding: 8px 9px;
+    position: sticky; top: 0; z-index: 2;
+    background: #141920; border-bottom: 1px solid rgba(201,168,110,.22);
+  }
+  .mobile-drawer-tabs { display: flex; gap: 5px; }
+  .mobile-drawer-tabs button {
+    height: 28px; padding: 0 13px; border-radius: 5px; border: 1px solid transparent;
+    background: transparent; color: #948875; font-size: 10px;
+  }
+  .mobile-drawer-tabs button.active {
+    color: var(--gold); border-color: rgba(201,168,110,.38);
+    background: rgba(201,168,110,.13);
+  }
+  .mobile-drawer-close {
+    height: 27px; padding: 0 9px; border-radius: 5px;
+    border: 1px solid var(--line); background: transparent; color: var(--note); font-size: 9px;
+  }
+  .rules-side.mobile-tab-toc .favorites-panel,
+  .rules-side.mobile-tab-toc .book-list { display: none; }
+  .rules-side.mobile-tab-toc .toc-panel { flex: 1; min-height: 0; }
+  .rules-side.mobile-tab-library .toc-panel { display: none; }
+  .rules-side.mobile-tab-library .favorites-panel { display: flex; }
+  .rules-side.mobile-tab-library .book-list {
+    display: block; flex: 1 1 auto; overflow-y: auto;
+  }
+  .rules-mobile-backdrop {
+    position: fixed; top: 52px; right: 0; bottom: 0; left: 0;
+    background: rgba(0,0,0,.5); z-index: 105;
+  }
+  .mobile-rules-toc { height: 26px; padding: 0 9px; font-size: 10px; }
+  .reader-bar { height: 36px; }
+  .reader-breadcrumb { font-size: 9px; }
+
+  .matrix, .derived-table, .skill-table, .attack-table, .result-table, .defense-table, .editable-table { font-size: 11px; }
+  .matrix-wrap, .table-wrap { overflow-x: auto; }
+  .section-head { padding: 12px 13px; }
+  .section-body { padding: 13px; }
+  .hero { flex-direction: column; align-items: flex-start; }
+  .hero-side { width: 100%; }
+  .hero-actions { flex-wrap: wrap; width: 100%; }
+  .hero-actions .btn { flex: 1 1 auto; min-width: 0; }
+  .stat-strip { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .overview-grid { grid-template-columns: 1fr; }
+  .form-grid, .editor-grid { grid-template-columns: 1fr !important; }
+  .four, .three, .two { grid-template-columns: 1fr !important; }
+  #view-combat .defense-target { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  .st-grid { grid-template-columns: 1fr; }
+
+  /* character resources: traits / feats / techniques */
+  .tab-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .tab-row::-webkit-scrollbar { display: none; }
+  .tab-row .tab-btn { flex: 0 0 auto; white-space: nowrap; }
+  .trait-cards, .feat-cards { display: flex; flex-direction: column; gap: 10px; }
+  .trait-card, .feat-card {
+    padding: 10px; border: 1px solid rgba(255,255,255,.07); border-radius: 8px;
+    background: rgba(255,255,255,.018);
+  }
+  .mobile-card-head { display: flex; align-items: center; gap: 7px; }
+  .mobile-card-head .mobile-card-name {
+    flex: 1; min-width: 0; height: 32px; font-size: 12px; font-weight: 500;
+  }
+  .mobile-card-head .icon-btn { flex: 0 0 auto; }
+  .mobile-card-source { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+  .mobile-source-input { flex: 1; min-width: 0; }
+  .mobile-mini-label { flex: 0 0 auto; font-size: 8px; color: #8a8275; letter-spacing: .03em; }
+  .mobile-effect-label { display: block; margin: 8px 0 4px; }
+  .trait-card textarea, .feat-card textarea { width: 100%; min-height: 58px; resize: vertical; }
+  .mobile-feat-meta {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 8px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .mobile-inline-field { display: flex; align-items: center; gap: 6px; font-size: 8.5px; color: #91897b; }
+  .mobile-inline-field input { width: 56px; height: 28px; padding: 3px 5px; text-align: center; }
+  .mobile-feat-xp { font-size: 9px; color: #91897b; padding-bottom: 6px; white-space: nowrap; }
+  .mobile-feat-xp .feat-xp { padding-top: 0; font-size: 12px; }
+  .mobile-feat-prereq { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
+  .mobile-feat-prereq input { flex: 1; min-width: 0; }
+
+  /* character skills: one card per skill on phones */
+  .skill-cards { display: flex; flex-direction: column; gap: 9px; }
+  .skill-card {
+    padding: 10px; border: 1px solid rgba(255,255,255,.07); border-radius: 8px;
+    background: rgba(255,255,255,.018);
+  }
+  .skill-card-head { display: flex; align-items: flex-start; gap: 8px; }
+  .skill-card-name { flex: 1; min-width: 0; color: #d8cdb9; font-size: 12px; }
+  .skill-card-name b { font-weight: 500; }
+  .skill-card-name small { display: block; margin-top: 3px; color: #8f8577; font-size: 8.5px; }
+  .skill-card-side { display: flex; align-items: center; gap: 5px; flex: 0 0 auto; }
+  .mobile-skill-attr { color: #8d8272; font-size: 9px; }
+.mobile-skill-succ { flex: 0 0 auto; color: #9cb291; font: 8.5px/1.2 var(--mono); }
+  .skill-mini-succ { color: #9cb291; font: 10px/1 var(--mono); text-align: center; }
+  .mobile-skill-name { height: 30px; font-size: 12px; }
+  .mobile-skill-attr select { width: 78px; height: 28px; padding: 3px 4px; font-size: 9px; }
+  .skill-card-major { display: flex; align-items: center; gap: 7px; margin-top: 8px; }
+  .mobile-skill-label { flex: 0 0 auto; color: #8a8275; font-size: 8px; letter-spacing: .03em; }
+  .mobile-skill-major { height: 30px; min-width: 0; font-size: 11px; }
+  .skill-card .skill-major-input {
+    color: #ffd25c !important; font-weight: 600;
+    text-shadow: 0 0 9px rgba(255, 201, 86, .12);
+  }
+  .skill-card .skill-major-input::placeholder { color: #a9843f; opacity: 1; }
+  .skill-card .skill-major-input:focus {
+    border-color: rgba(226,190,112,.55);
+    box-shadow: 0 0 0 2px rgba(201,168,110,.08);
+  }
+  .skill-card-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
+  .mobile-skill-field { display: flex; align-items: center; gap: 5px; min-width: 0; color: #91897b; font-size: 8.5px; }
+  .mobile-skill-field span { flex: 0 0 auto; }
+  .mobile-skill-field input { width: 100%; min-width: 0; height: 28px; padding: 3px 4px; text-align: center; }
+  .skill-card-extra {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 7px 10px; align-items: center;
+    margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.07);
+  }
+  .skill-card-stat { display: flex; align-items: center; justify-content: space-between; gap: 4px; color: #91897b; font-size: 8.5px; }
+  .skill-card-stat b { color: var(--gold); font: 12px/1 var(--mono); }
+  .skill-card-stat b.skill-over { color: var(--red); }
+
+  .resource-card {
+    grid-template-columns: minmax(0, 1fr) 58px 66px;
+    grid-template-areas: "type level points" "main main main";
+    gap: 8px;
+  }
+  .resource-card .res-type { grid-area: type; min-width: 0; }
+  .resource-card .res-type select { width: 100%; min-width: 0; }
+  .resource-card .res-main { grid-area: main; min-width: 0; }
+  .resource-card .res-main input, .resource-card .res-main textarea { width: 100%; }
+  .resource-card .res-main textarea { min-height: 52px; }
+  .resource-card .res-level { grid-area: level; }
+  .resource-card .res-points { grid-area: points; }
+  .resource-card .res-num input { width: 100%; min-width: 0; text-align: center; }
+
+  .technique-grid { grid-template-columns: 1fr; }
+  .technique-card textarea { min-height: 92px; }
+
+  /* defense composition: give manual input its own cell and center numbers */
+  #view-character .defense-table { width: 100%; min-width: 0; table-layout: fixed; }
+  #view-character .defense-table col:nth-child(1) { width: 18% !important; }
+  #view-character .defense-table col:nth-child(2) { width: 10% !important; }
+  #view-character .defense-table col:nth-child(3) { width: 16% !important; }
+  #view-character .defense-table col:nth-child(4) { width: 10% !important; }
+  #view-character .defense-table col:nth-child(5) { width: 46% !important; }
+  #view-character .defense-table th, #view-character .defense-table td { padding: 5px 3px; }
+  #view-character .defense-table .center,
+  #view-character .defense-table .def-auto,
+  #view-character .defense-table .def-total { text-align: center !important; }
+  #view-character .defense-table .def-name { font-size: 9.5px; white-space: nowrap; }
+  #view-character .defense-table .def-desc { font-size: 8px; line-height: 1.35; white-space: normal; }
+  #view-character .defense-table .defense-input {
+    width: 100% !important; max-width: 100%; min-width: 0;
+    padding: 5px 2px; text-align: center; font-size: 10px;
+  }
+  #view-st .st-target-grid { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+  #view-st .st-combat-toolbar { gap: 7px; }
+  #view-st .st-source-picker { width: 100%; }
+  #view-st .st-source-picker select { flex: 1; width: auto; min-width: 0; }
+  #view-st .st-combat-hint { display: none; }
+  #view-st .st-attack-cards { display: flex; flex-direction: column; gap: 9px; }
+  #view-st .st-attack-card { padding: 10px; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; background: rgba(255,255,255,.018); }
+  #view-st .st-attack-card-head { display: flex; align-items: center; gap: 6px; }
+  #view-st .st-attack-card-head .st-attack-name { flex: 1; min-width: 0; }
+  #view-st .st-attack-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: 8px; }
+  #view-st .st-attack-fields label { display: flex; flex-direction: column; gap: 3px; min-width: 0; color: #91897b; font-size: 8px; }
+  #view-st .st-attack-fields input { width: 100%; min-width: 0; height: 28px; padding: 3px 2px; text-align: center; }
+  #view-st .st-attack-effects { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 7px; }
+  #view-st .st-attack-effects label { display: flex; align-items: center; gap: 5px; color: #91897b; font-size: 8.5px; }
+  #view-st .st-attack-effects select { flex: 1; min-width: 0; width: 100%; }
+  #view-st .st-attack-card-source { margin-top: 7px; }
+  #view-st .st-attack-card-source input { width: 100%; height: 28px; }
+  #view-st .st-attack-import { display: flex; flex-direction: column; gap: 3px; margin-top: 7px; color: #91897b; font-size: 8px; }
+  #view-st .st-attack-import select { width: 100%; height: 28px; font-size: 9px; }
+  #view-st .st-attack-detail-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: 7px; }
+  #view-st .st-attack-detail-fields > label { display: flex; flex-direction: column; gap: 3px; min-width: 0; color: #91897b; font-size: 8px; }
+  #view-st .st-attack-detail-fields input { width: 100%; min-width: 0; height: 28px; padding: 3px 2px; text-align: center; }
+  #view-st .st-attack-effect-field { display: flex; flex-direction: column; gap: 3px; margin-top: 7px; color: #91897b; font-size: 8px; }
+  #view-st .st-attack-effect-field textarea { width: 100%; min-height: 52px; resize: vertical; padding: 6px 7px; font-size: 10px; }
+  #view-st .st-attack-card-output { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-top: 8px; padding-top: 7px; border-top: 1px solid rgba(255,255,255,.07); color: #91897b; font-size: 8px; }
+  #view-st .st-attack-card-output b { display: block; margin-top: 2px; color: var(--gold); font: 12px/1 var(--mono); }
+  #view-st .st-attack-card-output .st-attack-final { color: var(--gold); }
+  #view-st .st-attack-card-output .st-attack-damage { color: #e8c47e; }
+  #view-st .st-defense-grid { grid-template-columns: 1fr !important; }
+  #view-st .st-def-effect { grid-template-columns: minmax(80px, 1fr) 34px 86px; gap: 7px; }
+  #view-st .st-def-effect select { width: 100%; min-width: 0; max-width: 100%; }
+  .target-toolbar { flex-wrap: wrap; }
+  .target-effect { max-width: 100%; flex-wrap: wrap; }
+  .target-effect .effect-grade { max-width: 100%; }
+  .attack-table { min-width: 780px; }
+  .panel-head { align-items: flex-start; flex-wrap: wrap; }
+  .book-title { white-space: normal; }
+}
+
+@media (max-width: 390px) {
+  .mobile-nav button .mt { font-size: 8px; }
+  .theme-toggle, .display-toggle { padding-left: 5px; padding-right: 5px; }
+}

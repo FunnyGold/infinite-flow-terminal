@@ -12,3 +12,11 @@ chm-cache/
 *.zip
 app.log
 阿黛尔.json
+
+# mobile
+mobile/.gradle/
+mobile/**/build/
+mobile/local.properties
+mobile/**/*.apk
+*.jks
+*.keystore

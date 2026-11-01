@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <title>无限流 · 角色终端</title>
+  <script>
+    try {
+      if (localStorage.getItem('infinite-terminal/theme') === 'light')
+        document.documentElement.dataset.theme = 'light';
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="app.css?v=60">
+  <link rel="stylesheet" href="mobile.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="titlebar" id="titlebar">
+      <div class="titlebar-left">
+        <span class="tiny-mark">∞</span>
+        <span class="titlebar-name">无限流 · 角色终端</span>
+        <span class="local-badge">LOCAL</span>
+      </div>
+      <div class="titlebar-center">
+        <div class="character-switcher">
+          <button class="character-switch-btn" data-action="toggle-character-menu" title="切换角色卡">
+            <span class="character-switch-icon" data-icon="user"></span>
+            <span id="character-switch-name">未命名调查员</span>
+            <span class="character-switch-caret" data-icon="down"></span>
+          </button>
+          <div class="character-menu" id="character-menu" hidden></div>
+        </div>
+        <button class="theme-toggle" data-action="toggle-theme" title="切换明亮 / 暗黑模式">
+          <span class="theme-toggle-icon" data-theme-icon></span><span data-theme-label>明亮</span>
+        </button>
+        <div class="display-control">
+          <button class="display-toggle" data-action="toggle-display-panel" title="调节亮度 / 对比度 / 灰度">
+            <span class="display-toggle-icon" data-icon="sliders"></span><span>显示</span>
+          </button>
+          <div class="display-panel" id="display-panel" hidden>
+            <div class="display-head"><span>显示调节</span><button class="display-close" data-action="close-display-panel" title="关闭">×</button></div>
+            <label class="display-row"><span>亮度</span><input id="display-brightness" type="range" min="70" max="130" step="1"><output id="display-brightness-value">100%</output></label>
+            <label class="display-row"><span>对比度</span><input id="display-contrast" type="range" min="70" max="130" step="1"><output id="display-contrast-value">100%</output></label>
+            <label class="display-row"><span>灰度</span><input id="display-grayscale" type="range" min="0" max="100" step="1"><output id="display-grayscale-value">0%</output></label>
+            <div class="display-actions"><button class="btn small" data-action="reset-display">恢复默认</button></div>
+          </div>
+        </div>
+        <span class="save-dot" id="save-dot"></span>
+        <span id="save-label">本地工作台 · 自动存档</span>
+      </div>
+      <div class="titlebar-right">
+        <button class="tb-action" data-action="import" title="导入角色卡 JSON">
+          <span data-icon="upload"></span><span>导入</span>
+        </button>
+        <button class="tb-action primary" data-action="export" title="导出角色卡 JSON">
+          <span data-icon="download"></span><span>导出</span>
+        </button>
+        <div class="window-controls">
+          <button class="win-btn" data-window="minimize" title="最小化"><span>─</span></button>
+          <button class="win-btn" data-window="maximize" title="最大化"><span id="max-icon">□</span></button>
+          <button class="win-btn close" data-window="close" title="关闭"><span>✕</span></button>
+        </div>
+      </div>
+    </header>
+
+    <div class="shell">
+      <aside class="sidebar">
+        <div class="side-scroll">
+        <div class="brand">
+          <div class="brand-mark">∞</div>
+          <div class="brand-text">
+            <div class="brand-title">无限流</div>
+            <div class="brand-sub">角色终端 <span>V1.68</span></div>
+          </div>
+        </div>
+
+        <div class="side-label">WORKSPACE / 工作区</div>
+        <nav class="nav" id="nav">
+          <button class="nav-item active" data-nav="overview">
+            <span class="nav-icon" data-icon="grid"></span>
+            <span class="nav-text">总览</span>
+            <span class="nav-key">01</span>
+          </button>
+          <button class="nav-item" data-nav="character">
+            <span class="nav-icon" data-icon="user"></span>
+            <span class="nav-text">人物卡</span>
+            <span class="nav-key">02</span>
+          </button>
+          <button class="nav-item" data-nav="combat">
+            <span class="nav-icon" data-icon="sword"></span>
+            <span class="nav-text">战斗</span>
+            <span class="nav-key">03</span>
+          </button>
+          <button class="nav-item" data-nav="resources">
+            <span class="nav-icon" data-icon="spark"></span>
+            <span class="nav-text">资源 · 技艺</span>
+            <span class="nav-key">04</span>
+          </button>
+          <button class="nav-item" data-nav="ledger">
+            <span class="nav-icon" data-icon="coin"></span>
+            <span class="nav-text">收支账本</span>
+            <span class="nav-key">05</span>
+          </button>
+          <button class="nav-item rules-nav" data-nav="rules">
+            <span class="nav-icon" data-icon="book"></span>
+            <span class="nav-text">规则书</span>
+            <span class="nav-key">06</span>
+          </button>
+          <button class="nav-item" data-nav="st">
+            <span class="nav-icon" data-icon="users"></span>
+            <span class="nav-text">ST 工具</span>
+            <span class="nav-key">07</span>
+          </button>
+        </nav>
+
+        <div class="side-label side-label-tools">ARCHIVE / 档案</div>
+        <div class="side-tools">
+          <button class="side-tool" data-action="changelog-open">
+            <span class="side-tool-icon" data-icon="history"></span>
+            <span class="side-tool-text"><b>更新目录</b><small>当前 V1.68 · 43 个版本</small></span>
+            <span class="side-tool-arrow">›</span>
+          </button>
+          <button class="side-tool" data-action="about-open">
+            <span class="side-tool-icon" data-icon="info"></span>
+            <span class="side-tool-text"><b>关于</b><small>致谢与规则书贡献者</small></span>
+            <span class="side-tool-arrow">›</span>
+          </button>
+        </div>
+
+        <div class="side-spacer"></div>
+
+        <div class="side-vitals" id="side-vitals">
+          <div class="vitals-head">
+            <span>角色状态</span>
+            <span class="status-pill muted" id="side-status">未建卡</span>
+          </div>
+          <div class="vital-row"><span>生命</span><b id="side-hp">—</b></div>
+          <div class="vital-row"><span>意志</span><b id="side-will">—</b></div>
+          <div class="vital-row"><span>先攻 / 速度</span><b id="side-init">—</b></div>
+          <div class="vital-row"><span>基础防御</span><b id="side-def">—</b></div>
+        </div>
+
+        <div class="side-rule"></div>
+        <div class="side-chm" id="side-chm">
+          <div class="chm-dot" id="chm-dot"></div>
+          <div>
+            <div class="chm-label">CHM 规则库</div>
+            <div class="chm-count" id="chm-count">扫描中…</div>
+          </div>
+        </div>
+        </div>
+        <div class="side-foot">
+          <span>单机运行 · 数据在本地</span>
+          <button class="text-btn" data-action="help" title="快速上手与快捷键">帮助</button>
+          <button class="text-btn" data-action="reset" title="清空当前角色卡">重置</button>
+        </div>
+      </aside>
+
+      <main class="main" id="main">
+        <section class="view active" id="view-overview"></section>
+        <section class="view" id="view-character"></section>
+        <section class="view" id="view-combat"></section>
+        <section class="view" id="view-resources"></section>
+        <section class="view" id="view-ledger"></section>
+        <section class="view" id="view-rules"></section>
+        <section class="view" id="view-st"></section>
+      </main>
+    </div>
+  </div>
+
+  <div class="modal-layer" id="modal-layer" hidden>
+    <div class="modal-card" id="modal-card"></div>
+  </div>
+
+  <div class="about-layer" id="about-layer" hidden>
+    <div class="about-stage" role="dialog" aria-modal="true" aria-labelledby="about-title">
+      <button class="about-close" data-action="about-close" title="返回规则书">✕</button>
+      <div class="about-emblem" aria-hidden="true">
+        <span class="about-orbit orbit-a"></span>
+        <span class="about-orbit orbit-b"></span>
+        <span class="about-mark">∞</span>
+      </div>
+      <div class="about-kicker">RULEBOOK CONTRIBUTORS · 致谢</div>
+      <h2 class="about-title" id="about-title">致 谢</h2>
+      <div class="about-divider" aria-hidden="true"><i></i><span>◆</span><i></i></div>
+      <p class="about-thanks">感谢 <b>滑稽金_金子</b>、<b>觉妖怪</b>、<b>啤酒鸦</b><br>和<b>广大群友</b>对本规则书的贡献</p>
+      <p class="about-note">每一份整理、校对、投稿与传播，都让无限流的世界更完整。</p>
+      <div class="about-signature">
+        <span class="about-seal">∞</span>
+        <span>无限流 · 角色终端</span>
+        <span class="about-dot">·</span>
+        <span>V1.68</span>
+      </div>
+      <div class="about-actions"><button class="btn gold" data-action="about-close">返回</button></div>
+    </div>
+  </div>
+
+  <div class="changelog-layer" id="changelog-layer" hidden>
+    <div class="changelog-stage" role="dialog" aria-modal="true" aria-labelledby="changelog-title">
+      <button class="about-close" data-action="changelog-close" title="关闭更新目录">✕</button>
+      <div class="changelog-head">
+        <div class="about-kicker">CHANGELOG · 更新目录</div>
+        <h2 class="changelog-title" id="changelog-title">版本记录</h2>
+        <div class="changelog-sub">按每次更新递增 · 共 <b id="changelog-count">43</b> 个版本 · 当前 <span id="changelog-current">V1.68</span></div>
+        <div class="about-divider"><i></i><span>◆</span><i></i></div>
+      </div>
+      <div class="changelog-scroll" id="changelog-list"></div>
+      <div class="changelog-actions"><button class="btn gold" data-action="changelog-close">返回</button></div>
+    </div>
+  </div>
+
+  <div class="guide-layer" id="guide-layer" hidden>
+    <div class="guide-spotlight" id="guide-spotlight" hidden></div>
+    <div class="guide-card" id="guide-card" role="dialog" aria-modal="true" aria-labelledby="guide-title">
+      <div class="guide-head"><span class="guide-kicker" id="guide-kicker">新手引导</span><button class="guide-skip" data-action="guide-skip">跳过</button></div>
+      <div class="guide-title" id="guide-title"></div>
+      <div class="guide-body" id="guide-body"></div>
+      <div class="guide-actions">
+        <button class="btn" data-action="guide-prev">上一步</button>
+        <button class="btn gold" data-action="guide-next">下一步</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toasts" id="toasts"></div>
+
+  <script src="android-bridge.js"></script>
+  <script src="data.js?v=60"></script>
+  <script src="calc.js?v=60"></script>
+  <script src="app.js?v=60"></script>
+  <script src="mobile.js"></script>
+</body>
+</html>
