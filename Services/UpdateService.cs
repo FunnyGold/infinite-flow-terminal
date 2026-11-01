@@ -282,9 +282,11 @@ public static class UpdateService
 
         if (!manual) return;
         if (!string.IsNullOrWhiteSpace(info.Error))
-            MessageBox.Show("检查更新失败：\n" + info.Error, "检查更新", MessageBoxButton.OK, MessageBoxImage.Warning);
+            new UpdateStatusWindow("检查更新失败", "请检查网络后重试。\n" + info.Error, info.Current, true)
+                { Owner = Application.Current?.MainWindow }.ShowDialog();
         else
-            MessageBox.Show($"当前已是最新版本：V{info.Current}", "检查更新", MessageBoxButton.OK, MessageBoxImage.Information);
+            new UpdateStatusWindow("已是最新版本", "Gitee 和 GitHub 都没有发现新版本。", info.Current)
+                { Owner = Application.Current?.MainWindow }.ShowDialog();
     }
 
     private static async Task DownloadAndOfferAsync(UpdateInfo info)

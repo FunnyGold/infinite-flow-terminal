@@ -1,0 +1,59 @@
+<Window x:Class="InfiniteTerminal.UpdateStatusWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="检查更新" Width="470" Height="275"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False">
+    <Border Margin="18" CornerRadius="14" Background="#12151B"
+            BorderBrush="#5B4A31" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="28" ShadowDepth="8" Opacity="0.55" Color="#000000"/>
+        </Border.Effect>
+        <Grid Margin="26,22,26,20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <Grid>
+                <StackPanel Orientation="Horizontal">
+                    <Border x:Name="IconBorder" Width="42" Height="42" CornerRadius="10"
+                            Background="#1D241C" BorderBrush="#4E674B" BorderThickness="1">
+                        <TextBlock x:Name="GlyphText" Text="✓" Foreground="#9FC38F"
+                                   FontFamily="Segoe UI" FontSize="21" FontWeight="SemiBold"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <StackPanel Margin="13,0,0,0" VerticalAlignment="Center">
+                        <TextBlock x:Name="TitleText" Text="已是最新版本" Foreground="#F2EADB"
+                                   FontFamily="Microsoft YaHei UI" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="SubtitleText" Text="INFINITE FLOW TERMINAL"
+                                   Foreground="#8C7A58" FontFamily="Consolas" FontSize="8.5"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </StackPanel>
+                <Button Content="✕" Width="28" Height="28" HorizontalAlignment="Right"
+                        VerticalAlignment="Top" Background="Transparent" Foreground="#8D8679"
+                        BorderThickness="0" FontSize="13" Cursor="Hand" Click="Close_Click"/>
+            </Grid>
+
+            <StackPanel Grid.Row="1" VerticalAlignment="Center" Margin="0,14,0,0">
+                <TextBlock x:Name="VersionText" Text="当前版本 V1.82.0" Foreground="#E2C486"
+                           FontFamily="Consolas" FontSize="14" HorizontalAlignment="Center"/>
+                <Border Height="1" Width="54" Background="#3A3224" Margin="0,12,0,12"
+                        HorizontalAlignment="Center"/>
+                <TextBlock x:Name="MessageText" Text="已经是最新版本，无需更新。"
+                           Foreground="#A9A091" FontFamily="Microsoft YaHei UI"
+                           FontSize="11.5" TextAlignment="Center" TextWrapping="Wrap"
+                           LineHeight="20" MaxWidth="360" HorizontalAlignment="Center"/>
+            </StackPanel>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                <Button Content="关闭" Width="92" Height="32"
+                        Background="#23262D" Foreground="#CFC6B7" BorderBrush="#4A4032"
+                        BorderThickness="1" Cursor="Hand" Click="Close_Click"/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -225,7 +225,8 @@ public partial class MainWindow : Window
         {
             Log("update check failed: " + ex.Message);
             if (manual)
-                MessageBox.Show("检查更新失败：" + Environment.NewLine + ex.Message, "检查更新", MessageBoxButton.OK, MessageBoxImage.Warning);
+                new UpdateStatusWindow("检查更新失败", ex.Message, typeof(MainWindow).Assembly.GetName().Version?.ToString(3) ?? "未知", true)
+                    { Owner = this }.ShowDialog();
         }
     }
 

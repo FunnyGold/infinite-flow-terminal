@@ -990,10 +990,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.82';
+  const APP_VERSION = 'V1.83';
   const UPDATES = [
     {
-      version: 'V1.82', date: '2026-11-04', title: '更新源选择与关于页整理', current: true,
+      version: 'V1.83', date: '2026-11-04', title: '最新版本提示窗口重做', current: true,
+      notes: [
+        '检查更新已是最新版本时不再弹出系统 MessageBox',
+        '新增深色状态窗口，显示当前版本和检查结果',
+        '检查失败时也使用同一套窗口'
+      ]
+    },
+    {
+      version: 'V1.82', date: '2026-11-04', title: '更新源选择与关于页整理',
       notes: [
         '点击检查更新可自选 Gitee / GitHub，默认 Gitee',
         '检查更新按钮改为金色主按钮',
