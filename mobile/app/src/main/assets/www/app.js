@@ -1007,10 +1007,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.89';
+  const APP_VERSION = 'V1.90';
   const UPDATES = [
     {
-      version: 'V1.89', date: '2026-11-04', title: '快速建卡', current: true,
+      version: 'V1.90', date: '2026-11-04', title: '建卡检查', current: true,
+      notes: ['角色卡菜单新增检查角色卡']
+    },
+    {
+      version: 'V1.89', date: '2026-11-04', title: '快速建卡',
       notes: ['角色卡菜单新增快速建卡', '四个模板，只改名称和三个关键属性']
     },
     {
@@ -1798,7 +1802,7 @@
         <span class="cm-meta">${p.id === activeProfileId ? '当前角色' : new Date(p.updatedAt || Date.now()).toLocaleDateString('zh-CN')}</span>
       </button>`).join('')}</div>
       <div class="cm-actions">
-        <button data-action="quick-build">快速建卡</button><button data-action="create-character">＋ 新建</button>
+        <button data-action="quick-build">快速建卡</button><button data-action="check-character">检查角色卡</button><button data-action="create-character">＋ 新建</button>
         <button data-action="duplicate-character">复制</button>
         <button data-action="delete-character">删除</button>
       </div>`;
@@ -4277,6 +4281,61 @@
     window.setTimeout(() => { layer.hidden = true; }, 180);
   }
 
+  function closeCharacterCheck() {
+    const layer = document.getElementById('character-check-layer');
+    if (layer) layer.remove();
+  }
+
+  function openCharacterCheck() {
+    const c = C.compute(state);
+    const name = state.meta.name || '未命名调查员';
+    const normalDef = (c.defense.scenarios.find(s => s.key === 'normal') || {}).value || 0;
+    const skillCount = (c.allSkills || []).filter(s => Number(s.level) > 0).length;
+    const attackCount = (state.attacks || []).length;
+    const checks = [
+      { ok: name !== '未命名调查员' && name !== '新角色', label: '角色名', pass: name, tip: '给角色一个名字，导出和切换角色时会更好认。' },
+      { ok: c.hp > 0, label: '生命上限', pass: `生命 ${fmt(c.hp)}`, tip: '生命是承受伤害的基础；先确认它不是 0。' },
+      { ok: c.will > 0, label: '意志上限', pass: `意志 ${fmt(c.will)}`, tip: '意志用于能力和精神抵抗；不是当前生命。' },
+      { ok: normalDef > 0, label: '防御', pass: `平时防御 ${fmt(normalDef)}`, tip: '战斗页会用防御总值参与结算；基础防御只是其中一项。' },
+      { ok: attackCount > 0, label: '攻击预设', pass: `${attackCount} 个攻击`, tip: '没有攻击预设，战斗页就没有可结算的行。' },
+      { ok: skillCount >= 2, label: '核心技能', pass: `${skillCount} 个有等级技能`, tip: '至少准备两个常用技能，避免所有判定都靠裸属性。' }
+    ];
+    const passed = checks.filter(x => x.ok).length;
+    let layer = document.getElementById('character-check-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'character-check-layer';
+      layer.className = 'stat-guide-layer';
+      document.body.appendChild(layer);
+      layer.addEventListener('click', e => {
+        if (e.target === layer || e.target.closest('[data-check-close]')) { closeCharacterCheck(); return; }
+        if (e.target.closest('[data-check-goto]')) {
+          closeCharacterCheck();
+          switchView(e.target.closest('[data-check-goto]').dataset.checkGoto);
+        }
+      });
+    }
+    layer.innerHTML = `<div class="stat-guide-card quick-build-card character-check-card" role="dialog" aria-modal="true" aria-label="检查角色卡">
+      <button class="stat-guide-close" data-check-close aria-label="关闭">✕</button>
+      <div class="stat-guide-kicker">CHARACTER CHECK / 检查角色卡</div>
+      <h2>${passed >= checks.length ? '这张卡可以开跑了' : '这张卡还能再稳一点'}</h2>
+      <p class="quick-note">不是规则审判，只检查容易漏掉、会直接影响战斗的东西。</p>
+      <div class="character-check-list">
+        ${checks.map(x => `<div class="character-check-item ${x.ok ? 'ok' : 'warn'}">
+          <span class="character-check-icon">${x.ok ? '✓' : '!'}</span>
+          <div><b>${esc(x.label)}</b><small>${x.ok ? esc(x.pass) : esc(x.tip)}</small></div>
+        </div>`).join('')}
+      </div>
+      <div class="character-check-actions">
+        <button class="btn" data-check-close>关闭</button>
+        <span style="flex:1"></span>
+        <button class="btn" data-check-goto="character">去人物卡</button>
+        <button class="btn gold" data-check-goto="combat">去战斗页</button>
+      </div>
+    </div>`;
+    requestAnimationFrame(() => layer.classList.add('show'));
+  }
+
   const QUICK_BUILD_TEMPLATES = [
     {
       key: 'vanguard', name: '耐力前排', tag: '站得住', concept: '前排',
@@ -5038,6 +5097,7 @@
       case 'toggle-character-menu': toggleCharacterMenu(); break;
       case 'switch-character': switchCharacter(el.dataset.id); break;
       case 'quick-build': openQuickBuild(); break;
+      case 'check-character': openCharacterCheck(); break;
       case 'create-character': createCharacter(); break;
       case 'duplicate-character': duplicateCharacter(); break;
       case 'delete-character': deleteCharacter(); break;

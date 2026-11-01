@@ -601,6 +601,19 @@ html[data-theme="light"] .hero-identity-compact { color: #87622b; border-color: 
 .quick-review-list span { padding: 5px 8px; border-radius: 5px; border: 1px solid rgba(201,168,110,.15); color: #9f9688; font-size: 9px; }
 .quick-review-list b { color: #d8b878; font-weight: 500; }
 .quick-build-actions { display: flex; align-items: center; gap: 8px; margin-top: 18px; }
+
+.character-check-card { width: min(560px, 94vw); }
+.character-check-list { display: flex; flex-direction: column; gap: 6px; margin-top: 14px; }
+.character-check-item { display: flex; align-items: flex-start; gap: 10px; padding: 9px 11px; border-radius: 7px; border: 1px solid rgba(255,255,255,.07); background: rgba(255,255,255,.015); }
+.character-check-item.ok { border-color: rgba(124,164,123,.16); }
+.character-check-item.warn { border-color: rgba(201,168,110,.2); background: rgba(201,168,110,.035); }
+.character-check-icon { width: 19px; height: 19px; flex: 0 0 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 10px/1 var(--mono); }
+.character-check-item.ok .character-check-icon { color: #a8c79a; background: rgba(124,164,123,.12); }
+.character-check-item.warn .character-check-icon { color: #d8b878; background: rgba(201,168,110,.12); }
+.character-check-item b { display: block; color: #c5baa9; font-size: 10.5px; font-weight: 500; }
+.character-check-item small { display: block; margin-top: 3px; color: #777064; font-size: 9px; line-height: 1.65; }
+.character-check-actions { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+
 @media (max-width: 700px) {
   .quick-template-grid, .quick-primary-list { grid-template-columns: 1fr; }
   .quick-preview-grid { grid-template-columns: 1fr 1fr; }
