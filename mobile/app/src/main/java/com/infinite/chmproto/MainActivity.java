@@ -923,6 +923,50 @@ public class MainActivity extends Activity {
         }, "chm-search").start();
     }
 
+    private String snippetFor(ChmFile chm, Book b, String path, String query) {
+        try {
+            String chmPath = path.startsWith("/") ? path : "/" + path;
+            ChmUnitInfo ui = chm.resolveObject(chmPath);
+            if (ui == null) ui = chm.resolveObject(path);
+            if (ui == null) return "";
+            ByteBuffer bb = chm.retrieveObject(ui);
+            if (bb == null) return "";
+            byte[] data = new byte[bb.remaining()];
+            bb.get(data);
+            String encoding = b.encoding == null || b.encoding.isEmpty() ? "UTF-8" : b.encoding;
+            String html;
+            try { html = new String(data, encoding); }
+            catch (Throwable t) { html = new String(data, StandardCharsets.UTF_8); }
+            String text = html
+                    .replaceAll("(?is)<script.*?</script>", " ")
+                    .replaceAll("(?is)<style.*?</style>", " ")
+                    .replaceAll("(?is)<[^>]+>", " ")
+                    .replace("&nbsp;", " ")
+                    .replace("&amp;", "&")
+                    .replace("&lt;", "<")
+                    .replace("&gt;", ">")
+                    .replace("&quot;", "\"")
+                    .replace("&#39;", "'")
+                    .replaceAll("\\s+", " ")
+                    .trim();
+            if (text.isEmpty()) return "";
+            int pos = text.toLowerCase(Locale.ROOT).indexOf(query.toLowerCase(Locale.ROOT));
+            if (pos < 0) {
+                String first = query.split("\\s+")[0];
+                pos = text.toLowerCase(Locale.ROOT).indexOf(first.toLowerCase(Locale.ROOT));
+            }
+            if (pos < 0) pos = 0;
+            int start = Math.max(0, pos - 52);
+            int end = Math.min(text.length(), start + 170);
+            String snippet = text.substring(start, end).trim();
+            if (start > 0) snippet = "…" + snippet;
+            if (end < text.length()) snippet = snippet + "…";
+            return snippet;
+        } catch (Throwable t) {
+            return "";
+        }
+    }
+
     private SearchPart searchBook(Book b, String query, int generation) {
         SearchPart part = new SearchPart();
         if (generation != searchGeneration) return part;
@@ -938,7 +982,7 @@ public class MainActivity extends Activity {
                 h.put("bookTitle", b.title);
                 h.put("title", e.getValue() == null ? e.getKey() : e.getValue());
                 h.put("path", e.getKey());
-                h.put("snippet", "");
+                h.put("snippet", snippetFor(searchChm, b, e.getKey(), query));
                 h.put("score", 0);
                 part.items.put(h);
             }
