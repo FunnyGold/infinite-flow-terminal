@@ -28,7 +28,15 @@ public static class UpdateService
     private const string Repo = "infinite-flow-terminal";
 
     private static readonly HttpClient ApiHttp = CreateApiClient();
+    private static readonly HttpClient WebHttp = CreateWebClient();
     private static readonly HttpClient DownloadHttp = new() { Timeout = TimeSpan.FromMinutes(15) };
+
+    private static HttpClient CreateWebClient()
+    {
+        var client = new HttpClient(new HttpClientHandler { AllowAutoRedirect = false }) { Timeout = TimeSpan.FromSeconds(15) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("InfiniteTerminal-Updater/1.0");
+        return client;
+    }
 
     private static HttpClient CreateApiClient()
     {
@@ -43,49 +51,27 @@ public static class UpdateService
         var current = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
         try
         {
-            using var response = await ApiHttp.GetAsync(
-                $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest", ct);
-            if (response.StatusCode == HttpStatusCode.NotFound)
-                return new(false, current.ToString(3), "", "", "", Error: "仓库没有 Release");
-            response.EnsureSuccessStatusCode();
+            // /releases/latest is a web redirect, not the rate-limited REST API.
+            using var response = await WebHttp.GetAsync(
+                $"https://github.com/{Owner}/{Repo}/releases/latest",
+                HttpCompletionOption.ResponseHeadersRead, ct);
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
-            var root = doc.RootElement;
-            var tag = root.TryGetProperty("tag_name", out var t) ? t.GetString() ?? "" : "";
-            var url = root.TryGetProperty("html_url", out var u) ? u.GetString() ?? "" : "";
-            var body = root.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
+            var location = response.Headers.Location?.ToString();
+            if (string.IsNullOrWhiteSpace(location))
+                return new(false, current.ToString(3), "", "", "", Error: "无法读取最新版本");
+
+            var tag = location.TrimEnd('/').Split('/').Last();
             var latest = ParseVersion(tag);
             if (latest == null)
-                return new(false, current.ToString(3), tag, url, body, Error: "版本号无法解析");
+                return new(false, current.ToString(3), tag, "", "", Error: "版本号无法解析");
 
-            string? zipName = null, zipUrl = null, sumsUrl = null, digest = null;
-            if (root.TryGetProperty("assets", out var assets))
-            {
-                foreach (var asset in assets.EnumerateArray())
-                {
-                    var name = asset.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
-                    var dl = asset.TryGetProperty("browser_download_url", out var d) ? d.GetString() ?? "" : "";
-                    if (name.Equals("SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase)) sumsUrl = dl;
-                    if (name.EndsWith("-Windows.zip", StringComparison.OrdinalIgnoreCase))
-                    {
-                        zipName = name; zipUrl = dl;
-                        digest = asset.TryGetProperty("digest", out var dg) ? dg.GetString() : null;
-                    }
-                }
-            }
-
-            if (zipUrl == null)
-                return new(false, current.ToString(3), latest.ToString(3), url, body, Error: "Release 中没有 Windows 更新包");
-
-            string? sha = null;
-            if (digest != null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
-                sha = digest[7..].Trim();
-            if (sha == null && sumsUrl != null)
-                sha = await TryReadChecksumAsync(sumsUrl, zipName!, ct);
-
+            var releaseUrl = $"https://github.com/{Owner}/{Repo}/releases/tag/{tag}";
+            var assetName = $"InfiniteFlowTerminal-{tag}-Windows.zip";
+            var assetUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tag}/{assetName}";
+            var sumsUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tag}/SHA256SUMS.txt";
+            var sha = await TryReadChecksumAsync(sumsUrl, assetName, ct);
             var available = latest > current;
-            return new(available, current.ToString(3), latest.ToString(3), url, body, zipName, zipUrl, sha);
+            return new(available, current.ToString(3), latest.ToString(3), releaseUrl, "", assetName, assetUrl, sha);
         }
         catch (Exception ex)
         {
