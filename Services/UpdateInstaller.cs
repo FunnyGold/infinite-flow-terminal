@@ -28,7 +28,7 @@ public static class UpdateInstaller
 
             var source = Path.GetDirectoryName(newExe)!;
             var script = Path.Combine(staging, "apply-update.ps1");
-            File.WriteAllText(script, Script, new UTF8Encoding(false));
+            File.WriteAllText(script, Script, new UTF8Encoding(true));
 
             var psi = new ProcessStartInfo
             {
@@ -68,23 +68,55 @@ param(
   [string]$Exe
 )
 $ErrorActionPreference = 'Stop'
-try { Wait-Process -Id $ProcessId -ErrorAction SilentlyContinue } catch { }
-Start-Sleep -Milliseconds 800
-$backup = Join-Path $env:LOCALAPPDATA ('InfiniteTerminal\backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+$logDir = Join-Path $env:LOCALAPPDATA 'InfiniteTerminal'
+New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+$log = Join-Path $logDir 'update.log'
+function Log([string]$text) {
+  try { Add-Content -Path $log -Value ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + '  ' + $text) -Encoding UTF8 } catch { }
+}
+
+Log "update requested; waiting for process $ProcessId"
+try {
+  while (Get-Process -Id $ProcessId -ErrorAction SilentlyContinue) {
+    Start-Sleep -Milliseconds 500
+  }
+} catch { }
+Start-Sleep -Milliseconds 1200
+
+$backup = Join-Path $logDir ('backup\' + (Get-Date -Format 'yyyyMMdd-HHmmss'))
 New-Item -ItemType Directory -Force -Path $backup | Out-Null
 try {
-  Copy-Item -Path (Join-Path $Target '*') -Destination $backup -Recurse -Force
-  Get-ChildItem -Path $Source -Force | ForEach-Object {
+  Log "backing up program files to $backup"
+  Get-ChildItem -Path $Target -Force | Where-Object {
+    $_.Name -notin @('终端数据', 'webview-data')
+  } | ForEach-Object {
+    Copy-Item -Path $_.FullName -Destination $backup -Recurse -Force
+  }
+
+  Log "copying update from $Source to $Target"
+  Get-ChildItem -Path $Source -Force | Where-Object {
+    $_.Name -notin @('终端数据', 'webview-data')
+  } | ForEach-Object {
     Copy-Item -Path $_.FullName -Destination $Target -Recurse -Force
   }
+
+  Log "update copied; starting app"
   Start-Process -FilePath $Exe -WorkingDirectory $Target
+  Log "app started"
 } catch {
+  Log ("update failed: " + $_.Exception.Message)
   try {
-    Get-ChildItem -Path $backup -Force | ForEach-Object {
+    Log "rolling back"
+    Get-ChildItem -Path $backup -Force | Where-Object {
+      $_.Name -notin @('终端数据', 'webview-data')
+    } | ForEach-Object {
       Copy-Item -Path $_.FullName -Destination $Target -Recurse -Force
     }
     Start-Process -FilePath $Exe -WorkingDirectory $Target
-  } catch { }
+    Log "rollback started app"
+  } catch {
+    Log ("rollback failed: " + $_.Exception.Message)
+  }
 }
 """;
 }

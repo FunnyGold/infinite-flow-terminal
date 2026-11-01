@@ -205,9 +205,9 @@ public static class UpdateService
         if (result.Verified)
         {
             var install = MessageBox.Show(
-                "更新包已下载并通过 SHA256 校验。\n\n是否立即重启并更新？\n\n当前版本会先备份，更新完成后自动启动。",
-                "安装更新", MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (install == MessageBoxResult.Yes)
+                "更新包已下载并通过 SHA256 校验。\n\n点击“确定”后关闭软件并更新。\n更新器会等待程序退出，备份后替换文件并自动启动。",
+                "安装更新", MessageBoxButton.OKCancel, MessageBoxImage.Information);
+            if (install == MessageBoxResult.OK)
             {
                 if (UpdateInstaller.Start(info, result.Path, out var error))
                 {
