@@ -1,7 +1,9 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
+using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Reflection;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Windows;
 
@@ -13,17 +15,24 @@ public sealed record UpdateInfo(
     string Latest,
     string ReleaseUrl,
     string Notes,
+    string? AssetName = null,
+    string? AssetUrl = null,
+    string? Sha256 = null,
     string? Error = null);
+
+public sealed record DownloadResult(bool Ok, string Path, bool Verified, string? Error = null);
 
 public static class UpdateService
 {
     private const string Owner = "FunnyGold";
     private const string Repo = "infinite-flow-terminal";
-    private static readonly HttpClient Http = CreateClient();
 
-    private static HttpClient CreateClient()
+    private static readonly HttpClient ApiHttp = CreateApiClient();
+    private static readonly HttpClient DownloadHttp = new() { Timeout = TimeSpan.FromMinutes(15) };
+
+    private static HttpClient CreateApiClient()
     {
-        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(12) };
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("InfiniteTerminal-Updater/1.0");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
@@ -34,10 +43,10 @@ public static class UpdateService
         var current = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
         try
         {
-            using var response = await Http.GetAsync(
+            using var response = await ApiHttp.GetAsync(
                 $"https://api.github.com/repos/{Owner}/{Repo}/releases/latest", ct);
             if (response.StatusCode == HttpStatusCode.NotFound)
-                return new(false, current.ToString(3), "", "", "", "仓库没有 Release");
+                return new(false, current.ToString(3), "", "", "", Error: "仓库没有 Release");
             response.EnsureSuccessStatusCode();
 
             await using var stream = await response.Content.ReadAsStreamAsync(ct);
@@ -48,15 +57,115 @@ public static class UpdateService
             var body = root.TryGetProperty("body", out var b) ? b.GetString() ?? "" : "";
             var latest = ParseVersion(tag);
             if (latest == null)
-                return new(false, current.ToString(3), tag, url, body, "版本号无法解析");
+                return new(false, current.ToString(3), tag, url, body, Error: "版本号无法解析");
+
+            string? zipName = null, zipUrl = null, sumsUrl = null, digest = null;
+            if (root.TryGetProperty("assets", out var assets))
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    var name = asset.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                    var dl = asset.TryGetProperty("browser_download_url", out var d) ? d.GetString() ?? "" : "";
+                    if (name.Equals("SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase)) sumsUrl = dl;
+                    if (name.EndsWith("-Windows.zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        zipName = name; zipUrl = dl;
+                        digest = asset.TryGetProperty("digest", out var dg) ? dg.GetString() : null;
+                    }
+                }
+            }
+
+            if (zipUrl == null)
+                return new(false, current.ToString(3), latest.ToString(3), url, body, Error: "Release 中没有 Windows 更新包");
+
+            string? sha = null;
+            if (digest != null && digest.StartsWith("sha256:", StringComparison.OrdinalIgnoreCase))
+                sha = digest[7..].Trim();
+            if (sha == null && sumsUrl != null)
+                sha = await TryReadChecksumAsync(sumsUrl, zipName!, ct);
 
             var available = latest > current;
-            return new(available, current.ToString(3), latest.ToString(3), url, body);
+            return new(available, current.ToString(3), latest.ToString(3), url, body, zipName, zipUrl, sha);
         }
         catch (Exception ex)
         {
-            return new(false, current.ToString(3), "", "", "", ex.Message);
+            return new(false, current.ToString(3), "", "", "", Error: ex.Message);
         }
+    }
+
+    public static async Task<DownloadResult> DownloadAsync(
+        UpdateInfo info, IProgress<double>? progress, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(info.AssetUrl) || string.IsNullOrWhiteSpace(info.AssetName))
+            return new(false, "", false, "没有可下载的更新包");
+
+        var dir = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "InfiniteTerminal", "updates", info.Latest);
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, info.AssetName);
+
+        try
+        {
+            using var response = await DownloadHttp.GetAsync(
+                info.AssetUrl, HttpCompletionOption.ResponseHeadersRead, ct);
+            response.EnsureSuccessStatusCode();
+            var total = response.Content.Headers.ContentLength ?? 0;
+            await using var input = await response.Content.ReadAsStreamAsync(ct);
+            await using var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+            var buffer = new byte[81920];
+            long done = 0;
+            int read;
+            while ((read = await input.ReadAsync(buffer, ct)) > 0)
+            {
+                await output.WriteAsync(buffer.AsMemory(0, read), ct);
+                done += read;
+                if (total > 0) progress?.Report((double)done / total);
+            }
+
+            if (string.IsNullOrWhiteSpace(info.Sha256))
+                return new(true, path, false, "Release 未提供 SHA256，无法校验完整性");
+
+            var hash = await ComputeSha256Async(path, ct);
+            if (!hash.Equals(info.Sha256, StringComparison.OrdinalIgnoreCase))
+            {
+                try { File.Delete(path); } catch { }
+                return new(false, path, false, "SHA256 校验失败，更新包不完整或被篡改");
+            }
+            progress?.Report(1);
+            return new(true, path, true);
+        }
+        catch (OperationCanceledException)
+        {
+            return new(false, path, false, "下载已取消");
+        }
+        catch (Exception ex)
+        {
+            return new(false, path, false, ex.Message);
+        }
+    }
+
+    public static async Task<string?> TryReadChecksumAsync(string url, string fileName, CancellationToken ct)
+    {
+        try
+        {
+            var text = await ApiHttp.GetStringAsync(url, ct);
+            foreach (var line in text.Split('\n'))
+            {
+                var parts = line.Trim().Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 2 && parts[1].TrimStart('*').Equals(fileName, StringComparison.OrdinalIgnoreCase))
+                    return parts[0];
+            }
+        }
+        catch { }
+        return null;
+    }
+
+    private static async Task<string> ComputeSha256Async(string path, CancellationToken ct)
+    {
+        await using var stream = File.OpenRead(path);
+        var hash = await SHA256.HashDataAsync(stream, ct);
+        return Convert.ToHexString(hash).ToLowerInvariant();
     }
 
     public static void ShowResult(UpdateInfo info, bool manual)
@@ -66,10 +175,10 @@ public static class UpdateService
             var notes = string.IsNullOrWhiteSpace(info.Notes) ? "（无更新说明）" : info.Notes.Trim();
             if (notes.Length > 600) notes = notes[..600] + "…";
             var result = MessageBox.Show(
-                $"发现新版本 V{info.Latest}\n\n当前版本：V{info.Current}\n\n{notes}\n\n是否打开下载页面？",
+                $"发现新版本 V{info.Latest}\n\n当前版本：V{info.Current}\n\n{notes}\n\n是否下载更新包？",
                 "检查更新", MessageBoxButton.YesNo, MessageBoxImage.Information);
-            if (result == MessageBoxResult.Yes && !string.IsNullOrWhiteSpace(info.ReleaseUrl))
-                Process.Start(new ProcessStartInfo(info.ReleaseUrl) { UseShellExecute = true });
+            if (result == MessageBoxResult.Yes)
+                _ = DownloadAndOfferAsync(info);
             return;
         }
 
@@ -78,6 +187,38 @@ public static class UpdateService
             MessageBox.Show("检查更新失败：\n" + info.Error, "检查更新", MessageBoxButton.OK, MessageBoxImage.Warning);
         else
             MessageBox.Show($"当前已是最新版本：V{info.Current}", "检查更新", MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    private static async Task DownloadAndOfferAsync(UpdateInfo info)
+    {
+        var win = new UpdateDownloadWindow(info.Latest) { Owner = Application.Current?.MainWindow };
+        win.Show();
+        var result = await DownloadAsync(info, win.Progress, win.Token);
+        win.Close();
+
+        if (!result.Ok)
+        {
+            if (result.Error != "下载已取消")
+            {
+                var open = MessageBox.Show(
+                    "下载更新失败：\n" + (result.Error ?? "未知错误") +
+                    "\n\n是否打开 GitHub 下载页？",
+                    "下载失败", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+                if (open == MessageBoxResult.Yes && !string.IsNullOrWhiteSpace(info.ReleaseUrl))
+                    Process.Start(new ProcessStartInfo(info.ReleaseUrl) { UseShellExecute = true });
+            }
+            return;
+        }
+
+        var message = result.Verified
+            ? "更新包已下载并通过 SHA256 校验。"
+            : "更新包已下载，但未提供 SHA256 校验。";
+        var answer = MessageBox.Show(
+            message + "\n\n文件：" + result.Path +
+            "\n\n是否打开文件所在文件夹？",
+            "下载完成", MessageBoxButton.YesNo, MessageBoxImage.Information);
+        if (answer == MessageBoxResult.Yes)
+            Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{result.Path}\"") { UseShellExecute = true });
     }
 
     private static Version? ParseVersion(string tag)

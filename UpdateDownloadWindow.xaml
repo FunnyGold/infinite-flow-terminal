@@ -1,0 +1,31 @@
+﻿<Window x:Class="InfiniteTerminal.UpdateDownloadWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="下载更新" Width="500" Height="190"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowStyle="None" Background="#14161B" ShowInTaskbar="False">
+    <Border BorderBrush="#5A4A33" BorderThickness="1" Background="#14161B">
+        <Grid Margin="22,18">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock x:Name="TitleText" Text="正在下载更新" Foreground="#F0E8DA"
+                       FontFamily="Microsoft YaHei UI" FontSize="17" FontWeight="SemiBold"/>
+            <TextBlock x:Name="SubText" Grid.Row="1" Text="准备下载…" Foreground="#9A9386"
+                       FontFamily="Microsoft YaHei UI" FontSize="12" Margin="0,7,0,0"/>
+            <ProgressBar x:Name="Bar" Grid.Row="2" Height="8" Minimum="0" Maximum="100"
+                         Foreground="#C9A35F" Background="#282B33" BorderThickness="0"
+                         Margin="0,16,0,0"/>
+            <Grid Grid.Row="3" Margin="0,14,0,0">
+                <TextBlock x:Name="Percent" Text="0%" Foreground="#C9A35F"
+                           FontFamily="Consolas" FontSize="12" VerticalAlignment="Center"/>
+                <Button Content="取消" Width="76" Height="28" HorizontalAlignment="Right"
+                        Background="#24262C" Foreground="#D8D0C2" BorderBrush="#4A4032"
+                        Click="Cancel_Click"/>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>
