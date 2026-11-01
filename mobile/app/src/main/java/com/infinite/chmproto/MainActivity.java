@@ -1,17 +1,21 @@
 package com.infinite.chmproto;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.provider.Settings;
 import android.provider.OpenableColumns;
 import android.view.ViewGroup;
 import android.webkit.JavascriptInterface;
@@ -38,7 +42,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.net.URLDecoder;
+import java.security.MessageDigest;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -50,6 +57,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Full Android shell for the character terminal.
@@ -62,6 +71,7 @@ public class MainActivity extends Activity {
     private static final int REQ_IMPORT_JSON = 1002;
     private static final int REQ_EXPORT_JSON = 1003;
     private static final int REQ_AVATAR = 1004;
+    private static final int REQ_INSTALL_UNKNOWN = 1005;
     private static final String APP_HOST = "app.local";
     private static final String CHM_HOST = "chm.local";
 
@@ -84,6 +94,8 @@ public class MainActivity extends Activity {
     private volatile String pendingExportJson = "";
     private volatile String pendingExportName = "";
     private ValueCallback<Uri[]> avatarCallback;
+    private volatile boolean updateChecking;
+    private File pendingInstall;
 
     private static final class Book {
         String key;
@@ -122,6 +134,7 @@ public class MainActivity extends Activity {
         loadShell();
         scanLibrary(false);
         handleDebugIntent(getIntent());
+        if (webView != null) webView.postDelayed(this::checkForUpdates, 1800);
     }
 
     private void handleDebugIntent(Intent intent) {
@@ -534,6 +547,10 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQ_INSTALL_UNKNOWN) {
+            if (pendingInstall != null) installApk(pendingInstall);
+            return;
+        }
         if (requestCode == REQ_AVATAR) {
             if (avatarCallback != null) {
                 avatarCallback.onReceiveValue(WebChromeClient.FileChooserParams.parseResult(resultCode, data));
@@ -927,6 +944,248 @@ public class MainActivity extends Activity {
             out.put("response", response);
             postJson(out);
         } catch (Throwable ignored) { }
+    }
+
+
+    private static final class ReleaseInfo {
+        String version;
+        String apkUrl;
+        String apkName;
+        String sha256;
+        String releaseUrl;
+    }
+
+    private void checkForUpdates() {
+        if (updateChecking) return;
+        updateChecking = true;
+        io.execute(() -> {
+            try {
+                ReleaseInfo info = findLatestRelease();
+                if (info != null && compareVersion(info.version, currentVersionName()) > 0) {
+                    runOnUiThread(() -> showUpdateDialog(info));
+                }
+            } catch (Throwable ignored) {
+                // Update checks must never block normal startup.
+            } finally {
+                updateChecking = false;
+            }
+        });
+    }
+
+    private String currentVersionName() {
+        try {
+            return getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+        } catch (Throwable t) {
+            return "0.0.0";
+        }
+    }
+
+    private ReleaseInfo findLatestRelease() throws Exception {
+        String latest = "https://github.com/FunnyGold/infinite-flow-terminal/releases/latest";
+        HttpURLConnection conn = (HttpURLConnection) new URL(latest).openConnection();
+        conn.setInstanceFollowRedirects(false);
+        conn.setRequestProperty("User-Agent", "InfiniteTerminal-Android");
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(15000);
+        int code = conn.getResponseCode();
+        String location = conn.getHeaderField("Location");
+        conn.disconnect();
+        if (code < 300 || code >= 400 || location == null) return null;
+        String tag = location.substring(location.lastIndexOf('/') + 1);
+
+        String page = "https://github.com/FunnyGold/infinite-flow-terminal/releases/tag/" + tag;
+        String assetsUrl = "https://github.com/FunnyGold/infinite-flow-terminal/releases/expanded_assets/" + tag;
+        String html = readUrl(assetsUrl);
+        Pattern pattern = Pattern.compile(
+                "href=\"([^\"]*?/releases/download/" + Pattern.quote(tag)
+                        + "/InfiniteFlowTerminal-Android-v([0-9]+(?:\\.[0-9]+)+)\\.apk)\"");
+        Matcher matcher = pattern.matcher(html);
+        ReleaseInfo best = null;
+        while (matcher.find()) {
+            String version = matcher.group(2);
+            if (best == null || compareVersion(version, best.version) > 0) {
+                best = new ReleaseInfo();
+                best.version = version;
+                best.apkName = "InfiniteFlowTerminal-Android-v" + version + ".apk";
+                String path = matcher.group(1);
+                best.apkUrl = path.startsWith("http") ? path : "https://github.com" + path;
+                best.releaseUrl = page;
+                best.sha256 = findChecksum(best.apkUrl, best.apkName);
+            }
+        }
+        return best;
+    }
+
+    private String findChecksum(String apkUrl, String apkName) {
+        try {
+            String base = apkUrl.substring(0, apkUrl.lastIndexOf('/') + 1);
+            String text = readUrl(base + "SHA256SUMS.txt");
+            for (String line : text.split("\\r?\\n")) {
+                String[] parts = line.trim().split("\\s+");
+                if (parts.length >= 2 && parts[1].trim().replaceFirst("^\\*", "").equalsIgnoreCase(apkName)) {
+                    return parts[0].trim();
+                }
+            }
+        } catch (Throwable ignored) { }
+        return null;
+    }
+
+    private String readUrl(String url) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
+        conn.setInstanceFollowRedirects(true);
+        conn.setRequestProperty("User-Agent", "InfiniteTerminal-Android");
+        conn.setConnectTimeout(15000);
+        conn.setReadTimeout(20000);
+        int code = conn.getResponseCode();
+        if (code < 200 || code >= 300) {
+            conn.disconnect();
+            throw new IOException("HTTP " + code);
+        }
+        try (InputStream input = conn.getInputStream()) {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) output.write(buffer, 0, read);
+            return output.toString(StandardCharsets.UTF_8.name());
+        } finally {
+            conn.disconnect();
+        }
+    }
+
+    private static int compareVersion(String left, String right) {
+        String[] a = (left == null ? "0" : left).split("\\.");
+        String[] b = (right == null ? "0" : right).split("\\.");
+        int count = Math.max(a.length, b.length);
+        for (int i = 0; i < count; i++) {
+            int av = i < a.length ? parseVersionPart(a[i]) : 0;
+            int bv = i < b.length ? parseVersionPart(b[i]) : 0;
+            if (av != bv) return av > bv ? 1 : -1;
+        }
+        return 0;
+    }
+
+    private static int parseVersionPart(String value) {
+        try { return Integer.parseInt(value.replaceAll("[^0-9].*$", "")); }
+        catch (Throwable t) { return 0; }
+    }
+
+    private void showUpdateDialog(ReleaseInfo info) {
+        if (isFinishing()) return;
+        new AlertDialog.Builder(this)
+                .setTitle("发现新版本 " + info.version)
+                .setMessage("当前版本：" + currentVersionName()
+                        + "\n\n是否下载并安装？\n\n安装时 Android 会要求确认。")
+                .setPositiveButton("下载更新", (dialog, which) -> downloadApk(info))
+                .setNegativeButton("稍后", null)
+                .show();
+    }
+
+    private void downloadApk(ReleaseInfo info) {
+        ProgressDialog progress = new ProgressDialog(this);
+        progress.setTitle("正在下载 " + info.version);
+        progress.setMessage("准备下载…");
+        progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+        progress.setMax(100);
+        progress.setCancelable(false);
+        progress.show();
+
+        io.execute(() -> {
+            File dir = new File(getCacheDir(), "updates");
+            File apk = new File(dir, "update.apk");
+            try {
+                if (!dir.exists() && !dir.mkdirs()) throw new IOException("无法创建更新目录");
+                HttpURLConnection conn = (HttpURLConnection) new URL(info.apkUrl).openConnection();
+                conn.setInstanceFollowRedirects(true);
+                conn.setRequestProperty("User-Agent", "InfiniteTerminal-Android");
+                conn.setConnectTimeout(15000);
+                conn.setReadTimeout(30000);
+                int code = conn.getResponseCode();
+                if (code < 200 || code >= 300) throw new IOException("HTTP " + code);
+                long total = conn.getContentLengthLong();
+                try (InputStream input = conn.getInputStream();
+                     FileOutputStream output = new FileOutputStream(apk)) {
+                    byte[] buffer = new byte[8192];
+                    long done = 0;
+                    int read;
+                    while ((read = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, read);
+                        done += read;
+                        if (total > 0) {
+                            int percent = (int) Math.min(100, done * 100 / total);
+                            runOnUiThread(() -> progress.setProgress(percent));
+                        }
+                    }
+                } finally {
+                    conn.disconnect();
+                }
+
+                if (info.sha256 != null && !info.sha256.isEmpty()) {
+                    String actual = sha256(apk);
+                    if (!actual.equalsIgnoreCase(info.sha256)) {
+                        apk.delete();
+                        throw new IOException("SHA256 校验失败");
+                    }
+                }
+
+                runOnUiThread(() -> {
+                    progress.dismiss();
+                    installApk(apk);
+                });
+            } catch (Throwable t) {
+                apk.delete();
+                runOnUiThread(() -> {
+                    progress.dismiss();
+                    new AlertDialog.Builder(this)
+                            .setTitle("更新失败")
+                            .setMessage(t.getMessage() + "\n\n是否打开 GitHub 下载页？")
+                            .setPositiveButton("打开", (d, w) -> openReleasePage(info.releaseUrl))
+                            .setNegativeButton("取消", null)
+                            .show();
+                });
+            }
+        });
+    }
+
+    private static String sha256(File file) throws Exception {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        try (FileInputStream input = new FileInputStream(file)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) digest.update(buffer, 0, read);
+        }
+        StringBuilder out = new StringBuilder();
+        for (byte b : digest.digest()) out.append(String.format("%02x", b));
+        return out.toString();
+    }
+
+    private void installApk(File apk) {
+        pendingInstall = apk;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getPackageManager().canRequestPackageInstalls()) {
+            try {
+                Intent settings = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:" + getPackageName()));
+                startActivityForResult(settings, REQ_INSTALL_UNKNOWN);
+                return;
+            } catch (Throwable ignored) { }
+        }
+        try {
+            Uri uri = UpdateFileProvider.uriFor(this);
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setDataAndType(uri, "application/vnd.android.package-archive");
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(intent);
+        } catch (Throwable t) {
+            postToast("无法启动安装器: " + t.getMessage());
+        }
+    }
+
+    private void openReleasePage(String url) {
+        try {
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+        } catch (Throwable t) {
+            postToast("无法打开下载页: " + t.getMessage());
+        }
     }
 
     @Override
