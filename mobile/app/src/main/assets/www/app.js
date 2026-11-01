@@ -965,6 +965,7 @@
 
   let state = loadState();
   let computed = C.compute(state);
+  let statDeltas = {};
   let stTool = loadSTTool();
   let activeView = 'overview';
   let saveTimer = null;
@@ -1006,10 +1007,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.84';
+  const APP_VERSION = 'V1.85';
   const UPDATES = [
     {
-      version: 'V1.84', date: '2026-11-04', title: '核心数值新手说明', current: true,
+      version: 'V1.85', date: '2026-11-04', title: '数值变化提示', current: true,
+      notes: ['修改属性后核心数值卡显示变化', '可直接打开对应数值说明']
+    },
+    {
+      version: 'V1.84', date: '2026-11-04', title: '核心数值新手说明',
       notes: ['六张核心数值卡增加 ? 说明入口', '帮助页增加核心数值说明']
     },
     {
@@ -1813,6 +1818,7 @@
     activeProfileId = id;
     state = normalizeState(JSON.parse(JSON.stringify(target.state)));
     computed = C.compute(state);
+    statDeltas = {};
     ui.skillFilter = 'all';
     ui.skillQuery = '';
     closeCharacterMenu();
@@ -1831,6 +1837,7 @@
     activeProfileId = p.id;
     state = st;
     computed = C.compute(state);
+    statDeltas = {};
     closeCharacterMenu();
     switchView('overview');
     updateSidebar();
@@ -1847,6 +1854,7 @@
     activeProfileId = p.id;
     state = normalizeState(st);
     computed = C.compute(state);
+    statDeltas = {};
     closeCharacterMenu();
     switchView('overview');
     updateSidebar();
@@ -1871,6 +1879,7 @@
         activeProfileId = profiles[0].id;
         state = normalizeState(JSON.parse(JSON.stringify(profiles[0].state)));
         computed = C.compute(state);
+        statDeltas = {};
         closeCharacterMenu();
         switchView('overview');
         updateSidebar();
@@ -1928,7 +1937,7 @@
   }
 
   function stateChanged(opts) {
-    computed = C.compute(state);
+    computed = computeTracked();
     updateSidebar();
     scheduleSave();
     if (opts && opts.rerender) {
@@ -2032,13 +2041,14 @@
       <input id="avatar-input" type="file" accept="image/*" hidden>
 
       <div class="stat-strip">
-        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">耐力 + 体型 + 传奇耐力</div>${statHelpButton('hp')}</div>
-        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">决心 + 沉着 + 双传奇</div>${statHelpButton('will')}</div>
-        <div class="stat-card" style="--accent:rgba(201,168,110,.65)"><div class="stat-label">基础防御</div><div class="stat-value" data-ov="baseDefense">${fmt(c.baseDefense)}</div><div class="stat-foot">${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</div>${statHelpButton('baseDefense')}</div>
-        <div class="stat-card" style="--accent:rgba(98,169,163,.65)"><div class="stat-label">先攻</div><div class="stat-value" data-ov="initiative">+${fmt(c.initiative)}</div><div class="stat-foot">敏捷 + 沉着 + 传奇沉着</div>${statHelpButton('initiative')}</div>
-        <div class="stat-card" style="--accent:rgba(201,168,110,.45)"><div class="stat-label">速度</div><div class="stat-value" data-ov="speed">${fmt(c.speed)}</div><div class="stat-foot">力量 + 敏捷 + 体型</div>${statHelpButton('speed')}</div>
-        <div class="stat-card" style="--accent:rgba(98,169,163,.45)"><div class="stat-label">敏感范围</div><div class="stat-value" data-ov="sensitive">${fmt(c.sensitive)}<small>m</small></div><div class="stat-foot">模糊范围 ${fmt(c.fuzzy)} m</div>${statHelpButton('sensitive')}</div>
+        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}${statDeltaBadge('hp')}</div><div class="stat-foot">耐力 + 体型 + 传奇耐力</div>${statHelpButton('hp')}</div>
+        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}${statDeltaBadge('will')}</div><div class="stat-foot">决心 + 沉着 + 双传奇</div>${statHelpButton('will')}</div>
+        <div class="stat-card" style="--accent:rgba(201,168,110,.65)"><div class="stat-label">基础防御</div><div class="stat-value" data-ov="baseDefense">${fmt(c.baseDefense)}${statDeltaBadge('baseDefense')}</div><div class="stat-foot">${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</div>${statHelpButton('baseDefense')}</div>
+        <div class="stat-card" style="--accent:rgba(98,169,163,.65)"><div class="stat-label">先攻</div><div class="stat-value" data-ov="initiative">+${fmt(c.initiative)}${statDeltaBadge('initiative')}</div><div class="stat-foot">敏捷 + 沉着 + 传奇沉着</div>${statHelpButton('initiative')}</div>
+        <div class="stat-card" style="--accent:rgba(201,168,110,.45)"><div class="stat-label">速度</div><div class="stat-value" data-ov="speed">${fmt(c.speed)}${statDeltaBadge('speed')}</div><div class="stat-foot">力量 + 敏捷 + 体型</div>${statHelpButton('speed')}</div>
+        <div class="stat-card" style="--accent:rgba(98,169,163,.45)"><div class="stat-label">敏感范围</div><div class="stat-value" data-ov="sensitive">${fmt(c.sensitive)}<small>m</small>${statDeltaBadge('sensitive')}</div><div class="stat-foot">模糊范围 ${fmt(c.fuzzy)} m</div>${statHelpButton('sensitive')}</div>
       </div>
+      ${statDeltaNote()}
 
       <div class="overview-grid">
         <div class="overview-left">
@@ -4084,6 +4094,7 @@
       if (incoming.length === 1 && valid.length === 1) {
         state = valid[0].state;
         computed = C.compute(state);
+        statDeltas = {};
         saveNow();
         if (activeView === 'rules') switchView('overview');
         else renderView(activeView);
@@ -4106,6 +4117,7 @@
       activeProfileId = last.id;
       state = normalizeState(JSON.parse(JSON.stringify(last.state)));
       computed = C.compute(state);
+      statDeltas = {};
       persistProfiles();
       updateCharacterSwitcher();
       switchView('overview');
@@ -4306,6 +4318,37 @@
 
   function statHelpButton(key) {
     return `<button class="stat-help" data-action="open-stat-guide" data-stat="${key}" title="这个数值是做什么的？" aria-label="数值说明">?</button>`;
+  }
+
+  const STAT_KEYS = ['hp', 'will', 'baseDefense', 'initiative', 'speed', 'sensitive'];
+
+  function computeTracked() {
+    const next = C.compute(state);
+    const deltas = {};
+    for (const key of STAT_KEYS) {
+      const before = Number(computed[key]) || 0;
+      const after = Number(next[key]) || 0;
+      if (Math.abs(after - before) > 0.0001) deltas[key] = after - before;
+    }
+    statDeltas = deltas;
+    return next;
+  }
+
+  function statDeltaBadge(key) {
+    const d = statDeltas[key];
+    if (!d) return '';
+    return `<span class="stat-delta ${d > 0 ? 'up' : 'down'}">${d > 0 ? '+' : ''}${fmt(d)}</span>`;
+  }
+
+  function statDeltaNote() {
+    const keys = Object.keys(statDeltas);
+    if (!keys.length) return '';
+    const parts = keys.map(key => {
+      const d = statDeltas[key];
+      const label = STAT_GUIDE[key] ? STAT_GUIDE[key].label : key;
+      return `${label} ${d > 0 ? '+' : ''}${fmt(d)}`;
+    }).join(' · ');
+    return `<div class="stat-delta-note"><span>本次修改后：${parts}</span><button class="stat-delta-help" data-action="open-stat-guide" data-stat="${keys[0]}">看说明</button></div>`;
   }
 
   function closeStatGuide() {
@@ -4607,6 +4650,7 @@
       onConfirm: () => {
         state = D.createDefaultState();
         computed = C.compute(state);
+        statDeltas = {};
         saveNow();
         if (activeView === 'rules') switchView('overview');
         else renderView(activeView);
