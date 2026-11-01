@@ -101,12 +101,12 @@
     if (backdrop) backdrop.style.display = 'none';
   }
 
-  function toggleRulesDrawer() {
+  window.__toggleRulesDrawer = function () {
     const side = document.querySelector('#view-rules .rules-side');
     if (!side) return;
     if (side.classList.contains('mobile-open')) closeRulesDrawer();
     else openRulesDrawer();
-  }
+  };
 
   let lastSearchQuery = '';
   function syncSearchDrawer() {
@@ -136,13 +136,6 @@
     if (view) view.classList.toggle('mobile-reading', !!window.__INF.ui.rules.pagePath);
     const toolbar = view && view.querySelector('.rules-toolbar');
     if (!toolbar) return;
-    if (!toolbar.querySelector('.mobile-rules-toc')) {
-      const b = document.createElement('button');
-      b.className = 'btn mobile-rules-toc';
-      b.textContent = '目录';
-      b.onclick = toggleRulesDrawer;
-      toolbar.appendChild(b);
-    }
     preferBookScope(view);
     ensureDrawerControls();
     syncSearchDrawer();

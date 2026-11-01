@@ -3443,10 +3443,10 @@
         <div>
           <div class="eyebrow">RULES LIBRARY / 规则库</div>
           <h1 class="page-title">规则书 <small>CHM 全文检索</small></h1>
-          <p class="page-desc">点「导入 CHM」选择本机文件；导入后会自动扫描书库。解包与索引只在本机进行。</p>
+          <p class="page-desc">点「目录」打开书库和目录；导入 CHM 在「目录信息」里，导入后会自动扫描书库。</p>
         </div>
         <div class="head-actions">
-          <button class="btn" data-action="chm-add-folder">${ic('folder')} 导入 CHM</button>
+          <button class="btn" data-action="toggle-rules-drawer">${ic('book')} 目录</button>
           <button class="btn" data-action="chm-folder-info">${ic('folder')} 目录信息</button>
           <button class="btn gold" data-action="chm-refresh">${ic('refresh')} 重新扫描</button>
         </div>
@@ -3506,7 +3506,7 @@
             ${(b.status === 'extracting' || b.status === 'indexing') ? `<div class="book-progress"><i style="width:${b.progress}%"></i></div>` : ''}
             ${b.status === 'error' ? `<div class="book-error">${esc(b.error || '无法读取')}</div>` : ''}
           </div>
-        </div>`).join('') : `<div class="toc-empty">还没有发现 CHM。<br>点上方「导入 CHM」选择本地文件。</div>`);
+        </div>`).join('') : `<div class="toc-empty">还没有发现 CHM。<br>点「目录信息」导入本地文件。</div>`);
   }
 
   function toggleRulesLibrary() {
@@ -4741,6 +4741,9 @@
       case 'about-open': openAbout(); break;
       case 'about-close': closeAbout(); break;
       case 'chm-folder-info': showFolderInfo(); break;
+      case 'toggle-rules-drawer':
+        if (window.__toggleRulesDrawer) window.__toggleRulesDrawer();
+        break;
       case 'toc-expand-all': expandAllToc(); break;
       case 'toc-collapse-all': collapseAllToc(); break;
       case 'copy-folder-path':
