@@ -211,7 +211,14 @@ public partial class MainWindow : Window
     {
         try
         {
-            var info = await UpdateService.CheckAsync();
+            var source = UpdateSource.Auto;
+            if (manual)
+            {
+                var picker = new UpdateSourceWindow { Owner = this };
+                if (picker.ShowDialog() != true) return;
+                source = picker.SelectedSource;
+            }
+            var info = await UpdateService.CheckAsync(source);
             UpdateService.ShowResult(info, manual);
         }
         catch (Exception ex)

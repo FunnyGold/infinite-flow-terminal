@@ -990,10 +990,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.81';
+  const APP_VERSION = 'V1.82';
   const UPDATES = [
     {
-      version: 'V1.81', date: '2026-11-04', title: 'Gitee 优先更新源', current: true,
+      version: 'V1.82', date: '2026-11-04', title: '更新源选择与关于页整理', current: true,
+      notes: [
+        '点击检查更新可自选 Gitee / GitHub，默认 Gitee',
+        '检查更新按钮改为金色主按钮',
+        '关于页致谢改为规则书贡献与软件构建两块',
+        '保留双源版本比较与 Gitee 同版本优先'
+      ]
+    },
+    {
+      version: 'V1.81', date: '2026-11-04', title: 'Gitee 优先更新源',
       notes: [
         '同时检查 Gitee 和 GitHub',
         '取版本最高的源，同版本优先 Gitee',

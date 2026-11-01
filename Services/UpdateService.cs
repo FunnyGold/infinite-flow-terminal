@@ -22,6 +22,13 @@ public sealed record UpdateInfo(
 
 public sealed record DownloadResult(bool Ok, string Path, bool Verified, string? Error = null);
 
+public enum UpdateSource
+{
+    Auto,
+    Gitee,
+    GitHub
+}
+
 public static class UpdateService
 {
     private const string Owner = "FunnyGold";
@@ -54,7 +61,10 @@ public static class UpdateService
         return client;
     }
 
-    public static async Task<UpdateInfo> CheckAsync(CancellationToken ct = default)
+    public static Task<UpdateInfo> CheckAsync(CancellationToken ct = default)
+        => CheckAsync(UpdateSource.Auto, ct);
+
+    public static async Task<UpdateInfo> CheckAsync(UpdateSource preferred, CancellationToken ct = default)
     {
         var current = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
         var giteeTask = CheckGiteeAsync(current, ct);
@@ -70,7 +80,14 @@ public static class UpdateService
         else if (github.Error == null) chosen = github;
 
         if (chosen != null)
+        {
+            var preferredInfo = preferred == UpdateSource.Gitee ? gitee
+                : preferred == UpdateSource.GitHub ? github : null;
+            if (preferredInfo != null && preferredInfo.Error == null &&
+                CompareVersion(preferredInfo.Latest, chosen.Latest) >= 0)
+                chosen = preferredInfo;
             return chosen;
+        }
 
         var errors = string.Join("；", new[] { "Gitee: " + gitee.Error, "GitHub: " + github.Error }
             .Where(x => !x.EndsWith(": ")));
