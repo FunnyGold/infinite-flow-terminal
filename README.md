@@ -44,3 +44,9 @@ dotnet build
 
 当前仓库未选择开源许可证，源码可见但未授权开源使用。
 手机版构建需要 Android Studio / JDK 17。
+## 版权
+
+Copyright (c) 2026 FunnyGold. All rights reserved.
+
+本仓库未采用开源许可证，源码仅用于查看和个人评估。
+未经书面许可，不得复制、修改、分发或商用。
