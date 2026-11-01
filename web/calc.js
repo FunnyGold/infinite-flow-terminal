@@ -39,7 +39,7 @@
   function skillCalc(state, id, def, storedOverride) {
     const stored = storedOverride || (state.skills && state.skills[id]) || {};
     const attrKey = stored.attr || stored.attrOverride || (def && def.attr) || 'int';
-    const attr = attrOf(state, attrKey);
+    const attr = attrKey === 'none' ? { total: 0, legend: 0, success: 0 } : attrOf(state, attrKey);
     const level = num(stored.level);
     const bonus = num(stored.bonus);
     const temp = num(stored.temp);
@@ -53,7 +53,7 @@
       group: (def && def.group) || stored.group || '其他',
       note: (def && def.note) || '',
       attrKey,
-      attrName: (D.ATTR_MAP[attrKey] && D.ATTR_MAP[attrKey].name) || attrKey,
+      attrName: attrKey === 'none' ? '无' : ((D.ATTR_MAP[attrKey] && D.ATTR_MAP[attrKey].name) || attrKey),
       attrTotal: attr.total,
       level, bonus, temp, total, specialty, otherDP, otherSuccess,
       dp: attr.total + total + otherDP,
@@ -142,12 +142,8 @@
 
     const db = state.derivedBonus || {};
     const size = 5 + num(state.size && state.size.bonus) + num(state.size && state.size.other) + num(db.size);
-    const hpMultiplier = num(db.hpMultiplier) || 1;
-    const willMultiplier = num(db.willMultiplier) || 1;
-    const hpBase = attrs.sta.total + size + attrs.sta.legend * (attrs.sta.legend + 1) / 2;
-    const willBase = attrs.res.total + attrs.com.total + attrs.res.legend + attrs.com.legend;
-    const hp = hpBase * hpMultiplier + num(db.hp);
-    const will = willBase * willMultiplier + num(db.will);
+    const hp = attrs.sta.total + size + attrs.sta.legend * (attrs.sta.legend + 1) / 2 + num(db.hp);
+    const will = attrs.res.total + attrs.com.total + attrs.res.legend + attrs.com.legend + num(db.will);
     const speed = attrs.str.total + attrs.agi.total + attrs.agi.legend * 3 + size + num(db.speed);
     const initiative = attrs.agi.total + attrs.com.total + attrs.com.legend + num(db.initiative);
     const baseInfo = baseDefenseInfo(state, attrs);
@@ -187,6 +183,26 @@
       const attr = attrKey ? (attrs[attrKey] || { total: 0, legend: 0, success: 0 }) : {
         total: 0, legend: 0, success: 0
       };
+      if (a.kind === 'check') {
+        const caKey = attrs[a.checkA] ? a.checkA : 'res';
+        const cbKey = attrs[a.checkB] ? a.checkB : 'com';
+        const ca = attrs[caKey];
+        const cb = attrs[cbKey];
+        const dp = ca.total + cb.total;
+        const extraSuccess = ca.success + cb.success + num(a.extraSuccessBonus);
+        return Object.assign({}, a, {
+          isCheck: true, attrKey: caKey, attrName: D.ATTR_MAP[caKey].name,
+          checkAName: D.ATTR_MAP[caKey].name, checkBName: D.ATTR_MAP[cbKey].name,
+          skillKey: '', skillName: '无', skillTotal: 0, skillSuccess: 0,
+          capAttrName: '无', capSkillName: '无', capWeapon: 0, capPower: 0, capLegendBonus: 0,
+          explodeAt: 10, explodeFactor: 1 / 3, typedDP: 0, typedCap: 0,
+          attackCount: 1, actionCost: a.actionCost || '标准动作',
+          attackFlags: { flatfooted: false, contact: false }, totalExpectedDamage: 0,
+          dp, cap: 0, extraSuccess, effectiveDefense: 0, defenseSpent: [], finalDP: dp,
+          expectedSuccess: dp / 3, expectedDamage: 0, energyState: 'none',
+          poolName: '', poolCurrent: 0, poolMax: 0, energyCost: 0, willCost: num(a.willCost)
+        });
+      }
       const skillKey = a.skill && a.skill !== 'none' ? a.skill : '';
       const skill = skillKey ? (skillLookup[skillKey] || { total: 0, success: 0, name: '—', level: 0 }) : {
         total: 0, success: 0, name: '—', level: 0
@@ -293,7 +309,7 @@
 
     return {
       attrs, groups: D.ATTR_GROUPS.map(g => ({ name: g.name, en: g.en, attrs: g.attrs.map(k => Object.assign({}, D.ATTR_MAP[k], attrs[k])) })),
-      size, hp, will, hpMultiplier, willMultiplier, speed, initiative, baseDefense, sensitive, fuzzy, quickCheck,
+      size, hp, will, speed, initiative, baseDefense, sensitive, fuzzy, quickCheck,
       reflex, fortitude, willSave, derivedBonus: db,
       defense, targetRaw, flags, attacks,
       skills, customSkills, allSkills, topSkills, skillLookup,

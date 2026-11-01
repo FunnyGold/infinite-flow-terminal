@@ -979,10 +979,26 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.73';
+  const APP_VERSION = 'V1.74.1';
   const UPDATES = [
     {
-      version: 'V1.73', date: '2026-11-02', title: '传奇倍率与属性组合检定', current: true,
+      version: 'V1.74.1', date: '2026-11-03', title: '技能“无”显示修复', current: true,
+      notes: [
+        '修复自定义技能关键属性选择“无”后表格显示 none 的问题',
+        '保留 V1.74 的回退与双属性检定改动'
+      ]
+    },
+    {
+      version: 'V1.74', date: '2026-11-03', title: '回退倍率与战斗双属性检定',
+      notes: [
+        '回退生命 / 意志上限倍率，恢复原有生命公式',
+        '新增攻击预设支持“双属性检定”，默认决心 + 沉着',
+        '双属性检定显示总 DP 与附加成功，不参与伤害计算',
+        '自定义技能的关键属性可选“无”'
+      ]
+    },
+    {
+      version: 'V1.73', date: '2026-11-02', title: '传奇倍率与属性组合检定',
       notes: [
         '生命上限 / 意志上限新增倍率，传奇耐力翻倍可直接填 2',
         '倍率作用在自动值上，固定加值仍单独计算',
@@ -1998,8 +2014,8 @@
       <input id="avatar-input" type="file" accept="image/*" hidden>
 
       <div class="stat-strip">
-        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">（耐力 + 体型 + 传奇耐力）× ${fmt(c.hpMultiplier)}</div></div>
-        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">（决心 + 沉着 + 双传奇）× ${fmt(c.willMultiplier)}</div></div>
+        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">耐力 + 体型 + 传奇耐力</div></div>
+        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">决心 + 沉着 + 双传奇</div></div>
         <div class="stat-card" style="--accent:rgba(201,168,110,.65)"><div class="stat-label">基础防御</div><div class="stat-value" data-ov="baseDefense">${fmt(c.baseDefense)}</div><div class="stat-foot">${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</div></div>
         <div class="stat-card" style="--accent:rgba(98,169,163,.65)"><div class="stat-label">先攻</div><div class="stat-value" data-ov="initiative">+${fmt(c.initiative)}</div><div class="stat-foot">敏捷 + 沉着 + 传奇沉着</div></div>
         <div class="stat-card" style="--accent:rgba(201,168,110,.45)"><div class="stat-label">速度</div><div class="stat-value" data-ov="speed">${fmt(c.speed)}</div><div class="stat-foot">力量 + 敏捷 + 体型</div></div>
@@ -2022,8 +2038,8 @@
                   <tr><td>速度</td><td>${dbonus('speed')}</td><td class="derived-value"><span data-derived="speed">${fmt(c.speed)}</span></td><td>力量 + 敏捷 + 传奇敏捷 ×3 + 体型</td></tr>
                   <tr><td>先攻</td><td>${dbonus('initiative')}</td><td class="derived-value"><span data-derived="initiative">${fmt(c.initiative)}</span></td><td>敏捷 + 沉着 + 传奇沉着</td></tr>
                   <tr><td>基础防御</td><td>${dbonus('baseDefense')}</td><td class="derived-value"><span data-derived="baseDefense">${fmt(c.baseDefense)}</span></td><td>${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</td></tr>
-                  <tr><td>生命上限</td><td>${dbonus('hp')}</td><td class="derived-value"><span data-derived="hp">${fmt(c.hp)}</span></td><td>（耐力 + 体型 + 传奇耐力）× ${fmt(c.hpMultiplier)} + 加值</td></tr>
-                  <tr><td>意志上限</td><td>${dbonus('will')}</td><td class="derived-value"><span data-derived="will">${fmt(c.will)}</span></td><td>（决心 + 沉着 + 双传奇）× ${fmt(c.willMultiplier)} + 加值</td></tr>
+                  <tr><td>生命上限</td><td>${dbonus('hp')}</td><td class="derived-value"><span data-derived="hp">${fmt(c.hp)}</span></td><td>耐力 + 体型 + 传奇耐力</td></tr>
+                  <tr><td>意志上限</td><td>${dbonus('will')}</td><td class="derived-value"><span data-derived="will">${fmt(c.will)}</span></td><td>决心 + 沉着 + 双传奇</td></tr>
                   <tr><td>反射</td><td>${dbonus('reflex')}</td><td class="derived-value"><span data-derived="reflex">${fmt(c.reflex)}</span></td><td>敏捷 + 运动</td></tr>
                   <tr><td>强韧</td><td>${dbonus('fortitude')}</td><td class="derived-value"><span data-derived="fortitude">${fmt(c.fortitude)}</span></td><td>耐力 + 求生</td></tr>
                   <tr><td>意志豁免</td><td>${dbonus('willSave')}</td><td class="derived-value"><span data-derived="willSave">${fmt(c.willSave)}</span></td><td>意志值 + 传奇决心 + 加值</td></tr>
@@ -2032,19 +2048,7 @@
                   <tr><td>融合流伤害值</td><td><span class="derived-na">—</span></td><td class="derived-value"><span data-derived="fusionDamage">${fmt(c.health.fusionDamage)}</span></td><td>B + 2L + 4A</td></tr>
                 </tbody>
               </table>
-              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid #2E2B24;border-radius:6px;background:#171A20;">
-                <span style="color:#8D8679;font-size:10.5px;">衍生倍率</span>
-                <label style="display:flex;gap:6px;align-items:center;color:#BDB3A2;font-size:10.5px;">生命上限
-                  <input type="number" step="0.1" min="0.1" class="cell-input" data-bind="derivedBonus.hpMultiplier" value="${esc(db.hpMultiplier === undefined ? 1 : db.hpMultiplier)}" style="width:58px;">
-                  ×
-                </label>
-                <label style="display:flex;gap:6px;align-items:center;color:#BDB3A2;font-size:10.5px;">意志上限
-                  <input type="number" step="0.1" min="0.1" class="cell-input" data-bind="derivedBonus.willMultiplier" value="${esc(db.willMultiplier === undefined ? 1 : db.willMultiplier)}" style="width:58px;">
-                  ×
-                </label>
-                <span style="color:#6F6A60;font-size:10px;">传奇耐力等“翻倍 / ×4”效果直接填倍率，加值仍单独计算</span>
-              </div>
-              <div class="derived-note">加值用于资源 / 装备 / 状态提供的衍生加值，会叠加到自动值。<b>基础防御加值</b>只加在自动值上，和防御构成中的手动格叠加；生命 / 意志加值会即时影响状态判定。倍率作用在自动值上，再加固定加值。</div>
+              <div class="derived-note">加值用于资源 / 装备 / 状态提供的衍生加值，会叠加到自动值。<b>基础防御加值</b>只加在自动值上，和防御构成中的手动格叠加；生命 / 意志加值会即时影响状态判定。</div>
             </div>
           </div>
           <div class="panel">
@@ -2232,14 +2236,14 @@
     function skillRow(def, calc, index, custom) {
       const stored = custom ? state.customSkills[index] : state.skills[def.key];
       const attrKey = stored.attrOverride || def.attr;
-      const attrName = D.ATTR_MAP[attrKey] ? D.ATTR_MAP[attrKey].name : attrKey;
+      const attrName = attrKey === 'none' ? '无' : (D.ATTR_MAP[attrKey] ? D.ATTR_MAP[attrKey].name : attrKey);
       const group = custom ? (D.ATTR_MAP[stored.attr] ? D.ATTR_MAP[stored.attr].group : '其他') : def.group;
       const bind = custom ? 'customSkills.' + index : 'skills.' + def.key;
       return `<tr data-skill-row data-custom="${custom ? '1' : '0'}" data-group="${esc(group)}" data-note="${esc(def.note || '')}" data-search="${esc((stored.name || def.name) + ' ' + attrName + ' ' + group + ' ' + (stored.major || '') + ' ' + (def.note || ''))}">
         <td class="skill-name ${custom ? 'skill-name-user' : ''}">
           ${custom ? tInput(bind + '.name', stored.name, 'cell-input', '技能名称') : esc(def.name) + (def.note ? `<small>${esc(def.note)}</small>` : '')}
         </td>
-        <td class="skill-attr">${custom ? selectInput(bind + '.attr', D.ATTRS.map(a => ({ value: a.key, label: a.name })), stored.attr, 'cell-input') : esc(attrName)}</td>
+        <td class="skill-attr">${custom ? selectInput(bind + '.attr', [{ value: 'none', label: '无' }].concat(D.ATTRS.map(a => ({ value: a.key, label: a.name }))), stored.attr, 'cell-input') : esc(attrName)}</td>
         <td class="center">${nInput(bind + '.level', stored.level, 'cell-input', 'min="0"')}</td>
         <td class="center">${nInput(bind + '.bonus', stored.bonus, 'cell-input')}</td>
         <td class="center">${nInput(bind + '.temp', stored.temp, 'cell-input')}</td>
@@ -2467,6 +2471,27 @@
 
   function attackRow(a, index) {
     const ca = computed.attacks[index];
+    if (ca.isCheck) {
+      return `<tr data-attack-row="${index}" class="check-row">
+        <td class="attack-name">
+          <div class="atk-name-line"><b>${esc(a.name)}</b>${a.note ? `<span class="atk-note">${esc(a.note)}</span>` : ''}</div>
+          <small>${esc(ca.checkAName)} + ${esc(ca.checkBName)} · 双属性检定</small>
+          <div class="atk-outcome">
+            <span>检定 DP <b>${fmt(ca.dp)}</b></span>
+            <span>附加 <b>+${ca.extraSuccess}</b></span>
+          </div>
+        </td>
+        <td><span class="atk-computed">${fmt(ca.dp)}</span></td>
+        <td><span class="derived-na">—</span></td>
+        <td><span class="atk-success">+${ca.extraSuccess}</span></td>
+        <td><span class="derived-na">—</span></td>
+        <td><div class="atk-row-actions">
+          <button class="icon-btn" data-action="edit-attack" data-index="${index}" title="编辑检定">${ic('edit')}</button>
+          <button class="icon-btn" data-action="copy-attack" data-index="${index}" title="复制检定">${ic('copy')}</button>
+          <button class="icon-btn" data-action="remove-attack" data-index="${index}" title="删除检定">${ic('trash')}</button>
+        </div></td>
+      </tr>`;
+    }
     const energyText = ca.energyState === 'none' ? '—' : ca.energyState === 'ok' ? '✓ 足够' : ca.energyState === 'short' ? '✗ 不足' : '! 未匹配';
     const energyClass = 'energy-' + ca.energyState;
     const parts = [];
@@ -2748,6 +2773,18 @@
           <label class="field" style="flex:1 1 auto;"><span>关键词 / 备注</span><textarea id="ae-note" class="attack-note-input" rows="3" title="双击放大编辑" placeholder="双击放大编辑；也可拖拽右下角调整高度">${esc(a.note || '')}</textarea></label>
         </div>
         <div class="editor-section">
+          <div class="editor-section-title">检定类型</div>
+          <div class="editor-grid three">
+            <label class="field"><span>类型</span><select id="ae-kind">
+              <option value="attack" ${(a.kind || 'attack') === 'attack' ? 'selected' : ''}>攻击</option>
+              <option value="check" ${a.kind === 'check' ? 'selected' : ''}>双属性检定</option>
+            </select></label>
+            <label class="field"><span>属性 A</span><select id="ae-check-a">${attrOptions(a.checkA || 'res')}</select></label>
+            <label class="field"><span>属性 B</span><select id="ae-check-b">${attrOptions(a.checkB || 'com')}</select></label>
+          </div>
+          <div class="matrix-wrap-note">选择“双属性检定”时，只使用属性 A + 属性 B 计算检定 DP 与附加成功；下方攻击、伤害上限和消耗字段不会参与。</div>
+        </div>
+        <div class="editor-section">
           <div class="editor-section-title">攻击检定</div>
           <div class="editor-grid four">
             <label class="field"><span>属性</span><select id="ae-attr">${attrOptions(a.attr)}</select></label>
@@ -2841,6 +2878,9 @@
       const vals = {
         name,
         note: card.querySelector('#ae-note').value.trim(),
+        kind: card.querySelector('#ae-kind').value,
+        checkA: card.querySelector('#ae-check-a').value,
+        checkB: card.querySelector('#ae-check-b').value,
         attr: card.querySelector('#ae-attr').value,
         skill: card.querySelector('#ae-skill').value,
         weapon: C.num(card.querySelector('#ae-weapon').value),

@@ -171,6 +171,7 @@
     return {
       id: 'atk_' + Math.random().toString(36).slice(2, 9),
       name: name || '新攻击', desc: '',
+      kind: 'attack', checkA: 'res', checkB: 'com',
       attr: 'str', skill: 'brawl',
       capAttr: 'str', capSkill: 'brawl', capWeapon: 1, capPower: 0,
       capLegend: false, capOther: 0,
@@ -216,7 +217,6 @@
       size: { bonus: 0, other: 0 },
       derivedBonus: {
         size: 0, speed: 0, initiative: 0, baseDefense: 0, hp: 0, will: 0,
-        hpMultiplier: 1, willMultiplier: 1,
         reflex: 0, fortitude: 0, willSave: 0, sensitive: 0, fuzzy: 0
       },
       skills,
