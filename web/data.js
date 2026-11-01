@@ -216,6 +216,7 @@
       size: { bonus: 0, other: 0 },
       derivedBonus: {
         size: 0, speed: 0, initiative: 0, baseDefense: 0, hp: 0, will: 0,
+        hpMultiplier: 1, willMultiplier: 1,
         reflex: 0, fortitude: 0, willSave: 0, sensitive: 0, fuzzy: 0
       },
       skills,
@@ -223,6 +224,7 @@
       defense: { manual, willCurrent: null, baseMode: 'low', baseA: 'agi', baseB: 'per', note: '' },
       damageReductions: [],
       targetDefense: { values: targetValues, flatfooted: false, contact: false, flatfootedGrade: 'none', contactGrade: 'none' },
+      quickCheck: { a: 'res', b: 'com' },
       health: { b: 0, l: 0, a: 0 },
       healthMode: 'fusion',
       attacks: [],

@@ -142,8 +142,12 @@
 
     const db = state.derivedBonus || {};
     const size = 5 + num(state.size && state.size.bonus) + num(state.size && state.size.other) + num(db.size);
-    const hp = attrs.sta.total + size + attrs.sta.legend * (attrs.sta.legend + 1) / 2 + num(db.hp);
-    const will = attrs.res.total + attrs.com.total + attrs.res.legend + attrs.com.legend + num(db.will);
+    const hpMultiplier = num(db.hpMultiplier) || 1;
+    const willMultiplier = num(db.willMultiplier) || 1;
+    const hpBase = attrs.sta.total + size + attrs.sta.legend * (attrs.sta.legend + 1) / 2;
+    const willBase = attrs.res.total + attrs.com.total + attrs.res.legend + attrs.com.legend;
+    const hp = hpBase * hpMultiplier + num(db.hp);
+    const will = willBase * willMultiplier + num(db.will);
     const speed = attrs.str.total + attrs.agi.total + attrs.agi.legend * 3 + size + num(db.speed);
     const initiative = attrs.agi.total + attrs.com.total + attrs.com.legend + num(db.initiative);
     const baseInfo = baseDefenseInfo(state, attrs);
@@ -160,6 +164,16 @@
     const reflex = attrs.agi.total + (skills.athletics ? skills.athletics.total : 0) + num(db.reflex);
     const fortitude = attrs.sta.total + (skills.survival ? skills.survival.total : 0) + num(db.fortitude);
     const willSave = will + num(db.willSave);
+
+    const qc = state.quickCheck || { a: 'res', b: 'com' };
+    const qaKey = attrs[qc.a] ? qc.a : 'res';
+    const qbKey = attrs[qc.b] ? qc.b : 'com';
+    const qa = attrs[qaKey];
+    const qb = attrs[qbKey];
+    const quickCheck = {
+      aKey: qaKey, bKey: qbKey, aName: D.ATTR_MAP[qaKey].name, bName: D.ATTR_MAP[qbKey].name,
+      dp: qa.total + qb.total, success: qa.success + qb.success
+    };
 
     const defense = defenseCalc(state);
     const targetRaw = (state.targetDefense && state.targetDefense.values) || {};
@@ -279,7 +293,7 @@
 
     return {
       attrs, groups: D.ATTR_GROUPS.map(g => ({ name: g.name, en: g.en, attrs: g.attrs.map(k => Object.assign({}, D.ATTR_MAP[k], attrs[k])) })),
-      size, hp, will, speed, initiative, baseDefense, sensitive, fuzzy,
+      size, hp, will, hpMultiplier, willMultiplier, speed, initiative, baseDefense, sensitive, fuzzy, quickCheck,
       reflex, fortitude, willSave, derivedBonus: db,
       defense, targetRaw, flags, attacks,
       skills, customSkills, allSkills, topSkills, skillLookup,

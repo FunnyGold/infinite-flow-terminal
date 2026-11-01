@@ -119,6 +119,7 @@
     D.ATTRS.forEach(a => { s.attributes[a.key] = Object.assign({}, base.attributes[a.key], (raw.attributes || {})[a.key] || {}); });
     s.size = Object.assign({}, base.size, raw.size || {});
     s.derivedBonus = Object.assign({}, base.derivedBonus, raw.derivedBonus || {});
+    s.quickCheck = Object.assign({ a: 'res', b: 'com' }, raw.quickCheck || {});
     s.skills = {};
     D.SKILLS.forEach(def => {
       s.skills[def.key] = Object.assign(D.blankSkill(def.attr), (raw.skills || {})[def.key] || {});
@@ -978,10 +979,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.72';
+  const APP_VERSION = 'V1.73';
   const UPDATES = [
     {
-      version: 'V1.72', date: '2026-11-01', title: '更新窗口重做与自动重启', current: true,
+      version: 'V1.73', date: '2026-11-02', title: '传奇倍率与属性组合检定', current: true,
+      notes: [
+        '生命上限 / 意志上限新增倍率，传奇耐力翻倍可直接填 2',
+        '倍率作用在自动值上，固定加值仍单独计算',
+        '战斗新增属性组合检定，默认决心 + 沉着',
+        '组合检定显示总 DP 与附加成功，不叠加技能'
+      ]
+    },
+    {
+      version: 'V1.72', date: '2026-11-01', title: '更新窗口重做与自动重启',
       notes: [
         '更新检查改用网页跳转，避免 GitHub API 限流',
         '下载完成后校验并自动关闭、替换、重启',
@@ -1988,8 +1998,8 @@
       <input id="avatar-input" type="file" accept="image/*" hidden>
 
       <div class="stat-strip">
-        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">耐力 + 体型 + 传奇耐力</div></div>
-        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">决心 + 沉着 + 双传奇</div></div>
+        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">（耐力 + 体型 + 传奇耐力）× ${fmt(c.hpMultiplier)}</div></div>
+        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">（决心 + 沉着 + 双传奇）× ${fmt(c.willMultiplier)}</div></div>
         <div class="stat-card" style="--accent:rgba(201,168,110,.65)"><div class="stat-label">基础防御</div><div class="stat-value" data-ov="baseDefense">${fmt(c.baseDefense)}</div><div class="stat-foot">${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</div></div>
         <div class="stat-card" style="--accent:rgba(98,169,163,.65)"><div class="stat-label">先攻</div><div class="stat-value" data-ov="initiative">+${fmt(c.initiative)}</div><div class="stat-foot">敏捷 + 沉着 + 传奇沉着</div></div>
         <div class="stat-card" style="--accent:rgba(201,168,110,.45)"><div class="stat-label">速度</div><div class="stat-value" data-ov="speed">${fmt(c.speed)}</div><div class="stat-foot">力量 + 敏捷 + 体型</div></div>
@@ -2012,8 +2022,8 @@
                   <tr><td>速度</td><td>${dbonus('speed')}</td><td class="derived-value"><span data-derived="speed">${fmt(c.speed)}</span></td><td>力量 + 敏捷 + 传奇敏捷 ×3 + 体型</td></tr>
                   <tr><td>先攻</td><td>${dbonus('initiative')}</td><td class="derived-value"><span data-derived="initiative">${fmt(c.initiative)}</span></td><td>敏捷 + 沉着 + 传奇沉着</td></tr>
                   <tr><td>基础防御</td><td>${dbonus('baseDefense')}</td><td class="derived-value"><span data-derived="baseDefense">${fmt(c.baseDefense)}</span></td><td>${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</td></tr>
-                  <tr><td>生命上限</td><td>${dbonus('hp')}</td><td class="derived-value"><span data-derived="hp">${fmt(c.hp)}</span></td><td>耐力 + 体型 + 传奇耐力</td></tr>
-                  <tr><td>意志上限</td><td>${dbonus('will')}</td><td class="derived-value"><span data-derived="will">${fmt(c.will)}</span></td><td>决心 + 沉着 + 双传奇</td></tr>
+                  <tr><td>生命上限</td><td>${dbonus('hp')}</td><td class="derived-value"><span data-derived="hp">${fmt(c.hp)}</span></td><td>（耐力 + 体型 + 传奇耐力）× ${fmt(c.hpMultiplier)} + 加值</td></tr>
+                  <tr><td>意志上限</td><td>${dbonus('will')}</td><td class="derived-value"><span data-derived="will">${fmt(c.will)}</span></td><td>（决心 + 沉着 + 双传奇）× ${fmt(c.willMultiplier)} + 加值</td></tr>
                   <tr><td>反射</td><td>${dbonus('reflex')}</td><td class="derived-value"><span data-derived="reflex">${fmt(c.reflex)}</span></td><td>敏捷 + 运动</td></tr>
                   <tr><td>强韧</td><td>${dbonus('fortitude')}</td><td class="derived-value"><span data-derived="fortitude">${fmt(c.fortitude)}</span></td><td>耐力 + 求生</td></tr>
                   <tr><td>意志豁免</td><td>${dbonus('willSave')}</td><td class="derived-value"><span data-derived="willSave">${fmt(c.willSave)}</span></td><td>意志值 + 传奇决心 + 加值</td></tr>
@@ -2022,7 +2032,19 @@
                   <tr><td>融合流伤害值</td><td><span class="derived-na">—</span></td><td class="derived-value"><span data-derived="fusionDamage">${fmt(c.health.fusionDamage)}</span></td><td>B + 2L + 4A</td></tr>
                 </tbody>
               </table>
-              <div class="derived-note">加值用于资源 / 装备 / 状态提供的衍生加值，会叠加到自动值。<b>基础防御加值</b>只加在自动值上，和防御构成中的手动格叠加；生命 / 意志加值会即时影响状态判定。</div>
+              <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border:1px solid #2E2B24;border-radius:6px;background:#171A20;">
+                <span style="color:#8D8679;font-size:10.5px;">衍生倍率</span>
+                <label style="display:flex;gap:6px;align-items:center;color:#BDB3A2;font-size:10.5px;">生命上限
+                  <input type="number" step="0.1" min="0.1" class="cell-input" data-bind="derivedBonus.hpMultiplier" value="${esc(db.hpMultiplier === undefined ? 1 : db.hpMultiplier)}" style="width:58px;">
+                  ×
+                </label>
+                <label style="display:flex;gap:6px;align-items:center;color:#BDB3A2;font-size:10.5px;">意志上限
+                  <input type="number" step="0.1" min="0.1" class="cell-input" data-bind="derivedBonus.willMultiplier" value="${esc(db.willMultiplier === undefined ? 1 : db.willMultiplier)}" style="width:58px;">
+                  ×
+                </label>
+                <span style="color:#6F6A60;font-size:10px;">传奇耐力等“翻倍 / ×4”效果直接填倍率，加值仍单独计算</span>
+              </div>
+              <div class="derived-note">加值用于资源 / 装备 / 状态提供的衍生加值，会叠加到自动值。<b>基础防御加值</b>只加在自动值上，和防御构成中的手动格叠加；生命 / 意志加值会即时影响状态判定。倍率作用在自动值上，再加固定加值。</div>
             </div>
           </div>
           <div class="panel">
@@ -2530,6 +2552,26 @@
             <tbody id="attack-rows">${state.attacks.map((a, i) => attackRow(a, i)).join('')}</tbody>
           </table>
         </div></div>
+      </div>
+
+      <div class="panel mt18">
+        <div class="panel-head"><div class="panel-title">属性组合检定</div><span class="panel-sub">双属性直接检定 · 例如决心 + 沉着</span></div>
+        <div class="panel-body">
+          <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap;">
+            <label style="display:flex;flex-direction:column;gap:5px;color:#8D8679;font-size:10.5px;">属性 A
+              <select class="cell-input" data-quick-check="a">${attrOptions(computed.quickCheck.aKey)}</select>
+            </label>
+            <span style="color:#C9A35F;font-size:15px;padding-bottom:6px;">+</span>
+            <label style="display:flex;flex-direction:column;gap:5px;color:#8D8679;font-size:10.5px;">属性 B
+              <select class="cell-input" data-quick-check="b">${attrOptions(computed.quickCheck.bKey)}</select>
+            </label>
+            <div style="display:flex;gap:20px;align-items:center;margin-left:auto;padding:8px 14px;border:1px solid #3A3225;border-radius:6px;background:#171A20;">
+              <span style="color:#8D8679;font-size:10.5px;">检定 DP <b style="color:#D8B878;font-size:16px;margin-left:5px;" data-quick-dp>${fmt(computed.quickCheck.dp)}</b></span>
+              <span style="color:#8D8679;font-size:10.5px;">附加成功 <b style="color:#A9C982;font-size:14px;margin-left:5px;" data-quick-success>+${computed.quickCheck.success}</b></span>
+            </div>
+          </div>
+          <div class="matrix-wrap-note">用于决心 + 沉着、力量 + 敏捷等双属性检定；DP 为两项属性合计，附加成功为两项附加之和，不叠加技能。需要叠加技能时用下方攻击预设或「人物卡 → 技能检定」。</div>
+        </div>
       </div>
 
       <div class="panel mt18">
@@ -5000,6 +5042,12 @@
     });
 
     document.addEventListener('change', e => {
+      if (e.target && e.target.matches('[data-quick-check]')) {
+        state.quickCheck = Object.assign({ a: 'res', b: 'com' }, state.quickCheck || {});
+        state.quickCheck[e.target.dataset.quickCheck] = e.target.value;
+        stateChanged({ rerender: true });
+        return;
+      }
       if (e.target && e.target.matches('[data-st-defense-source]')) {
         stLoadDefense(e.target.value);
         return;
