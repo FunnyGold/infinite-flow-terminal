@@ -978,10 +978,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.67';
+  const APP_VERSION = 'V1.72';
   const UPDATES = [
     {
-      version: 'V1.67', date: '2026-10-29', title: '攻击预设列位右移', current: true,
+      version: 'V1.72', date: '2026-11-01', title: '更新窗口重做与自动重启', current: true,
+      notes: [
+        '更新检查改用网页跳转，避免 GitHub API 限流',
+        '下载完成后校验并自动关闭、替换、重启',
+        '更新窗口和“更新已就绪”窗口重做',
+        '更新完成后自动重新打开软件'
+      ]
+    },
+    {
+      version: 'V1.67', date: '2026-10-29', title: '攻击预设列位右移',
       notes: [
         '总 DP、伤害上限、附加、能量四列整体右移',
         '攻击方式列加宽，数值列不再挤在中间'
