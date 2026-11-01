@@ -74,6 +74,23 @@ $log = Join-Path $logDir 'update.log'
 function Log([string]$text) {
   try { Add-Content -Path $log -Value ((Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + '  ' + $text) -Encoding UTF8 } catch { }
 }
+function Start-App() {
+  for ($i = 0; $i -lt 3; $i++) {
+    try {
+      Start-Process -FilePath $Exe -WorkingDirectory $Target
+      Log "app started"
+      return $true
+    } catch {
+      Log ("start attempt failed: " + $_.Exception.Message)
+      Start-Sleep -Milliseconds 800
+    }
+  }
+  try {
+    Start-Process -FilePath 'explorer.exe' -ArgumentList $Target
+    Log "opened target folder after start failure"
+  } catch { }
+  return $false
+}
 
 Log "update requested; waiting for process $ProcessId"
 try {
@@ -101,8 +118,7 @@ try {
   }
 
   Log "update copied; starting app"
-  Start-Process -FilePath $Exe -WorkingDirectory $Target
-  Log "app started"
+  Start-App | Out-Null
 } catch {
   Log ("update failed: " + $_.Exception.Message)
   try {
@@ -112,7 +128,7 @@ try {
     } | ForEach-Object {
       Copy-Item -Path $_.FullName -Destination $Target -Recurse -Force
     }
-    Start-Process -FilePath $Exe -WorkingDirectory $Target
+    Start-App | Out-Null
     Log "rollback started app"
   } catch {
     Log ("rollback failed: " + $_.Exception.Message)

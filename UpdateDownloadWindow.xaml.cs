@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 
 namespace InfiniteTerminal;
 
@@ -12,12 +12,20 @@ public partial class UpdateDownloadWindow : Window
     public UpdateDownloadWindow(string version)
     {
         InitializeComponent();
-        TitleText.Text = $"正在下载 V{version}";
-        SubText.Text = "下载完成后会校验文件完整性";
+        VersionText.Text = $"V{version}";
+        SubText.Text = "正在连接 GitHub，准备下载更新包";
         Progress = new Progress<double>(p =>
         {
             Bar.Value = Math.Round(p * 100, 1);
             Percent.Text = $"{Bar.Value:0}%";
+            if (p >= 1)
+            {
+                SubText.Text = "下载完成，正在校验文件完整性";
+            }
+            else if (p > 0)
+            {
+                SubText.Text = "正在下载更新包…";
+            }
         });
     }
 
