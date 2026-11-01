@@ -584,6 +584,14 @@ public sealed class ChmLibrary : IDisposable
         catch { }
     }
 
+    private sealed class RawSearchHit
+    {
+        public required BookRuntime Book { get; init; }
+        public required SearchDocument Doc { get; init; }
+        public required string Title { get; init; }
+        public int Score { get; init; }
+    }
+
     public async Task<SearchResponse> SearchAsync(string query, string? bookKey, int limit, CancellationToken token)
     {
         var started = Stopwatch.StartNew();
@@ -599,112 +607,138 @@ public sealed class ChmLibrary : IDisposable
                                       (string.IsNullOrEmpty(bookKey) || b.Info.Key.Equals(bookKey, StringComparison.OrdinalIgnoreCase)))
                           .ToList();
 
-        var hits = new List<SearchHit>();
+        var docLists = await Task.WhenAll(books.Select(b => LoadSearchDocsAsync(b, token))).ConfigureAwait(false);
+        var allDocs = new List<(BookRuntime Book, SearchDocument Doc)>();
+        for (var bi = 0; bi < books.Count; bi++)
+            foreach (var doc in docLists[bi])
+                allDocs.Add((books[bi], doc));
+
+        var rawHits = new ConcurrentBag<RawSearchHit>();
         var total = 0;
-        foreach (var book in books)
+        var options = new ParallelOptions
         {
-            token.ThrowIfCancellationRequested();
-            var docs = await LoadSearchDocsAsync(book, token).ConfigureAwait(false);
-            foreach (var doc in docs)
+            CancellationToken = token,
+            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 8)
+        };
+        Parallel.ForEach(allDocs, options, pair =>
+        {
+            var book = pair.Book;
+            var doc = pair.Doc;
+            var title = doc.Page.Title ?? "";
+            var all = true;
+            var titleHits = 0;
+            var bodyHits = 0;
+            foreach (var term in terms)
             {
-                token.ThrowIfCancellationRequested();
-                var title = doc.Page.Title ?? "";
-                var hay = title + "\n" + doc.Text;
-                var all = true;
-                var titleHits = 0;
-                var bodyHits = 0;
-                foreach (var term in terms)
+                var ti = title.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+                var bi = doc.Text.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+                if (ti < 0 && bi < 0) { all = false; break; }
+                if (ti >= 0) titleHits++;
+                if (bi >= 0)
                 {
-                    var ti = title.IndexOf(term, StringComparison.OrdinalIgnoreCase);
-                    var bi = doc.Text.IndexOf(term, StringComparison.OrdinalIgnoreCase);
-                    if (ti < 0 && bi < 0) { all = false; break; }
-                    if (ti >= 0) titleHits++;
-                    if (bi >= 0)
+                    var from = 0;
+                    var count = 0;
+                    while (count < 8)
                     {
-                        // Count a few occurrences for ranking, capped per term.
-                        var from = 0; var count = 0;
-                        while (count < 8)
-                        {
-                            var idx = doc.Text.IndexOf(term, from, StringComparison.OrdinalIgnoreCase);
-                            if (idx < 0) break;
-                            count++; from = idx + Math.Max(1, term.Length);
-                        }
-                        bodyHits += count;
+                        var idx = doc.Text.IndexOf(term, from, StringComparison.OrdinalIgnoreCase);
+                        if (idx < 0) break;
+                        count++;
+                        from = idx + Math.Max(1, term.Length);
                     }
+                    bodyHits += count;
                 }
-                if (!all) continue;
-                total++;
-                var score = titleHits * 90 + Math.Min(bodyHits, 40) * 3;
-                if (title.Equals(query, StringComparison.OrdinalIgnoreCase)) score += 160;
-                else if (title.Contains(query, StringComparison.OrdinalIgnoreCase)) score += 70;
-
-                var snippetSource = doc.Text;
-                var pos = -1;
-                foreach (var term in terms)
-                {
-                    var i = snippetSource.IndexOf(term, StringComparison.OrdinalIgnoreCase);
-                    if (i >= 0 && (pos < 0 || i < pos)) pos = i;
-                }
-                string snippet;
-                if (pos >= 0)
-                {
-                    var start = Math.Max(0, pos - 52);
-                    var len = Math.Min(170, snippetSource.Length - start);
-                    snippet = (start > 0 ? "…" : "") + snippetSource.Substring(start, len).Trim() + (start + len < snippetSource.Length ? "…" : "");
-                }
-                else
-                {
-                    snippet = snippetSource.Length > 150 ? snippetSource[..150] + "…" : snippetSource;
-                }
-                snippet = Regex.Replace(snippet, @"\s+", " ").Trim();
-                hits.Add(new SearchHit
-                {
-                    BookKey = book.Info.Key,
-                    BookTitle = book.Info.Title,
-                    Title = string.IsNullOrWhiteSpace(title) ? doc.Page.Path : title,
-                    Path = doc.Page.Path,
-                    Snippet = snippet,
-                    Score = score
-                });
             }
-        }
+            if (!all) return;
+            Interlocked.Increment(ref total);
+            var score = titleHits * 90 + Math.Min(bodyHits, 40) * 3;
+            if (title.Equals(query, StringComparison.OrdinalIgnoreCase)) score += 160;
+            else if (title.Contains(query, StringComparison.OrdinalIgnoreCase)) score += 70;
+            rawHits.Add(new RawSearchHit { Book = book, Doc = doc, Title = title, Score = score });
+        });
 
-        var ordered = hits.OrderByDescending(h => h.Score)
+        var ordered = rawHits.OrderByDescending(h => h.Score)
             .ThenBy(h => h.Title.Length)
             .Take(Math.Clamp(limit, 1, 200))
             .ToList();
+
+        // Snippets are relatively expensive; generate them only for the visible page.
+        var results = new List<SearchHit>(ordered.Count);
+        foreach (var raw in ordered)
+        {
+            var doc = raw.Doc;
+            var title = raw.Title;
+            results.Add(new SearchHit
+            {
+                BookKey = raw.Book.Info.Key,
+                BookTitle = raw.Book.Info.Title,
+                Title = string.IsNullOrWhiteSpace(title) ? doc.Page.Path : title,
+                Path = doc.Page.Path,
+                Snippet = BuildSnippet(doc.Text, terms),
+                Score = raw.Score
+            });
+        }
+
         return new SearchResponse
         {
             Query = query,
             Total = total,
             ElapsedMs = started.ElapsedMilliseconds,
-            Truncated = total > ordered.Count,
-            Results = ordered
+            Truncated = total > results.Count,
+            Results = results
         };
+    }
+
+    private static string BuildSnippet(string text, string[] terms)
+    {
+        var pos = -1;
+        foreach (var term in terms)
+        {
+            var i = text.IndexOf(term, StringComparison.OrdinalIgnoreCase);
+            if (i >= 0 && (pos < 0 || i < pos)) pos = i;
+        }
+
+        string snippet;
+        if (pos >= 0)
+        {
+            var start = Math.Max(0, pos - 52);
+            var len = Math.Min(170, text.Length - start);
+            snippet = (start > 0 ? "…" : "") + text.Substring(start, len).Trim() +
+                      (start + len < text.Length ? "…" : "");
+        }
+        else
+        {
+            snippet = text.Length > 150 ? text[..150] + "…" : text;
+        }
+        return Regex.Replace(snippet, @"\s+", " ").Trim();
     }
 
     private async Task<List<SearchDocument>> LoadSearchDocsAsync(BookRuntime book, CancellationToken token)
     {
         if (book.SearchDocs != null) return book.SearchDocs;
-        var docs = new List<SearchDocument>();
         var textDir = Path.Combine(book.CacheDir, "_dsh_text");
         var pages = book.Manifest?.Pages ?? new List<PageInfo>();
-        foreach (var page in pages)
+        var docs = new SearchDocument[pages.Count];
+        var options = new ParallelOptions
         {
-            token.ThrowIfCancellationRequested();
+            CancellationToken = token,
+            MaxDegreeOfParallelism = Math.Clamp(Environment.ProcessorCount, 2, 8)
+        };
+        await Parallel.ForEachAsync(Enumerable.Range(0, pages.Count), options, async (i, ct) =>
+        {
+            var page = pages[i];
             var text = "";
             try
             {
                 var f = Path.Combine(textDir, page.TextHash + ".txt");
                 if (File.Exists(f))
-                    text = await File.ReadAllTextAsync(f, Encoding.UTF8, token).ConfigureAwait(false);
+                    text = await File.ReadAllTextAsync(f, Encoding.UTF8, ct).ConfigureAwait(false);
             }
             catch (OperationCanceledException) { throw; }
             catch { }
-            docs.Add(new SearchDocument { Page = page, Text = text });
-        }
-        book.SearchDocs = docs;
-        return docs;
+            docs[i] = new SearchDocument { Page = page, Text = text };
+        }).ConfigureAwait(false);
+        book.SearchDocs = docs.ToList();
+        return book.SearchDocs;
     }
 
     public void Dispose()

@@ -990,10 +990,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.76';
+  const APP_VERSION = 'V1.77';
   const UPDATES = [
     {
-      version: 'V1.76', date: '2026-11-04', title: '关于页整合与致谢更新', current: true,
+      version: 'V1.77', date: '2026-11-04', title: '规则书检索加速', current: true,
+      notes: [
+        '搜索改为并行扫描书库',
+        '首次加载页面文本改为并行读取',
+        '只在最终结果页生成摘要',
+        '实测首次搜索约 382ms，后续查询约 16–21ms'
+      ]
+    },
+    {
+      version: 'V1.76', date: '2026-11-04', title: '关于页整合与致谢更新',
       notes: [
         '更新、帮助、重置移入关于页',
         '更新致谢文案，补充软件构建感谢',
