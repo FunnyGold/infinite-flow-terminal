@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>无限流角色终端</AssemblyName>
+    <RootNamespace>InfiniteTerminal</RootNamespace>
+    <ApplicationIcon>assets\app.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <Company>INFINITE TRPG</Company>
+    <Product>无限流角色终端</Product>
+    <Description>无限流 TRPG 角色卡、战斗计算与规则书检索终端</Description>
+    <Copyright>本地单机工具</Copyright>
+    <PublishSingleFile>true</PublishSingleFile>
+    <SelfContained>true</SelfContained>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+    <SatelliteResourceLanguages>zh-Hans</SatelliteResourceLanguages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.4314.35" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="web\index.html" LogicalName="web/index.html" />
+    <EmbeddedResource Include="web\app.css" LogicalName="web/app.css" />
+    <EmbeddedResource Include="web\app.js" LogicalName="web/app.js" />
+    <EmbeddedResource Include="web\data.js" LogicalName="web/data.js" />
+    <EmbeddedResource Include="web\calc.js" LogicalName="web/calc.js" />
+    <Resource Include="assets\app.ico" />
+  </ItemGroup>
+
+</Project>

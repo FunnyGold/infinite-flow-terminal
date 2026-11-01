@@ -1,0 +1,73 @@
+<Window x:Class="InfiniteTerminal.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        Title="无限流 · 角色终端"
+        Width="1460" Height="920" MinWidth="1160" MinHeight="720"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" ResizeMode="CanResize"
+        Background="#0F1115" UseLayoutRounding="True"
+        SnapsToDevicePixels="True" TextOptions.TextFormattingMode="Display"
+        StateChanged="Window_StateChanged">
+    <shell:WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="0"
+                            ResizeBorderThickness="8"
+                            CornerRadius="0"
+                            GlassFrameThickness="0"
+                            UseAeroCaptionButtons="False"/>
+    </shell:WindowChrome.WindowChrome>
+
+    <Grid Background="#0F1115">
+        <!-- Leave a real WPF border exposed: the WebView2 child HWND would
+             otherwise swallow hit-testing at the window edges. -->
+        <wv2:WebView2 x:Name="Web" Visibility="Hidden" Margin="8"/>
+
+        <!-- The WebView2 child HWND owns the center of the window. These
+             transparent WPF strips sit in the exposed 8px frame and start the
+             native sizing loop, so all four edges and corners resize reliably. -->
+        <Grid Panel.ZIndex="50">
+            <Border Width="8" HorizontalAlignment="Left" Background="Transparent" Cursor="SizeWE"
+                    Tag="10" MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Width="8" HorizontalAlignment="Right" Background="Transparent" Cursor="SizeWE"
+                    Tag="11" MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Height="8" VerticalAlignment="Top" Background="Transparent" Cursor="SizeNS"
+                    Tag="12" MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Height="8" VerticalAlignment="Bottom" Background="Transparent" Cursor="SizeNS"
+                    Tag="15" MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Top"
+                    Background="Transparent" Cursor="SizeNWSE" Tag="13"
+                    MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="Transparent" Cursor="SizeNESW" Tag="14"
+                    MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Width="12" Height="12" HorizontalAlignment="Left" VerticalAlignment="Bottom"
+                    Background="Transparent" Cursor="SizeNESW" Tag="16"
+                    MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+            <Border Width="12" Height="12" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Background="Transparent" Cursor="SizeNWSE" Tag="17"
+                    MouseLeftButtonDown="ResizeBorder_MouseLeftButtonDown"/>
+        </Grid>
+
+        <Grid x:Name="Splash">
+            <Grid.Background>
+                <RadialGradientBrush Center="0.5,0.42" GradientOrigin="0.5,0.42" RadiusX="0.7" RadiusY="0.7">
+                    <GradientStop Color="#241A1C" Offset="0"/>
+                    <GradientStop Color="#0F1115" Offset="0.62"/>
+                </RadialGradientBrush>
+            </Grid.Background>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <TextBlock Text="∞" Foreground="#C9A35F" FontFamily="Georgia" FontSize="92"
+                           HorizontalAlignment="Center" Margin="0,-18,0,-4"/>
+                <TextBlock Text="无限流 · 角色终端" Foreground="#F0E8DA" FontSize="26"
+                           FontFamily="Microsoft YaHei UI" FontWeight="SemiBold"
+                           HorizontalAlignment="Center"/>
+                <TextBlock Text="INFINITE  TRPG  CHARACTER  TERMINAL" Foreground="#7C7568" FontSize="10"
+                           FontFamily="Consolas" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+                <Border Width="54" Height="1" Background="#5A3438" Margin="0,28,0,18"/>
+                <TextBlock x:Name="SplashText" Text="正在唤醒角色终端…" Foreground="#9A9386"
+                           FontSize="12" FontFamily="Microsoft YaHei UI" HorizontalAlignment="Center"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

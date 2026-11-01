@@ -1,0 +1,14 @@
+﻿bin/
+obj/
+publish_fw/
+publish_modal/
+publish_sc/
+.vs/
+*.user
+*.suo
+终端数据/
+chm-cache/
+*.chm
+*.zip
+app.log
+阿黛尔.json
