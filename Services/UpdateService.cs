@@ -210,17 +210,34 @@ public static class UpdateService
             return;
         }
 
-        var message = result.Verified
-            ? "更新包已下载并通过 SHA256 校验。"
-            : "更新包已下载，但未提供 SHA256 校验。";
+        if (result.Verified)
+        {
+            var install = MessageBox.Show(
+                "更新包已下载并通过 SHA256 校验。\n\n是否立即重启并更新？\n\n当前版本会先备份，更新完成后自动启动。",
+                "安装更新", MessageBoxButton.YesNo, MessageBoxImage.Information);
+            if (install == MessageBoxResult.Yes)
+            {
+                if (UpdateInstaller.Start(info, result.Path, out var error))
+                {
+                    Application.Current?.Shutdown();
+                    return;
+                }
+                MessageBox.Show("启动更新失败：\n" + error, "安装更新", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        else
+        {
+            MessageBox.Show(
+                "更新包已下载，但 Release 未提供 SHA256，无法自动安装。\n\n文件：" + result.Path,
+                "下载完成", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
         var answer = MessageBox.Show(
-            message + "\n\n文件：" + result.Path +
-            "\n\n是否打开文件所在文件夹？",
+            "是否打开更新文件所在文件夹？",
             "下载完成", MessageBoxButton.YesNo, MessageBoxImage.Information);
         if (answer == MessageBoxResult.Yes)
             Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{result.Path}\"") { UseShellExecute = true });
     }
-
     private static Version? ParseVersion(string tag)
     {
         var text = tag.Trim().TrimStart('v', 'V');
