@@ -591,6 +591,12 @@ html[data-theme="light"] .hero-identity-compact { color: #87622b; border-color: 
 .quick-primary small { display: block; color: #6f685c; font-size: 8px; font-weight: 400; margin-top: 2px; }
 .quick-primary input { width: 100%; padding: 6px 7px; border-radius: 5px; border: 1px solid rgba(201,168,110,.2); background: #0e1116; color: #e8c98f; font: 15px var(--mono); }
 .quick-note { margin-top: 12px; color: #6f685c; font-size: 9px; line-height: 1.8; }
+
+.quick-budget { display: flex; align-items: center; gap: 14px; margin-top: 12px; padding: 7px 10px; border-radius: 6px; border: 1px solid rgba(201,168,110,.14); background: rgba(201,168,110,.035); color: #8d8679; font-size: 9.5px; }
+.quick-budget b { color: #d8b878; font-weight: 500; }
+.quick-budget.over { border-color: rgba(208,94,94,.35); background: rgba(208,94,94,.06); color: #d9a39e; }
+.quick-budget.over b { color: #e2aaa5; }
+
 .quick-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin-top: 14px; }
 .quick-preview-grid > div { padding: 9px 10px; border-radius: 6px; background: rgba(255,255,255,.02); border: 1px solid rgba(255,255,255,.06); }
 .quick-preview-grid span { display: block; color: #777064; font-size: 8.5px; }

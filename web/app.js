@@ -991,10 +991,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.90';
+  const APP_VERSION = 'V1.91';
   const UPDATES = [
     {
-      version: 'V1.90', date: '2026-11-04', title: '建卡检查', current: true,
+      version: 'V1.91', date: '2026-11-04', title: '快速建卡预算', current: true,
+      notes: [
+        '四个模板改为规则内的初始预算',
+        '属性初始 9 点，4→5 额外消耗 1 点',
+        '技能初始 20 点，单项不超过 3 级',
+        '快速建卡实时显示属性点 / 技能点余额'
+      ]
+    },
+    {
+      version: 'V1.90', date: '2026-11-04', title: '建卡检查',
       notes: [
         '角色卡菜单新增“检查角色卡”',
         '检查姓名、生命、意志、防御、攻击和核心技能',
@@ -4407,8 +4416,8 @@
       key: 'vanguard', name: '耐力前排', tag: '站得住', concept: '前排',
       desc: '生命和防御优先，适合第一次战斗站在队友前面。',
       primary: ['sta', 'str', 'com'],
-      attrs: { int: 2, per: 3, res: 3, str: 4, agi: 3, sta: 5, pre: 2, man: 2, com: 3 },
-      skills: { brawl: 4, athletics: 3, survival: 2 },
+      attrs: { int: 1, per: 2, res: 2, str: 3, agi: 2, sta: 4, pre: 1, man: 1, com: 2 },
+      skills: { brawl: 3, athletics: 3, survival: 3, melee: 3, firearms: 2, drive: 2, stealth: 2, persuasion: 2 },
       defense: { baseA: 'sta', baseB: 'agi', baseMode: 'low' },
       attack: 'brawl'
     },
@@ -4417,8 +4426,8 @@
       concept: '调查 / 敏捷',
       desc: '先攻、躲藏和调查兼顾，适合观察、找线索和先手攻击。',
       primary: ['agi', 'per', 'int'],
-      attrs: { int: 3, per: 5, res: 3, str: 3, agi: 4, sta: 3, pre: 2, man: 2, com: 3 },
-      skills: { investigation: 4, stealth: 3, firearms: 3 },
+      attrs: { int: 3, per: 3, res: 1, str: 1, agi: 4, sta: 2, pre: 1, man: 1, com: 2 },
+      skills: { investigation: 3, stealth: 3, firearms: 3, athletics: 3, survival: 3, drive: 2, empathy: 3 },
       defense: { baseA: 'agi', baseB: 'per', baseMode: 'low' },
       attack: 'firearms'
     },
@@ -4427,8 +4436,8 @@
       concept: '术法',
       desc: '意志和智力优先，依赖资源与法术攻击；生命和防御偏低。',
       primary: ['res', 'int', 'com'],
-      attrs: { int: 5, per: 3, res: 5, str: 2, agi: 2, sta: 3, pre: 2, man: 2, com: 4 },
-      skills: { occult: 4, academics: 3, empathy: 2 },
+      attrs: { int: 4, per: 2, res: 4, str: 1, agi: 1, sta: 2, pre: 1, man: 1, com: 2 },
+      skills: { occult: 3, academics: 3, investigation: 3, empathy: 3, persuasion: 3, medicine: 2, science: 3 },
       defense: { baseA: 'res', baseB: 'int', baseMode: 'low' },
       attack: 'spell'
     },
@@ -4437,12 +4446,35 @@
       concept: '社交 / 支援',
       desc: '风度和操控优先，适合交涉、情报和支援队友。',
       primary: ['pre', 'man', 'com'],
-      attrs: { int: 3, per: 3, res: 3, str: 2, agi: 3, sta: 3, pre: 5, man: 5, com: 4 },
-      skills: { persuasion: 4, empathy: 3, subterfuge: 2 },
+      attrs: { int: 1, per: 2, res: 2, str: 1, agi: 2, sta: 2, pre: 3, man: 4, com: 1 },
+      skills: { persuasion: 3, empathy: 3, subterfuge: 3, investigation: 3, expressionA: 3, intimidate: 3, animal: 2 },
       defense: { baseA: 'agi', baseB: 'per', baseMode: 'low' },
       attack: 'lightThrow'
     }
   ];
+
+  const QUICK_ATTR_BUDGET = 9;
+  const QUICK_SKILL_BUDGET = 20;
+
+  function quickBuildAttrCost(st) {
+    return Object.values(st.attributes).reduce((sum, a) => {
+      const v = Math.max(1, Math.min(5, Number(a.base) || 1));
+      return sum + (v - 1) + (v === 5 ? 1 : 0);
+    }, 0);
+  }
+
+  function quickBuildSkillCost(st) {
+    return Object.values(st.skills).reduce((sum, s) => sum + Math.max(0, Number(s.level) || 0), 0);
+  }
+
+  function quickBuildBudgetHTML(st) {
+    const attr = quickBuildAttrCost(st);
+    const skill = quickBuildSkillCost(st);
+    return `<div class="quick-budget ${attr > QUICK_ATTR_BUDGET || skill > QUICK_SKILL_BUDGET ? 'over' : ''}">
+      <span>属性点 <b>${attr}</b> / ${QUICK_ATTR_BUDGET}</span>
+      <span>技能点 <b>${skill}</b> / ${QUICK_SKILL_BUDGET}</span>
+    </div>`;
+  }
 
   let quickBuildDraft = null;
   let quickBuildStep = 0;
@@ -4485,7 +4517,7 @@
     const a = (c.attacks || [])[0];
     const hp = Math.round(c.hp);
     const will = Math.round(c.will);
-    return `<div class="quick-preview-grid">
+    return quickBuildBudgetHTML(st) + `<div class="quick-preview-grid">
       <div><span>生命上限</span><b>${fmt(hp)}</b></div>
       <div><span>意志上限</span><b>${fmt(will)}</b></div>
       <div><span>基础防御</span><b>${fmt(c.baseDefense)}</b></div>
@@ -4512,7 +4544,7 @@
     } else if (quickBuildStep === 1 && st) {
       body = `<div class="quick-field"><label for="qb-name">角色名</label><input id="qb-name" type="text" maxlength="40" value="${esc(st.meta.name || '')}" placeholder="例如：阿黛尔"></div>
         <div class="quick-field"><label>你想重点调整的三个属性</label>
-          <div class="quick-primary-list">${tpl.primary.map(k => `<label class="quick-primary"><span>${esc(D.ATTR_MAP[k].name)}<small>${esc(D.ATTR_MAP[k].desc)}</small></span><input data-qb-attr="${k}" type="number" min="1" max="20" value="${fmt(st.attributes[k].base)}"></label>`).join('')}</div>
+          <div class="quick-primary-list">${tpl.primary.map(k => `<label class="quick-primary"><span>${esc(D.ATTR_MAP[k].name)}<small>${esc(D.ATTR_MAP[k].desc)}</small></span><input data-qb-attr="${k}" type="number" min="1" max="5" value="${fmt(st.attributes[k].base)}"></label>`).join('')}</div>
         </div>
         <div class="quick-note">其余六项属性、技能和防御已经按「${esc(tpl.name)}」模板填好，之后可以在人物卡里继续修改。</div>
         ${quickBuildPreviewHTML(st)}`;
@@ -4573,9 +4605,13 @@
             if (nameInput) quickBuildDraft.state.meta.name = nameInput.value.trim() || '未命名调查员';
             document.querySelectorAll('[data-qb-attr]').forEach(input => {
               const key = input.dataset.qbAttr;
-              const v = Math.max(1, Math.min(20, Number(input.value) || 1));
+              const v = Math.max(1, Math.min(5, Number(input.value) || 1));
               if (quickBuildDraft.state.attributes[key]) quickBuildDraft.state.attributes[key].base = v;
             });
+            if (quickBuildAttrCost(quickBuildDraft.state) > QUICK_ATTR_BUDGET) {
+              toast('属性点超出：初始最多 9 点（4→5 需要 2 点）', 'error');
+              return;
+            }
             quickBuildStep = 2;
           } else if (quickBuildStep === 2) {
             saveNow();
