@@ -30,6 +30,7 @@ public static class UpdateService
     private static readonly HttpClient ApiHttp = CreateApiClient();
     private static readonly HttpClient WebHttp = CreateWebClient();
     private static readonly HttpClient DownloadHttp = new() { Timeout = TimeSpan.FromMinutes(15) };
+    private static int _downloadBusy;
 
     private static HttpClient CreateWebClient()
     {
@@ -89,7 +90,9 @@ public static class UpdateService
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "InfiniteTerminal", "updates", info.Latest);
         Directory.CreateDirectory(dir);
-        var path = Path.Combine(dir, info.AssetName);
+        var baseName = Path.GetFileNameWithoutExtension(info.AssetName);
+        var extension = Path.GetExtension(info.AssetName);
+        var path = Path.Combine(dir, $"{baseName}-{DateTime.Now:yyyyMMddHHmmss}-{Guid.NewGuid().ToString("N")[..6]}{extension}");
 
         try
         {
@@ -177,6 +180,9 @@ public static class UpdateService
 
     private static async Task DownloadAndOfferAsync(UpdateInfo info)
     {
+        if (Interlocked.Exchange(ref _downloadBusy, 1) != 0) return;
+        try
+        {
         var win = new UpdateDownloadWindow(info.Latest) { Owner = Application.Current?.MainWindow };
         win.Show();
         var result = await DownloadAsync(info, win.Progress, win.Token);
@@ -223,6 +229,11 @@ public static class UpdateService
             "下载完成", MessageBoxButton.YesNo, MessageBoxImage.Information);
         if (answer == MessageBoxResult.Yes)
             Process.Start(new ProcessStartInfo("explorer.exe", $"/select,\"{result.Path}\"") { UseShellExecute = true });
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _downloadBusy, 0);
+        }
     }
     private static Version? ParseVersion(string tag)
     {
