@@ -207,6 +207,21 @@ public partial class MainWindow : Window
         });
     }
 
+    private async Task CheckForUpdatesAsync(bool manual)
+    {
+        try
+        {
+            var info = await UpdateService.CheckAsync();
+            UpdateService.ShowResult(info, manual);
+        }
+        catch (Exception ex)
+        {
+            Log("update check failed: " + ex.Message);
+            if (manual)
+                MessageBox.Show("检查更新失败：" + Environment.NewLine + ex.Message, "检查更新", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+    }
+
     private async void Core_WebMessageReceived(object? sender, CoreWebView2WebMessageReceivedEventArgs e)
     {
         try
@@ -221,6 +236,11 @@ public partial class MainWindow : Window
             {
                 case "ready":
                     SendInit();
+                    _ = CheckForUpdatesAsync(false);
+                    break;
+
+                case "update.check":
+                    await CheckForUpdatesAsync(true);
                     break;
 
                 case "window":

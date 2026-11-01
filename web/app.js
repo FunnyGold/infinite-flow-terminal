@@ -4649,6 +4649,7 @@
       case 'changelog-open': openChangelog(); break;
       case 'changelog-close': closeChangelog(); break;
       case 'about-open': openAbout(); break;
+      case 'check-update': post({ type: 'update.check' }); break;
       case 'about-close': closeAbout(); break;
       case 'chm-folder-info': showFolderInfo(); break;
       case 'toc-expand-all': expandAllToc(); break;
