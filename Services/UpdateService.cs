@@ -28,6 +28,14 @@ public static class UpdateService
     private const string Repo = "infinite-flow-terminal";
 
     private static readonly HttpClient ApiHttp = CreateApiClient();
+    private static readonly HttpClient GiteeHttp = CreateGiteeClient();
+
+    private static HttpClient CreateGiteeClient()
+    {
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("InfiniteTerminal-Updater/1.0");
+        return client;
+    }
     private static readonly HttpClient WebHttp = CreateWebClient();
     private static readonly HttpClient DownloadHttp = new() { Timeout = TimeSpan.FromMinutes(15) };
     private static int _downloadBusy;
@@ -43,13 +51,80 @@ public static class UpdateService
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd("InfiniteTerminal-Updater/1.0");
-        client.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
         return client;
     }
 
     public static async Task<UpdateInfo> CheckAsync(CancellationToken ct = default)
     {
         var current = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
+        var giteeTask = CheckGiteeAsync(current, ct);
+        var githubTask = CheckGitHubAsync(current, ct);
+        await Task.WhenAll(giteeTask, githubTask).ConfigureAwait(false);
+        var gitee = await giteeTask.ConfigureAwait(false);
+        var github = await githubTask.ConfigureAwait(false);
+
+        UpdateInfo? chosen = null;
+        if (gitee.Error == null && github.Error == null)
+            chosen = CompareVersion(gitee.Latest, github.Latest) >= 0 ? gitee : github;
+        else if (gitee.Error == null) chosen = gitee;
+        else if (github.Error == null) chosen = github;
+
+        if (chosen != null)
+            return chosen;
+
+        var errors = string.Join("；", new[] { "Gitee: " + gitee.Error, "GitHub: " + github.Error }
+            .Where(x => !x.EndsWith(": ")));
+        return new(false, current.ToString(3), "", "", "", Error: errors);
+    }
+
+    private static async Task<UpdateInfo> CheckGiteeAsync(Version current, CancellationToken ct)
+    {
+        try
+        {
+            var stamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            using var response = await GiteeHttp.GetAsync(
+                $"https://gitee.com/api/v5/repos/funnygold/infinite-flow-terminal/releases/latest?t={stamp}", ct);
+            if (response.StatusCode == HttpStatusCode.NotFound)
+                return new(false, current.ToString(3), "", "", "", Error: "没有 Release");
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync(ct);
+            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct);
+            var root = doc.RootElement;
+            var tag = root.TryGetProperty("tag_name", out var t) ? t.GetString() ?? "" : "";
+            var latest = ParseVersion(tag);
+            if (latest == null)
+                return new(false, current.ToString(3), tag, "", "", Error: "版本号无法解析");
+
+            string? assetName = null, assetUrl = null, sumsUrl = null;
+            if (root.TryGetProperty("assets", out var assets))
+            {
+                foreach (var asset in assets.EnumerateArray())
+                {
+                    var name = asset.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+                    var url = asset.TryGetProperty("browser_download_url", out var u) ? u.GetString() ?? "" : "";
+                    if (name.EndsWith("-Windows.zip", StringComparison.OrdinalIgnoreCase))
+                    {
+                        assetName = name;
+                        assetUrl = url;
+                    }
+                    if (name.Equals("SHA256SUMS.txt", StringComparison.OrdinalIgnoreCase)) sumsUrl = url;
+                }
+            }
+            if (assetUrl == null)
+                return new(false, current.ToString(3), latest.ToString(3), "", "", Error: "Release 中没有 Windows 更新包");
+
+            var sha = sumsUrl == null ? null : await TryReadChecksumAsync(sumsUrl, assetName!, ct);
+            var releaseUrl = $"https://gitee.com/funnygold/infinite-flow-terminal/releases/tag/{tag}";
+            return new(latest > current, current.ToString(3), latest.ToString(3), releaseUrl, "", assetName, assetUrl, sha);
+        }
+        catch (Exception ex)
+        {
+            return new(false, current.ToString(3), "", "", "", Error: ex.Message);
+        }
+    }
+
+    private static async Task<UpdateInfo> CheckGitHubAsync(Version current, CancellationToken ct)
+    {
         try
         {
             // /releases/latest is a web redirect, not the rate-limited REST API.
@@ -73,8 +148,7 @@ public static class UpdateService
             var assetUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tag}/{assetName}";
             var sumsUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tag}/SHA256SUMS.txt";
             var sha = await TryReadChecksumAsync(sumsUrl, assetName, ct);
-            var available = latest > current;
-            return new(available, current.ToString(3), latest.ToString(3), releaseUrl, "", assetName, assetUrl, sha);
+            return new(latest > current, current.ToString(3), latest.ToString(3), releaseUrl, "", assetName, assetUrl, sha);
         }
         catch (Exception ex)
         {
@@ -251,6 +325,13 @@ public static class UpdateService
             Interlocked.Exchange(ref _downloadBusy, 0);
         }
     }
+    private static int CompareVersion(string left, string right)
+    {
+        var a = ParseVersion(left) ?? new Version(0, 0, 0);
+        var b = ParseVersion(right) ?? new Version(0, 0, 0);
+        return a.CompareTo(b);
+    }
+
     private static Version? ParseVersion(string tag)
     {
         var text = tag.Trim().TrimStart('v', 'V');

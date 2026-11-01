@@ -990,10 +990,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.80';
+  const APP_VERSION = 'V1.81';
   const UPDATES = [
     {
-      version: 'V1.80', date: '2026-11-04', title: '更新提示窗口重做', current: true,
+      version: 'V1.81', date: '2026-11-04', title: 'Gitee 优先更新源', current: true,
+      notes: [
+        '同时检查 Gitee 和 GitHub',
+        '取版本最高的源，同版本优先 Gitee',
+        'Gitee 查询失败时自动使用 GitHub'
+      ]
+    },
+    {
+      version: 'V1.80', date: '2026-11-04', title: '更新提示窗口重做',
       notes: [
         '检查更新不再使用系统 MessageBox',
         '新增深色版本对比窗口',
