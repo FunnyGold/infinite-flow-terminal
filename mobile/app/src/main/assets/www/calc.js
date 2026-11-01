@@ -39,7 +39,7 @@
   function skillCalc(state, id, def, storedOverride) {
     const stored = storedOverride || (state.skills && state.skills[id]) || {};
     const attrKey = stored.attr || stored.attrOverride || (def && def.attr) || 'int';
-    const attr = attrOf(state, attrKey);
+    const attr = attrKey === 'none' ? { total: 0, legend: 0, success: 0 } : attrOf(state, attrKey);
     const level = num(stored.level);
     const bonus = num(stored.bonus);
     const temp = num(stored.temp);
@@ -53,7 +53,7 @@
       group: (def && def.group) || stored.group || '其他',
       note: (def && def.note) || '',
       attrKey,
-      attrName: (D.ATTR_MAP[attrKey] && D.ATTR_MAP[attrKey].name) || attrKey,
+      attrName: attrKey === 'none' ? '无' : ((D.ATTR_MAP[attrKey] && D.ATTR_MAP[attrKey].name) || attrKey),
       attrTotal: attr.total,
       level, bonus, temp, total, specialty, otherDP, otherSuccess,
       dp: attr.total + total + otherDP,
@@ -173,6 +173,8 @@
       const attr = attrKey ? (attrs[attrKey] || { total: 0, legend: 0, success: 0 }) : {
         total: 0, legend: 0, success: 0
       };
+      const attr2Key = a.attr2 && a.attr2 !== 'none' ? a.attr2 : '';
+      const attr2 = attr2Key ? (attrs[attr2Key] || { total: 0, legend: 0, success: 0 }) : { total: 0, legend: 0, success: 0 };
       const skillKey = a.skill && a.skill !== 'none' ? a.skill : '';
       const skill = skillKey ? (skillLookup[skillKey] || { total: 0, success: 0, name: '—', level: 0 }) : {
         total: 0, success: 0, name: '—', level: 0
@@ -190,12 +192,12 @@
       const typedCap = ['capInternal', 'capEnhance', 'capEnergy', 'capInstrument', 'capPerfect', 'capPractice']
         .reduce((s, k) => s + num(a[k]), 0) +
         (Array.isArray(a.capCustoms) ? a.capCustoms.reduce((s, x) => s + num(x && x.value), 0) : 0);
-      const dp = attr.total + skill.total + weapon + power + typedDP + other;
+      const dp = attr.total + attr2.total + skill.total + weapon + power + typedDP + other;
       const capWeapon = [0, 1, 2].includes(num(a.capWeapon)) ? num(a.capWeapon) : 0;
       const capPower = num(a.capPower) === 1 ? 1 : 0;
       const capLegendBonus = a.capLegend ? capAttr.legend * (capAttr.legend + 1) / 2 : 0;
       const cap = capAttr.total + capSkill.total + weapon * capWeapon + power * capPower + typedCap + num(a.capOther) + capLegendBonus;
-      const extraSuccess = attr.success + skill.success + num(a.extraSuccessBonus);
+      const extraSuccess = attr.success + attr2.success + skill.success + num(a.extraSuccessBonus);
       const explodeAt = [8, 9, 10].includes(num(a.explodeAt)) ? num(a.explodeAt) : 10;
       const explodeFactor = explodeAt === 8 ? 3 / 7 : explodeAt === 9 ? 3 / 8 : 1 / 3;
       const attackFlags = {
@@ -219,7 +221,9 @@
       return Object.assign({}, a, {
         attrKey, attrName: attrKey ? D.ATTR_MAP[attrKey].name : '无',
         attrTotal: attr.total, legend: attr.legend || 0,
-        skillKey, skillName: skill.name || '—',
+        attr2Key, attr2Name: attr2Key ? D.ATTR_MAP[attr2Key].name : '无',
+        attr2Total: attr2.total, attr2Legend: attr2.legend || 0,
+        skillKey, skillName: skillKey ? (skill.name || '—') : '无',
         skillTotal: skill.total, skillSuccess: skill.success,
         capAttrName: capAttrKey ? D.ATTR_MAP[capAttrKey].name : '无',
         capSkillName: capSkillKey ? (skillLookup[capSkillKey] || {}).name || '—' : '无',

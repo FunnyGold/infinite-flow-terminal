@@ -158,6 +158,7 @@
       obj.id = a.id || (t ? 'atk_' + t.key : 'atk_' + uid());
       obj.name = a.name || (t ? t.name : '自定义');
       obj.desc = a.desc !== undefined ? a.desc : (t ? t.desc : '');
+      obj.attr2 = obj.attr2 || 'none';
       obj.attr = (a.attr === 'manual' || !a.attr) ? (t ? t.attr : 'str') : a.attr;
       obj.skill = (a.skill === 'manual' || !a.skill) ? (t ? t.skill : 'brawl') : a.skill;
       const hasNewCap = a.capAttr !== undefined || a.capSkill !== undefined ||
@@ -1005,10 +1006,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.68';
+  const APP_VERSION = 'V1.75';
   const UPDATES = [
     {
-      version: 'V1.68', date: '2026-10-30', title: '手机版布局修复', current: true,
+      version: 'V1.75', date: '2026-11-03', title: '桌面功能同步', current: true,
+      notes: [
+        '攻击预设新增第二属性，支持决心 + 沉着',
+        '自定义技能关键属性可选无',
+        '手机版同步桌面 V1.75 的检定结构'
+      ]
+    },
+    {
+      version: 'V1.68', date: '2026-10-30', title: '手机版布局修复',
       notes: [
         '收支账本在手机上改为记录卡片，添加后完整显示',
         '人物卡防御构成的折叠按钮右对齐',
@@ -2193,7 +2202,7 @@
      ============================================================ */
   function characterHTML() {
     const c = computed;
-    const attrOptions = D.ATTRS.map(a => ({ value: a.key, label: a.name }));
+    const attrOptions = [{ value: 'none', label: '无' }].concat(D.ATTRS.map(a => ({ value: a.key, label: a.name })));
     const baseAName = (D.ATTR_MAP[state.defense.baseA] || D.ATTR_MAP.agi).name;
     const baseBName = (D.ATTR_MAP[state.defense.baseB] || D.ATTR_MAP.per).name;
     const idFields = [
@@ -2229,7 +2238,7 @@
     function skillRow(def, calc, index, custom) {
       const stored = custom ? state.customSkills[index] : state.skills[def.key];
       const attrKey = stored.attrOverride || def.attr;
-      const attrName = D.ATTR_MAP[attrKey] ? D.ATTR_MAP[attrKey].name : attrKey;
+      const attrName = attrKey === 'none' ? '无' : (D.ATTR_MAP[attrKey] ? D.ATTR_MAP[attrKey].name : attrKey);
       const group = custom ? (D.ATTR_MAP[stored.attr] ? D.ATTR_MAP[stored.attr].group : '其他') : def.group;
       const bind = custom ? 'customSkills.' + index : 'skills.' + def.key;
       const skillId = custom ? 'custom:' + index : def.key;
@@ -2242,7 +2251,7 @@
             </div>
             <div class="skill-card-side">
               <span class="mobile-skill-succ" data-skill-succ-badge="${skillId}">附加 +${calc.success}</span>
-              ${custom ? selectInput(bind + '.attr', D.ATTRS.map(a => ({ value: a.key, label: a.name })), stored.attr, 'cell-input mobile-skill-attr') : `<span class="mobile-skill-attr">${esc(attrName)}</span>`}
+              ${custom ? selectInput(bind + '.attr', [{ value: 'none', label: '无' }].concat(D.ATTRS.map(a => ({ value: a.key, label: a.name }))), stored.attr, 'cell-input mobile-skill-attr') : `<span class="mobile-skill-attr">${esc(attrName)}</span>`}
               ${custom ? `<button class="icon-btn" data-action="remove-custom-skill" data-index="${index}" title="删除技能">${ic('trash')}</button>` : ''}
             </div>
           </div>
@@ -2264,7 +2273,7 @@
         <td class="skill-name ${custom ? 'skill-name-user' : ''}">
           ${custom ? tInput(bind + '.name', stored.name, 'cell-input', '技能名称') : esc(def.name) + (def.note ? `<small>${esc(def.note)}</small>` : '')}
         </td>
-        <td class="skill-attr">${custom ? selectInput(bind + '.attr', D.ATTRS.map(a => ({ value: a.key, label: a.name })), stored.attr, 'cell-input') : esc(attrName)}</td>
+        <td class="skill-attr">${custom ? selectInput(bind + '.attr', [{ value: 'none', label: '无' }].concat(D.ATTRS.map(a => ({ value: a.key, label: a.name }))), stored.attr, 'cell-input') : esc(attrName)}</td>
         <td class="center">${nInput(bind + '.level', stored.level, 'cell-input', 'min="0"')}</td>
         <td class="center">${nInput(bind + '.bonus', stored.bonus, 'cell-input')}</td>
         <td class="center">${nInput(bind + '.temp', stored.temp, 'cell-input')}</td>
@@ -2499,6 +2508,7 @@
     const ca = computed.attacks[index];
     const energyText = ca.energyState === 'none' ? '—' : ca.energyState === 'ok' ? '✓ 足够' : ca.energyState === 'short' ? '✗ 不足' : '! 未匹配';
     const energyClass = 'energy-' + ca.energyState;
+    const attrLine = ca.attr2Key ? `${ca.attrName} + ${ca.attr2Name}` : ca.attrName;
     const parts = [];
     if (ca.attackCount > 1) parts.push('×' + ca.attackCount + ' 次攻击');
     if (ca.actionCost) parts.push(ca.actionCost);
@@ -2521,7 +2531,7 @@
     return `<tr data-attack-row="${index}">
       <td class="attack-name">
         <div class="atk-name-line"><b>${esc(a.name)}</b>${a.note ? `<span class="atk-note">${esc(a.note)}</span>` : ''}</div>
-        <small>${esc(ca.attrName)} + ${esc(ca.skillName)}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''}</small>
+        <small>${esc(attrLine)}${ca.skillKey ? ' + ' + esc(ca.skillName) : ''}${parts.length ? ' · ' + esc(parts.join(' · ')) : ''}</small>
         <div class="atk-outcome">
           <span>最终 DP <b>${fmt(ca.finalDP)}</b></span>
           <span>期望伤害 <b>${ca.attackCount > 1 ? `${fmt(C.round1(ca.expectedDamage).toFixed(1))} ×${ca.attackCount} = ${fmt(C.round1(ca.totalExpectedDamage).toFixed(1))}` : fmt(C.round1(ca.expectedDamage).toFixed(1))}</b></span>
@@ -2759,9 +2769,10 @@
         </div>
         <div class="editor-section">
           <div class="editor-section-title">攻击检定</div>
-          <div class="editor-grid four">
+          <div class="editor-grid five">
             <label class="field"><span>属性</span><select id="ae-attr">${attrOptions(a.attr)}</select></label>
-            <label class="field"><span>技能</span><select id="ae-skill">${skillSelectOptions(a.skill, false)}</select></label>
+            <label class="field"><span>第二属性</span><select id="ae-attr2"><option value="none">无</option>${attrOptions(a.attr2 || 'none')}</select></label>
+            <label class="field"><span>技能</span><select id="ae-skill">${skillSelectOptions(a.skill, true)}</select></label>
             <label class="field"><span>武器伤害</span><input id="ae-weapon" type="number" value="${esc(a.weapon || 0)}"></label>
             <label class="field"><span>威力</span><input id="ae-power" type="number" value="${esc(a.power || 0)}"></label>
           </div>
@@ -2852,6 +2863,7 @@
         name,
         note: card.querySelector('#ae-note').value.trim(),
         attr: card.querySelector('#ae-attr').value,
+        attr2: card.querySelector('#ae-attr2').value,
         skill: card.querySelector('#ae-skill').value,
         weapon: C.num(card.querySelector('#ae-weapon').value),
         power: C.num(card.querySelector('#ae-power').value),

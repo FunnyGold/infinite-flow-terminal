@@ -171,6 +171,7 @@
     return {
       id: 'atk_' + Math.random().toString(36).slice(2, 9),
       name: name || '新攻击', desc: '',
+      attr2: 'none',
       attr: 'str', skill: 'brawl',
       capAttr: 'str', capSkill: 'brawl', capWeapon: 1, capPower: 0,
       capLegend: false, capOther: 0,
