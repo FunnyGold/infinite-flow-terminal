@@ -785,7 +785,12 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getVersion() {
-            return "0.2.0";
+            return currentVersionName();
+        }
+
+        @JavascriptInterface
+        public void checkUpdate() {
+            runOnUiThread(() -> checkForUpdates(true));
         }
     }
 
@@ -956,16 +961,25 @@ public class MainActivity extends Activity {
     }
 
     private void checkForUpdates() {
-        if (updateChecking) return;
+        checkForUpdates(false);
+    }
+
+    private void checkForUpdates(boolean manual) {
+        if (updateChecking) {
+            if (manual) postToast("正在检查更新…");
+            return;
+        }
         updateChecking = true;
         io.execute(() -> {
             try {
                 ReleaseInfo info = findLatestRelease();
                 if (info != null && compareVersion(info.version, currentVersionName()) > 0) {
                     runOnUiThread(() -> showUpdateDialog(info));
+                } else if (manual) {
+                    postToast("当前已是最新版本");
                 }
-            } catch (Throwable ignored) {
-                // Update checks must never block normal startup.
+            } catch (Throwable t) {
+                if (manual) postToast("检查更新失败: " + t.getMessage());
             } finally {
                 updateChecking = false;
             }

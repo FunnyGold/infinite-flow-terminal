@@ -176,6 +176,7 @@
     moreSheet.className = 'mobile-more-sheet';
     moreSheet.innerHTML = '<div class="mobile-more-title">更多</div>';
     const items = [
+      ['check-update', '检查更新'],
       ['changelog-open', '更新目录'],
       ['about-open', '关于'],
       ['help', '帮助'],
@@ -187,6 +188,10 @@
       b.textContent = label;
       b.onclick = () => {
         closeMoreMenu();
+        if (action === 'check-update') {
+          if (window.AndroidApp && window.AndroidApp.checkUpdate) window.AndroidApp.checkUpdate();
+          return;
+        }
         const source = document.querySelector('.sidebar [data-action="' + action + '"]');
         if (source) source.click();
       };
