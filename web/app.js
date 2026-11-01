@@ -991,10 +991,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.88';
+  const APP_VERSION = 'V1.89';
   const UPDATES = [
     {
-      version: 'V1.88', date: '2026-11-04', title: '帮助入口移到总览', current: true,
+      version: 'V1.89', date: '2026-11-04', title: '快速建卡', current: true,
+      notes: [
+        '角色卡菜单新增“快速建卡”',
+        '提供耐力前排、敏捷调查、意志术法、社交支援四个模板',
+        '只改名称和三个关键属性即可生成可玩角色',
+        '自动生成第一个攻击预设和防御构成'
+      ]
+    },
+    {
+      version: 'V1.88', date: '2026-11-04', title: '帮助入口移到总览',
       notes: [
         '总览右上角新增“帮助”按钮',
         '关于页移除重复的帮助入口',
@@ -1892,7 +1901,7 @@
         <span class="cm-meta">${p.id === activeProfileId ? '当前角色' : new Date(p.updatedAt || Date.now()).toLocaleDateString('zh-CN')}</span>
       </button>`).join('')}</div>
       <div class="cm-actions">
-        <button data-action="create-character">＋ 新建</button>
+        <button data-action="quick-build">快速建卡</button><button data-action="create-character">＋ 新建</button>
         <button data-action="duplicate-character">复制</button>
         <button data-action="delete-character">删除</button>
       </div>`;
@@ -4329,6 +4338,209 @@
     window.setTimeout(() => { layer.hidden = true; }, 180);
   }
 
+  const QUICK_BUILD_TEMPLATES = [
+    {
+      key: 'vanguard', name: '耐力前排', tag: '站得住', concept: '前排',
+      desc: '生命和防御优先，适合第一次战斗站在队友前面。',
+      primary: ['sta', 'str', 'com'],
+      attrs: { int: 2, per: 3, res: 3, str: 4, agi: 3, sta: 5, pre: 2, man: 2, com: 3 },
+      skills: { brawl: 4, athletics: 3, survival: 2 },
+      defense: { baseA: 'sta', baseB: 'agi', baseMode: 'low' },
+      attack: 'brawl'
+    },
+    {
+      key: 'scout', name: '敏捷调查', tag: '先手与线索',
+      concept: '调查 / 敏捷',
+      desc: '先攻、躲藏和调查兼顾，适合观察、找线索和先手攻击。',
+      primary: ['agi', 'per', 'int'],
+      attrs: { int: 3, per: 5, res: 3, str: 3, agi: 4, sta: 3, pre: 2, man: 2, com: 3 },
+      skills: { investigation: 4, stealth: 3, firearms: 3 },
+      defense: { baseA: 'agi', baseB: 'per', baseMode: 'low' },
+      attack: 'firearms'
+    },
+    {
+      key: 'caster', name: '意志术法', tag: '资源爆发',
+      concept: '术法',
+      desc: '意志和智力优先，依赖资源与法术攻击；生命和防御偏低。',
+      primary: ['res', 'int', 'com'],
+      attrs: { int: 5, per: 3, res: 5, str: 2, agi: 2, sta: 3, pre: 2, man: 2, com: 4 },
+      skills: { occult: 4, academics: 3, empathy: 2 },
+      defense: { baseA: 'res', baseB: 'int', baseMode: 'low' },
+      attack: 'spell'
+    },
+    {
+      key: 'face', name: '社交支援', tag: '交涉与辅助',
+      concept: '社交 / 支援',
+      desc: '风度和操控优先，适合交涉、情报和支援队友。',
+      primary: ['pre', 'man', 'com'],
+      attrs: { int: 3, per: 3, res: 3, str: 2, agi: 3, sta: 3, pre: 5, man: 5, com: 4 },
+      skills: { persuasion: 4, empathy: 3, subterfuge: 2 },
+      defense: { baseA: 'agi', baseB: 'per', baseMode: 'low' },
+      attack: 'lightThrow'
+    }
+  ];
+
+  let quickBuildDraft = null;
+  let quickBuildStep = 0;
+
+  function quickBuildFromTemplate(key) {
+    const tpl = QUICK_BUILD_TEMPLATES.find(t => t.key === key);
+    if (!tpl) return null;
+    const st = D.createDefaultState();
+    Object.entries(tpl.attrs).forEach(([k, v]) => { if (st.attributes[k]) st.attributes[k].base = v; });
+    Object.entries(tpl.skills).forEach(([k, v]) => { if (st.skills[k]) st.skills[k].level = v; });
+    Object.assign(st.defense, tpl.defense || {});
+    const t = D.ATTACK_TEMPLATES.find(x => x.key === tpl.attack);
+    if (t) {
+      const a = D.newAttack(t.name);
+      a.name = t.name;
+      a.attr = t.attr;
+      a.skill = t.skill;
+      a.capAttr = t.capAttr;
+      a.capSkill = t.capSkill;
+      a.capWeapon = t.capWeapon;
+      a.capPower = t.capPower;
+      a.capLegend = t.capLegend;
+      a.weapon = t.key === 'spell' ? 0 : t.capWeapon;
+      a.power = t.key === 'spell' ? 1 : 0;
+      st.attacks = [a];
+    }
+    st.meta.name = '新角色';
+    st.meta.concept = tpl.concept;
+    st.meta.team = tpl.name;
+    return { template: tpl, state: st };
+  }
+
+  function closeQuickBuild() {
+    const layer = document.getElementById('quick-build-layer');
+    if (layer) layer.remove();
+  }
+
+  function quickBuildPreviewHTML(st) {
+    const c = C.compute(st);
+    const a = (c.attacks || [])[0];
+    const hp = Math.round(c.hp);
+    const will = Math.round(c.will);
+    return `<div class="quick-preview-grid">
+      <div><span>生命上限</span><b>${fmt(hp)}</b></div>
+      <div><span>意志上限</span><b>${fmt(will)}</b></div>
+      <div><span>基础防御</span><b>${fmt(c.baseDefense)}</b></div>
+      <div><span>先攻</span><b>${c.initiative >= 0 ? '+' : ''}${fmt(c.initiative)}</b></div>
+      <div><span>攻击 DP</span><b>${a ? fmt(a.dp) : '—'}</b></div>
+      <div><span>期望伤害</span><b>${a ? fmt(C.round1(a.expectedDamage)) : '—'}</b></div>
+    </div>`;
+  }
+
+  function renderQuickBuild() {
+    const layer = document.getElementById('quick-build-layer');
+    if (!layer) return;
+    const tpl = quickBuildDraft ? quickBuildDraft.template : null;
+    const st = quickBuildDraft ? quickBuildDraft.state : null;
+    let body = '';
+    if (quickBuildStep === 0) {
+      body = `<div class="quick-template-grid">
+        ${QUICK_BUILD_TEMPLATES.map(t => `<button class="quick-template ${t.key === (tpl && tpl.key) ? 'active' : ''}" data-qb-template="${t.key}">
+          <div class="quick-template-top"><b>${esc(t.name)}</b><span>${esc(t.tag)}</span></div>
+          <p>${esc(t.desc)}</p>
+          <small>关键：${t.primary.map(k => esc(D.ATTR_MAP[k].name)).join(' · ')}</small>
+        </button>`).join('')}
+      </div>`;
+    } else if (quickBuildStep === 1 && st) {
+      body = `<div class="quick-field"><label for="qb-name">角色名</label><input id="qb-name" type="text" maxlength="40" value="${esc(st.meta.name || '')}" placeholder="例如：阿黛尔"></div>
+        <div class="quick-field"><label>你想重点调整的三个属性</label>
+          <div class="quick-primary-list">${tpl.primary.map(k => `<label class="quick-primary"><span>${esc(D.ATTR_MAP[k].name)}<small>${esc(D.ATTR_MAP[k].desc)}</small></span><input data-qb-attr="${k}" type="number" min="1" max="20" value="${fmt(st.attributes[k].base)}"></label>`).join('')}</div>
+        </div>
+        <div class="quick-note">其余六项属性、技能和防御已经按「${esc(tpl.name)}」模板填好，之后可以在人物卡里继续修改。</div>
+        ${quickBuildPreviewHTML(st)}`;
+    } else if (st) {
+      body = `<div class="quick-review-title">${esc(st.meta.name || '未命名调查员')}</div>
+        <div class="quick-review-sub">${esc(st.meta.team || '')} · ${esc(st.meta.concept || '')}</div>
+        ${quickBuildPreviewHTML(st)}
+        <div class="quick-review-list">
+          ${tpl.primary.map(k => `<span>${esc(D.ATTR_MAP[k].name)} <b>${fmt(st.attributes[k].base)}</b></span>`).join('')}
+          <span>攻击 <b>${esc((st.attacks[0] && st.attacks[0].name) || '—')}</b></span>
+        </div>
+        <div class="quick-note">这是可修改的起点。建卡后可以继续补装备、技能和资源。</div>`;
+    }
+    const last = quickBuildStep === 2;
+    layer.innerHTML = `<div class="stat-guide-card quick-build-card" role="dialog" aria-modal="true" aria-label="快速建卡">
+      <button class="stat-guide-close" data-qb-close aria-label="关闭">✕</button>
+      <div class="stat-guide-kicker">QUICK BUILD / 快速建卡</div>
+      <div class="quick-build-steps"><span class="${quickBuildStep === 0 ? 'active' : ''}">1 选模板</span><i>→</i><span class="${quickBuildStep === 1 ? 'active' : ''}">2 改三项</span><i>→</i><span class="${last ? 'active' : ''}">3 看结果</span></div>
+      <h2>${quickBuildStep === 0 ? '先选一个能直接玩的起点' : quickBuildStep === 1 ? '只改最重要的三项' : '确认你的角色'}</h2>
+      ${body}
+      <div class="quick-build-actions">
+        <button class="btn" data-qb-close>取消</button>
+        <span style="flex:1"></span>
+        ${quickBuildStep > 0 ? '<button class="btn" data-qb-back>上一步</button>' : ''}
+        <button class="btn gold" data-qb-next ${quickBuildStep === 0 ? 'disabled' : ''}>${last ? '创建角色' : '下一步'}</button>
+      </div>
+    </div>`;
+  }
+
+  function openQuickBuild() {
+    closeCharacterMenu();
+    quickBuildStep = 0;
+    quickBuildDraft = null;
+    let layer = document.getElementById('quick-build-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'quick-build-layer';
+      layer.className = 'stat-guide-layer';
+      document.body.appendChild(layer);
+      layer.addEventListener('click', e => {
+        if (e.target === layer || e.target.closest('[data-qb-close]')) { closeQuickBuild(); return; }
+        const t = e.target.closest('[data-qb-template]');
+        if (t) {
+          quickBuildDraft = quickBuildFromTemplate(t.dataset.qbTemplate);
+          quickBuildStep = 1;
+          renderQuickBuild();
+          return;
+        }
+        if (e.target.closest('[data-qb-back]')) {
+          quickBuildStep = Math.max(0, quickBuildStep - 1);
+          renderQuickBuild();
+          return;
+        }
+        if (e.target.closest('[data-qb-next]')) {
+          if (quickBuildStep === 0) { if (!quickBuildDraft) return; quickBuildStep = 1; renderQuickBuild(); return; }
+          if (quickBuildStep === 1) {
+            const nameInput = document.getElementById('qb-name');
+            if (nameInput) quickBuildDraft.state.meta.name = nameInput.value.trim() || '未命名调查员';
+            document.querySelectorAll('[data-qb-attr]').forEach(input => {
+              const key = input.dataset.qbAttr;
+              const v = Math.max(1, Math.min(20, Number(input.value) || 1));
+              if (quickBuildDraft.state.attributes[key]) quickBuildDraft.state.attributes[key].base = v;
+            });
+            quickBuildStep = 2;
+          } else if (quickBuildStep === 2) {
+            saveNow();
+            const st = normalizeState(quickBuildDraft.state);
+            st.meta.name = st.meta.name || '未命名调查员';
+            const p = { id: 'char_' + uid(), name: profileLabel(st), updatedAt: Date.now(), state: st };
+            profiles.push(p);
+            activeProfileId = p.id;
+            state = normalizeState(JSON.parse(JSON.stringify(st)));
+            computed = C.compute(state);
+            statDeltas = {};
+            persistProfiles();
+            updateCharacterSwitcher();
+            closeQuickBuild();
+            switchView('overview');
+            updateSidebar();
+            saveNow();
+            toast('快速建卡完成，可以开始填装备和资源了');
+          } else {
+            quickBuildStep = 1;
+          }
+          renderQuickBuild();
+        }
+      });
+    }
+    renderQuickBuild();
+    requestAnimationFrame(() => layer.classList.add('show'));
+  }
+
   const STAT_GUIDE = {
     hp: {
       label: '生命上限', en: 'HP / HEALTH',
@@ -4882,6 +5094,7 @@
       case 'st-health-mode': stSetHealthMode(el.dataset.id, el.dataset.mode); break;
       case 'toggle-character-menu': toggleCharacterMenu(); break;
       case 'switch-character': switchCharacter(el.dataset.id); break;
+      case 'quick-build': openQuickBuild(); break;
       case 'create-character': createCharacter(); break;
       case 'duplicate-character': duplicateCharacter(); break;
       case 'delete-character': deleteCharacter(); break;
