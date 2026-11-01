@@ -1006,10 +1006,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.79';
+  const APP_VERSION = 'V1.84';
   const UPDATES = [
     {
-      version: 'V1.79', date: '2026-11-04', title: '检索摘要开关', current: true,
+      version: 'V1.84', date: '2026-11-04', title: '核心数值新手说明', current: true,
+      notes: ['六张核心数值卡增加 ? 说明入口', '帮助页增加核心数值说明']
+    },
+    {
+      version: 'V1.79', date: '2026-11-04', title: '检索摘要开关',
       notes: ['CHM 检索结果增加摘要显示 / 隐藏按钮']
     },
     {
@@ -2028,12 +2032,12 @@
       <input id="avatar-input" type="file" accept="image/*" hidden>
 
       <div class="stat-strip">
-        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">耐力 + 体型 + 传奇耐力</div></div>
-        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">决心 + 沉着 + 双传奇</div></div>
-        <div class="stat-card" style="--accent:rgba(201,168,110,.65)"><div class="stat-label">基础防御</div><div class="stat-value" data-ov="baseDefense">${fmt(c.baseDefense)}</div><div class="stat-foot">${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</div></div>
-        <div class="stat-card" style="--accent:rgba(98,169,163,.65)"><div class="stat-label">先攻</div><div class="stat-value" data-ov="initiative">+${fmt(c.initiative)}</div><div class="stat-foot">敏捷 + 沉着 + 传奇沉着</div></div>
-        <div class="stat-card" style="--accent:rgba(201,168,110,.45)"><div class="stat-label">速度</div><div class="stat-value" data-ov="speed">${fmt(c.speed)}</div><div class="stat-foot">力量 + 敏捷 + 体型</div></div>
-        <div class="stat-card" style="--accent:rgba(98,169,163,.45)"><div class="stat-label">敏感范围</div><div class="stat-value" data-ov="sensitive">${fmt(c.sensitive)}<small>m</small></div><div class="stat-foot">模糊范围 ${fmt(c.fuzzy)} m</div></div>
+        <div class="stat-card" style="--accent:rgba(184,73,78,.8)"><div class="stat-label">生命上限</div><div class="stat-value" data-ov="hp">${fmt(c.hp)}</div><div class="stat-foot">耐力 + 体型 + 传奇耐力</div>${statHelpButton('hp')}</div>
+        <div class="stat-card" style="--accent:rgba(124,164,123,.75)"><div class="stat-label">意志上限</div><div class="stat-value" data-ov="will">${fmt(c.will)}</div><div class="stat-foot">决心 + 沉着 + 双传奇</div>${statHelpButton('will')}</div>
+        <div class="stat-card" style="--accent:rgba(201,168,110,.65)"><div class="stat-label">基础防御</div><div class="stat-value" data-ov="baseDefense">${fmt(c.baseDefense)}</div><div class="stat-foot">${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}</div>${statHelpButton('baseDefense')}</div>
+        <div class="stat-card" style="--accent:rgba(98,169,163,.65)"><div class="stat-label">先攻</div><div class="stat-value" data-ov="initiative">+${fmt(c.initiative)}</div><div class="stat-foot">敏捷 + 沉着 + 传奇沉着</div>${statHelpButton('initiative')}</div>
+        <div class="stat-card" style="--accent:rgba(201,168,110,.45)"><div class="stat-label">速度</div><div class="stat-value" data-ov="speed">${fmt(c.speed)}</div><div class="stat-foot">力量 + 敏捷 + 体型</div>${statHelpButton('speed')}</div>
+        <div class="stat-card" style="--accent:rgba(98,169,163,.45)"><div class="stat-label">敏感范围</div><div class="stat-value" data-ov="sensitive">${fmt(c.sensitive)}<small>m</small></div><div class="stat-foot">模糊范围 ${fmt(c.fuzzy)} m</div>${statHelpButton('sensitive')}</div>
       </div>
 
       <div class="overview-grid">
@@ -4249,6 +4253,105 @@
     window.setTimeout(() => { layer.hidden = true; }, 180);
   }
 
+  const STAT_GUIDE = {
+    hp: {
+      label: '生命上限', en: 'HP / HEALTH',
+      value: () => fmt(computed.hp),
+      purpose: '你能承受的伤害总量。受到伤害后扣这里；扣到 0 会昏迷或濒死。',
+      formula: '耐力 + 体型 + 传奇耐力 + 生命加值',
+      changes: '耐力、体型、传奇耐力、装备 / 资源提供的生命加值发生变化时。',
+      example: '战斗里受到伤害，看“生命与状态”中的完好生命；生命上限本身不是当前生命。'
+    },
+    will: {
+      label: '意志上限', en: 'WILL / RESOLVE',
+      value: () => fmt(computed.will),
+      purpose: '意志资源的上限。释放需要意志的能力、抵抗精神影响时会消耗当前意志。',
+      formula: '决心 + 沉着 + 双传奇 + 意志加值',
+      changes: '决心、沉着、传奇属性、资源或装备提供的意志加值变化时。',
+      example: '当前意志可以低于上限；休息或使用恢复效果后，再把它补回上限。'
+    },
+    baseDefense: {
+      label: '基础防御', en: 'DEFENSE / BASE',
+      value: () => fmt(computed.baseDefense),
+      purpose: '防御总值中的基础部分。敌人攻击你时，用防御参与判断是否命中；它不是直接减伤。',
+      formula: '属性 A / 属性 B 取低或取高 + 防御加值',
+      changes: '在人物卡 → 防御构成里换属性、切换取低 / 取高，或增加防御加值时。',
+      example: '基础防御只是防御的一项；总防御还会叠加闪避、洞察、格挡、护甲等来源。'
+    },
+    initiative: {
+      label: '先攻', en: 'INITIATIVE',
+      value: () => '+' + fmt(computed.initiative),
+      purpose: '战斗开始时的行动顺序。先攻高的人通常先行动。',
+      formula: '敏捷 + 沉着 + 传奇沉着 + 先攻加值',
+      changes: '敏捷、沉着、传奇属性或先攻加值变化时。',
+      example: '先攻不是速度。先攻决定谁先动，速度用于移动和距离。'
+    },
+    speed: {
+      label: '速度', en: 'SPEED',
+      value: () => fmt(computed.speed),
+      purpose: '移动和部分行动可用的距离 / 能力。速度高不等于一定先行动。',
+      formula: '力量 + 敏捷 + 传奇敏捷 × 3 + 体型 + 速度加值',
+      changes: '力量、敏捷、体型、传奇敏捷或速度加值变化时。',
+      example: '战斗里需要移动时看速度；决定行动顺序则看先攻。'
+    },
+    sensitive: {
+      label: '敏感范围', en: 'PERCEPTION / RANGE',
+      value: () => fmt(computed.sensitive) + ' m',
+      purpose: '能够清楚感知目标的距离。超出后还有模糊范围，但只能知道大概方向。',
+      formula: '感知 × 10 + 传奇感知 × 20',
+      changes: '感知、传奇感知或感知范围加值变化时。',
+      example: '总览下方会同时显示模糊范围，通常是敏感范围 × 10。'
+    }
+  };
+
+  function statHelpButton(key) {
+    return `<button class="stat-help" data-action="open-stat-guide" data-stat="${key}" title="这个数值是做什么的？" aria-label="数值说明">?</button>`;
+  }
+
+  function closeStatGuide() {
+    const layer = document.getElementById('stat-guide-layer');
+    if (layer) layer.remove();
+  }
+
+  function openStatGuide(key) {
+    const active = STAT_GUIDE[key] ? key : 'hp';
+    const item = STAT_GUIDE[active];
+    const tabs = Object.entries(STAT_GUIDE).map(([k, v]) =>
+      `<button class="stat-guide-tab ${k === active ? 'active' : ''}" data-guide-tab="${k}">${esc(v.label)}</button>`).join('');
+    let layer = document.getElementById('stat-guide-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'stat-guide-layer';
+      layer.className = 'stat-guide-layer';
+      document.body.appendChild(layer);
+      layer.addEventListener('click', e => {
+        if (e.target === layer || e.target.closest('[data-guide-close]')) {
+          closeStatGuide();
+          return;
+        }
+        const tab = e.target.closest('[data-guide-tab]');
+        if (tab) openStatGuide(tab.dataset.guideTab);
+      });
+    }
+    layer.innerHTML = `
+      <div class="stat-guide-card" role="dialog" aria-modal="true" aria-label="数值说明">
+        <button class="stat-guide-close" data-guide-close aria-label="关闭">✕</button>
+        <div class="stat-guide-kicker">STAT GUIDE / 数值说明</div>
+        <div class="stat-guide-heading"><h2>${esc(item.label)}</h2><span>${esc(item.en)}</span></div>
+        <div class="stat-guide-tabs">${tabs}</div>
+        <div class="stat-guide-value"><b>${item.value()}</b><span>当前值</span></div>
+        <p class="stat-guide-purpose">${esc(item.purpose)}</p>
+        <div class="stat-guide-sections">
+          <div><h4>怎么算</h4><p>${esc(item.formula)}</p></div>
+          <div><h4>什么时候会变</h4><p>${esc(item.changes)}</p></div>
+        </div>
+        <div class="stat-guide-example"><b>举个例</b><span>${esc(item.example)}</span></div>
+        <div class="stat-guide-note">只解释本软件里的用途；具体判定以你使用的规则书为准。</div>
+        <div class="stat-guide-actions"><button class="btn gold" data-guide-close>知道了</button></div>
+      </div>`;
+    requestAnimationFrame(() => layer.classList.add('show'));
+  }
+
   const GUIDE_STEPS = [
     {
       title: '欢迎使用无限流角色终端',
@@ -4267,7 +4370,7 @@
     {
       title: '总览：六个核心数值',
       target: '.stat-strip',
-      body: '这六张卡是战斗最常用的结果：<strong>生命上限、意志上限、基础防御、先攻、速度、敏感范围</strong>。<br>下方小字是计算来源；改了属性或资源后会自动重算。'
+      body: '这六张卡是战斗最常用的结果：<strong>生命上限、意志上限、基础防御、先攻、速度、敏感范围</strong>。<br>下方小字是计算来源；改了属性或资源后会自动重算。每张卡右上角的 <strong>?</strong> 可以查看“这个数值做什么、怎么来、什么时候变”。'
     },
     {
       title: '总览：衍生与防御',
@@ -4446,7 +4549,7 @@
         <b class="gold">5 · 存档</b>　所有改动自动保存到本机；用右上角「导出 / 导入」迁移角色卡 JSON。<br>
         <span style="color:#6e675c;">快捷键：Ctrl + K 全文检索　·　Ctrl + S 立即保存　·　Esc 关闭弹窗。</span>
       </div>
-      <div class="modal-actions"><button class="btn" data-guide-start>开始新手引导</button><button class="btn gold" data-modal="ok">知道了</button></div>`;
+      <div class="modal-actions"><button class="btn" data-action="open-stat-guide" data-stat="hp">核心数值说明</button><button class="btn" data-guide-start>开始新手引导</button><button class="btn gold" data-modal="ok">知道了</button></div>`;
     layer.hidden = false;
     const close = () => { layer.hidden = true; card.style.width = ''; };
     card.querySelector('[data-modal="ok"]').onclick = close;
@@ -4588,6 +4691,10 @@
         state.meta.avatar = '';
         stateChanged({ rerender: true });
         toast('已移除头像');
+        break;
+      case 'open-stat-guide':
+        if (window.__modalClose) window.__modalClose();
+        openStatGuide(el.dataset.stat || 'hp');
         break;
       case 'help': showHelp(); break;
       case 'guide-prev': prevGuideStep(); break;
