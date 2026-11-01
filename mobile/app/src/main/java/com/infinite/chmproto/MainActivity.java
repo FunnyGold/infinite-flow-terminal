@@ -352,6 +352,34 @@ public class MainActivity extends Activity {
         });
     }
 
+    private void deleteBook(String key) {
+        if (key == null || key.isEmpty()) return;
+        io.execute(() -> {
+            Book b;
+            synchronized (libraryLock) { b = books.remove(key); }
+            if (b == null) {
+                postToast("规则书不存在");
+                return;
+            }
+            if (b.chm != null) {
+                try { b.chm.close(); } catch (Throwable ignored) { }
+            }
+            File file = new File(b.filePath);
+            boolean deleted = !file.exists() || file.delete();
+            searchGeneration++;
+            searchCache.clear();
+            if (!deleted) {
+                scanLibraryNow();
+                sendLibrary();
+                postToast("删除失败，文件仍被占用");
+                return;
+            }
+            scanLibraryNow();
+            sendLibrary();
+            postToast("已删除规则书：" + b.title);
+        });
+    }
+
     private void scanLibraryNow() {
         File dir = new File(getFilesDir(), "books");
         File[] files = dir.listFiles((d, n) -> n.toLowerCase(Locale.ROOT).endsWith(".chm"));
@@ -759,6 +787,9 @@ public class MainActivity extends Activity {
                         break;
                     case "chm.addFolder":
                         pickChm();
+                        break;
+                    case "chm.delete":
+                        deleteBook(o.optString("bookKey", ""));
                         break;
                     case "chm.resetFolders":
                         break;

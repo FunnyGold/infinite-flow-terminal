@@ -4469,10 +4469,13 @@
         <code class="folder-path">${esc(dir || '（未知路径）')}</code>
         <div class="folder-note">${androidNative ? '这是 Android 应用内部目录，普通文件管理器和电脑都无法直接打开，不需要手动把 CHM 放进去。请用下方「导入 CHM」选择手机里的文件，程序会自动复制到此处并加入书库。' : '为避免部分系统环境限制外部资源管理器，这里直接在软件内显示目录信息。可复制路径后自行打开。'}</div>
         <div class="folder-list">
-          ${books.length ? books.map(b => `<button class="folder-book" data-action="open-book-modal" data-key="${esc(b.key)}">
-            <span class="book-mark">CHM</span>
-            <span><b>${esc(b.title)}</b><small>${esc(b.fileName)} · ${esc(bookStatusLabel(b))}</small></span>
-          </button>`).join('') : '<div class="toc-empty">当前目录下没有已识别的 CHM 文件。</div>'}
+          ${books.length ? books.map(b => `<div class="folder-book-row">
+            <button class="folder-book" data-action="open-book-modal" data-key="${esc(b.key)}">
+              <span class="book-mark">CHM</span>
+              <span><b>${esc(b.title)}</b><small>${esc(b.fileName)} · ${esc(bookStatusLabel(b))}</small></span>
+            </button>
+            <button class="folder-delete" data-action="delete-book" data-key="${esc(b.key)}" data-title="${esc(b.title)}" title="删除此 CHM">${ic('trash')}</button>
+          </div>`).join('') : '<div class="toc-empty">当前目录下没有已识别的 CHM 文件。</div>'}
         </div>
       </div>
       <div class="modal-actions">
@@ -4747,6 +4750,19 @@
       case 'modal-close':
         if (window.__modalClose) window.__modalClose();
         break;
+      case 'delete-book': {
+        const key = el.dataset.key;
+        const title = el.dataset.title || '这本规则书';
+        if (window.__modalClose) window.__modalClose();
+        confirmDialog({
+          title: '删除规则书？',
+          text: `将删除「${esc(title)}」的 CHM 文件。删除后需要重新导入才能恢复。`,
+          danger: true,
+          okText: '删除 CHM',
+          onConfirm: () => post({ type: 'chm.delete', bookKey: key })
+        });
+        break;
+      }
       case 'open-book-modal':
         if (window.__modalClose) window.__modalClose();
         switchView('rules');

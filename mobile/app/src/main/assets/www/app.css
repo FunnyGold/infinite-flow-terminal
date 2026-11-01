@@ -1343,6 +1343,10 @@ html[data-theme="light"] .book-collapse-btn { color: #80653c; border-color: rgba
 .folder-book .book-mark { width: 24px; height: 28px; }
 .folder-book b { display: block; font-size: 10px; color: #c7bdad; font-weight: 500; }
 .folder-book small { display: block; font-size: 8px; color: #6f6960; margin-top: 3px; }
+.folder-book-row { display: flex; gap: 6px; align-items: stretch; }
+.folder-book-row .folder-book { flex: 1; width: auto; min-width: 0; }
+.folder-delete { width: 34px; flex: 0 0 34px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid rgba(208,94,94,.22); background: rgba(208,94,94,.05); color: #b97772; }
+.folder-delete:hover { background: rgba(208,94,94,.12); border-color: rgba(208,94,94,.4); }
 .toasts { position: fixed; right: 22px; bottom: 22px; display: flex; flex-direction: column; gap: 8px; z-index: 120; pointer-events: none; }
 .toast { min-width: 190px; max-width: 340px; padding: 10px 13px; border-radius: 7px; background: rgba(30,35,43,.97); border: 1px solid rgba(201,168,110,.18); color: #d8cebc; font-size: 10.5px; box-shadow: var(--shadow); animation: toastIn .2s ease both; }
 .toast.error { border-color: rgba(208,94,94,.35); color: #e2aaa5; }
@@ -1882,6 +1886,7 @@ html[data-theme="light"] .folder-book { background: #fbf7ef; border-color: rgba(
 html[data-theme="light"] .folder-book:hover { background: rgba(143,106,50,.07); border-color: rgba(143,106,50,.25); }
 html[data-theme="light"] .folder-book b { color: #554737; }
 html[data-theme="light"] .folder-book small { color: #8f8270; }
+html[data-theme="light"] .folder-delete { background: #fbf1ef; border-color: rgba(166,55,53,.18); color: #a64040; }
 
 /* ---------------- explanatory-text contrast pass ---------------- */
 .page-desc { color: var(--note) !important; font-size: 12px; }
