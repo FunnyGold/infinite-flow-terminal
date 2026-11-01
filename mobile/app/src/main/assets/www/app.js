@@ -1006,10 +1006,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.78';
+  const APP_VERSION = 'V1.79';
   const UPDATES = [
     {
-      version: 'V1.78', date: '2026-11-04', title: '检索结果精简', current: true,
+      version: 'V1.79', date: '2026-11-04', title: '检索摘要开关', current: true,
+      notes: ['CHM 检索结果增加摘要显示 / 隐藏按钮']
+    },
+    {
+      version: 'V1.78', date: '2026-11-04', title: '检索结果精简',
       notes: ['CHM 检索结果不再显示截断摘要']
     },
     {
@@ -3723,6 +3727,7 @@
       panel.innerHTML = `<div class="toc-head">
           <span class="toc-head-title">${r.searchScope === 'book' ? '本书内检索' : '全文检索'}</span>
           <div class="toc-head-right">
+            <button class="scope-tab snippet-toggle ${r.showSnippet !== false ? 'active' : ''}" data-action="toggle-search-snippet" aria-pressed="${r.showSnippet !== false ? 'true' : 'false'}" title="显示 / 隐藏简略摘要">摘要</button>
             <div class="scope-tabs">
               <button class="scope-tab ${r.searchScope === 'all' ? 'active' : ''}" data-action="set-search-scope" data-scope="all" aria-pressed="${r.searchScope === 'all' ? 'true' : 'false'}">全库</button>
               <button class="scope-tab ${r.searchScope === 'book' ? 'active' : ''}" data-action="set-search-scope" data-scope="book" aria-pressed="${r.searchScope === 'book' ? 'true' : 'false'}">本书内</button>
@@ -3770,6 +3775,7 @@
       r.results.map((h, i) => `<div class="toc-search-result" data-result-index="${i}">
         <div class="result-book">${esc(h.bookTitle)}</div>
         <div class="result-title">${highlightText(h.title, r.searchQuery)}</div>
+        ${r.showSnippet !== false ? `<div class="result-snippet">${highlightText(h.snippet, r.searchQuery)}</div>` : ''}
         <div class="result-meta">${esc(h.path)}</div>
       </div>`).join('');
   }
@@ -4776,6 +4782,10 @@
         if (input) { input.focus(); input.select(); }
         break;
       }
+      case 'toggle-search-snippet':
+        ui.rules.showSnippet = ui.rules.showSnippet === false;
+        renderTocPanel();
+        break;
       case 'set-search-scope':
         ui.rules.searchScope = el.dataset.scope === 'book' ? 'book' : 'all';
         if (ui.rules.searchActive && ui.rules.searchQuery.trim()) startSearch(ui.rules.searchQuery);
