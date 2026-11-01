@@ -225,10 +225,8 @@ public static class UpdateService
 
         if (result.Verified)
         {
-            var install = MessageBox.Show(
-                "更新包已下载并通过 SHA256 校验。\n\n点击“确定”后关闭软件并更新。\n更新器会等待程序退出，备份后替换文件并自动启动。",
-                "安装更新", MessageBoxButton.OKCancel, MessageBoxImage.Information);
-            if (install == MessageBoxResult.OK)
+            var ready = new UpdateReadyWindow(info.Latest) { Owner = Application.Current?.MainWindow };
+            if (ready.ShowDialog() == true && ready.Proceed)
             {
                 if (UpdateInstaller.Start(info, result.Path, out var error))
                 {
