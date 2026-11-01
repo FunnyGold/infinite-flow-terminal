@@ -113,6 +113,10 @@ public static class UpdateService
                 if (total > 0) progress?.Report((double)done / total);
             }
 
+            // The hash must be computed after the write stream is flushed and closed.
+            await output.FlushAsync(ct);
+            await output.DisposeAsync();
+
             var checksumUrl = info.AssetUrl == null ? null : info.AssetUrl[..(info.AssetUrl.LastIndexOf('/') + 1)] + "SHA256SUMS.txt";
             var freshSha = checksumUrl == null ? null : await TryReadChecksumAsync(
                 checksumUrl + "?t=" + DateTime.UtcNow.Ticks, info.AssetName!, ct);
