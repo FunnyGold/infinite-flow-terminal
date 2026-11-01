@@ -67,7 +67,8 @@ public static class UpdateService
                 return new(false, current.ToString(3), tag, "", "", Error: "版本号无法解析");
 
             var releaseUrl = $"https://github.com/{Owner}/{Repo}/releases/tag/{tag}";
-            var assetName = $"InfiniteFlowTerminal-{tag}-Windows.zip";
+            var assetVersion = tag.StartsWith("v", StringComparison.OrdinalIgnoreCase) ? "V" + tag[1..] : tag;
+            var assetName = $"InfiniteFlowTerminal-{assetVersion}-Windows.zip";
             var assetUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tag}/{assetName}";
             var sumsUrl = $"https://github.com/{Owner}/{Repo}/releases/download/{tag}/SHA256SUMS.txt";
             var sha = await TryReadChecksumAsync(sumsUrl, assetName, ct);
@@ -101,7 +102,7 @@ public static class UpdateService
             response.EnsureSuccessStatusCode();
             var total = response.Content.Headers.ContentLength ?? 0;
             await using var input = await response.Content.ReadAsStreamAsync(ct);
-            await using var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+            await using var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read, 81920, FileOptions.Asynchronous);
             var buffer = new byte[81920];
             long done = 0;
             int read;
@@ -152,9 +153,21 @@ public static class UpdateService
 
     private static async Task<string> ComputeSha256Async(string path, CancellationToken ct)
     {
-        await using var stream = File.OpenRead(path);
-        var hash = await SHA256.HashDataAsync(stream, ct);
-        return Convert.ToHexString(hash).ToLowerInvariant();
+        for (var attempt = 0; ; attempt++)
+        {
+            try
+            {
+                await using var stream = new FileStream(
+                    path, FileMode.Open, FileAccess.Read,
+                    FileShare.ReadWrite | FileShare.Delete, 81920, FileOptions.Asynchronous);
+                var hash = await SHA256.HashDataAsync(stream, ct);
+                return Convert.ToHexString(hash).ToLowerInvariant();
+            }
+            catch (IOException) when (attempt < 12)
+            {
+                await Task.Delay(300, ct);
+            }
+        }
     }
 
     public static void ShowResult(UpdateInfo info, bool manual)
