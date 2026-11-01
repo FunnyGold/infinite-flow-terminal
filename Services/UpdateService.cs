@@ -113,11 +113,15 @@ public static class UpdateService
                 if (total > 0) progress?.Report((double)done / total);
             }
 
-            if (string.IsNullOrWhiteSpace(info.Sha256))
+            var checksumUrl = info.AssetUrl == null ? null : info.AssetUrl[..(info.AssetUrl.LastIndexOf('/') + 1)] + "SHA256SUMS.txt";
+            var freshSha = checksumUrl == null ? null : await TryReadChecksumAsync(
+                checksumUrl + "?t=" + DateTime.UtcNow.Ticks, info.AssetName!, ct);
+            var expected = string.IsNullOrWhiteSpace(freshSha) ? info.Sha256 : freshSha;
+            if (string.IsNullOrWhiteSpace(expected))
                 return new(true, path, false, "Release 未提供 SHA256，无法校验完整性");
 
             var hash = await ComputeSha256Async(path, ct);
-            if (!hash.Equals(info.Sha256, StringComparison.OrdinalIgnoreCase))
+            if (!hash.Equals(expected, StringComparison.OrdinalIgnoreCase))
             {
                 try { File.Delete(path); } catch { }
                 return new(false, path, false, "SHA256 校验失败，更新包不完整或被篡改");
