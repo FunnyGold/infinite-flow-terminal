@@ -53,8 +53,9 @@ public static class UpdateService
         try
         {
             // /releases/latest is a web redirect, not the rate-limited REST API.
+            var stamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
             using var response = await WebHttp.GetAsync(
-                $"https://github.com/{Owner}/{Repo}/releases/latest",
+                $"https://github.com/{Owner}/{Repo}/releases/latest?t={stamp}",
                 HttpCompletionOption.ResponseHeadersRead, ct);
 
             var location = response.Headers.Location?.ToString();
