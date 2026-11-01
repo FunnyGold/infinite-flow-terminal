@@ -991,10 +991,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.85';
+  const APP_VERSION = 'V1.86';
   const UPDATES = [
     {
-      version: 'V1.85', date: '2026-11-04', title: '数值变化提示', current: true,
+      version: 'V1.86', date: '2026-11-04', title: '一轮战斗示例', current: true,
+      notes: [
+        '新增“看懂一轮战斗”三步演示',
+        '把先攻、命中、伤害和意志消耗串起来',
+        '帮助页和数值说明里均可打开'
+      ]
+    },
+    {
+      version: 'V1.85', date: '2026-11-04', title: '数值变化提示',
       notes: [
         '修改属性后，核心数值卡显示本次变化',
         '增加“本次修改后：生命上限 +1 …”汇总',
@@ -4429,8 +4437,98 @@
         </div>
         <div class="stat-guide-example"><b>举个例</b><span>${esc(item.example)}</span></div>
         <div class="stat-guide-note">只解释本软件里的用途；具体判定以你使用的规则书为准。</div>
-        <div class="stat-guide-actions"><button class="btn gold" data-guide-close>知道了</button></div>
+        <div class="stat-guide-actions"><button class="btn" data-action="open-combat-demo">看一轮战斗示例</button><button class="btn gold" data-guide-close>知道了</button></div>
       </div>`;
+    requestAnimationFrame(() => layer.classList.add('show'));
+  }
+
+  let combatDemoIndex = 0;
+
+  function combatDemoSteps() {
+    const maxHp = Math.max(0, Math.round(Number(computed.hp) || 0));
+    const maxWill = Math.max(0, Math.round(Number(computed.will) || 0));
+    const currentWill = Math.max(0, Math.round(Number(computed.health?.willCurrent ?? maxWill) || 0));
+    const afterHp = Math.max(0, maxHp - 3);
+    const afterWill = Math.max(0, currentWill - 1);
+    return [
+      {
+        kicker: 'STEP 1 / 3',
+        title: '先攻决定谁先行动',
+        body: `战斗开始时先比较先攻。你的先攻是 <b>${esc(String(computed.initiative >= 0 ? '+' : '') + fmt(computed.initiative))}</b>；示例敌人是 <b>+1</b>。<br>这个例子里你先行动。先攻只决定顺序，不决定你打得多疼。`,
+        formula: '先攻 = 敏捷 + 沉着 + 传奇沉着 + 先攻加值'
+      },
+      {
+        kicker: 'STEP 2 / 3',
+        title: '攻击看 DP 和对方防御',
+        body: `在战斗页选一个攻击预设，软件会自动算出最终 <b>DP</b>。示例：最终 DP <b>8</b>，对方防御 <b>5</b>，所以这一次命中。<br>这里的 8 和 5 只是示例，不是你的真实预设；实际战斗看战斗页每一行的最终 DP。`,
+        formula: '命中判断：攻击最终 DP 对抗对方防御'
+      },
+      {
+        kicker: 'STEP 3 / 3',
+        title: '命中后扣生命，消耗看资源',
+        body: `假设这次造成 <b>3</b> 点伤害。满生命是 <b>${maxHp}</b>，扣完后是 <b>${afterHp}</b>。<br>如果这个攻击还消耗 1 点意志，当前意志会从 <b>${currentWill}</b> 变成 <b>${afterWill}</b>。`,
+        formula: `生命：${maxHp} − 3 = ${afterHp}　·　意志：${currentWill} − 1 = ${afterWill}`
+      }
+    ];
+  }
+
+  function closeCombatDemo() {
+    const layer = document.getElementById('combat-demo-layer');
+    if (layer) layer.remove();
+  }
+
+  function renderCombatDemo() {
+    const layer = document.getElementById('combat-demo-layer');
+    if (!layer) return;
+    const steps = combatDemoSteps();
+    combatDemoIndex = Math.max(0, Math.min(combatDemoIndex, steps.length - 1));
+    const step = steps[combatDemoIndex];
+    const dots = steps.map((_, i) => `<span class="combat-demo-dot ${i === combatDemoIndex ? 'active' : ''}"></span>`).join('');
+    const last = combatDemoIndex === steps.length - 1;
+    layer.innerHTML = `
+      <div class="stat-guide-card combat-demo-card" role="dialog" aria-modal="true" aria-label="看懂一轮战斗">
+        <button class="stat-guide-close" data-combat-close aria-label="关闭">✕</button>
+        <div class="stat-guide-kicker">COMBAT WALKTHROUGH / 看懂一轮战斗</div>
+        <div class="combat-demo-dots">${dots}</div>
+        <div class="combat-demo-kicker">${esc(step.kicker)}</div>
+        <h2>${esc(step.title)}</h2>
+        <p class="combat-demo-body">${step.body}</p>
+        <div class="combat-demo-formula">${esc(step.formula)}</div>
+        <div class="stat-guide-note">示例数值只用来演示顺序，不代表你的实际角色或攻击预设；实际结果以战斗页自动计算为准。</div>
+        <div class="combat-demo-actions">
+          <button class="btn" data-combat-close>关闭</button>
+          <span style="flex:1"></span>
+          <button class="btn" data-combat-prev ${combatDemoIndex === 0 ? 'disabled' : ''}>上一步</button>
+          <button class="btn gold" data-combat-next>${last ? '完成' : '下一步'}</button>
+        </div>
+      </div>`;
+  }
+
+  function openCombatDemo() {
+    closeStatGuide();
+    combatDemoIndex = 0;
+    let layer = document.getElementById('combat-demo-layer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'combat-demo-layer';
+      layer.className = 'stat-guide-layer';
+      document.body.appendChild(layer);
+      layer.addEventListener('click', e => {
+        if (e.target === layer || e.target.closest('[data-combat-close]')) {
+          closeCombatDemo();
+          return;
+        }
+        if (e.target.closest('[data-combat-prev]')) {
+          combatDemoIndex--;
+          renderCombatDemo();
+        } else if (e.target.closest('[data-combat-next]')) {
+          const total = combatDemoSteps().length;
+          if (combatDemoIndex >= total - 1) closeCombatDemo();
+          else { combatDemoIndex++; renderCombatDemo(); }
+        }
+      });
+    }
+    renderCombatDemo();
     requestAnimationFrame(() => layer.classList.add('show'));
   }
 
@@ -4631,7 +4729,7 @@
         <b class="gold">5 · 存档</b>　所有改动自动保存到本机；用右上角「导出 / 导入」迁移角色卡 JSON。<br>
         <span style="color:#6e675c;">快捷键：Ctrl + K 全文检索　·　Ctrl + S 立即保存　·　Esc 关闭弹窗。</span>
       </div>
-      <div class="modal-actions"><button class="btn" data-action="open-stat-guide" data-stat="hp">核心数值说明</button><button class="btn" data-guide-start>开始新手引导</button><button class="btn gold" data-modal="ok">知道了</button></div>`;
+      <div class="modal-actions"><button class="btn" data-action="open-stat-guide" data-stat="hp">核心数值说明</button><button class="btn" data-action="open-combat-demo">看懂一轮战斗</button><button class="btn" data-guide-start>开始新手引导</button><button class="btn gold" data-modal="ok">知道了</button></div>`;
     layer.hidden = false;
     const close = () => { layer.hidden = true; card.style.width = ''; };
     card.querySelector('[data-modal="ok"]').onclick = close;
@@ -4770,6 +4868,10 @@
         state.meta.avatar = '';
         stateChanged({ rerender: true });
         toast('已移除头像');
+        break;
+      case 'open-combat-demo':
+        if (window.__modalClose) window.__modalClose();
+        openCombatDemo();
         break;
       case 'open-stat-guide':
         if (window.__modalClose) window.__modalClose();
