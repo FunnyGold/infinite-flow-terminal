@@ -10,6 +10,7 @@
   const FAVORITES_KEY = 'infinite-terminal/rules-favorites/v1';
   const UI_ZOOM_KEY = 'infinite-terminal/ui-zoom/v1';
   const READER_ZOOM_KEY = 'infinite-terminal/reader-zoom/v1';
+  const FONT_ZOOM_KEY = 'infinite-terminal/font-zoom/v1';
   const HAS_UI_ZOOM = !!(window.chrome && window.chrome.webview);
   const LEDGER_UI_KEY = 'infinite-terminal/ledger-ui/v1';
   let ledgerDrag = null;
@@ -343,7 +344,7 @@
       combat.targets = targetRaw.map((t, i) => {
         const values = {};
         D.DEFENSE_ITEMS.forEach(d => { values[d.key] = C.num((t && t.values || {})[d.key]); });
-        return { id: (t && t.id) || ('stt_' + uid()), name: (t && t.name) || ('目标 ' + (i + 1)), values };
+        return { id: (t && t.id) || ('stt_' + uid()), name: (t && t.name) || ('目标 ' + (i + 1)), sourceId: (t && t.sourceId) || '', values };
       });
       combat.activeTargetId = combat.targets.some(t => t.id === raw.activeTargetId) ? raw.activeTargetId : combat.targets[0].id;
       const active = combat.targets.find(t => t.id === combat.activeTargetId);
@@ -567,11 +568,11 @@
   function stCombatHTML() {
     const combat = stTool.combat;
     const entries = stTool.entries || [];
-    const selected = entries.some(e => e.id === combat.sourceId) ? combat.sourceId : '';
+    const activeTarget = stActiveTarget();
+    const selected = entries.some(e => e.id === activeTarget.sourceId) ? activeTarget.sourceId : '';
     const options = entries.map(e => `<option value="${esc(e.id)}" ${e.id === selected ? 'selected' : ''}>${esc(e.name || '未命名调查员')}</option>`).join('');
     const defCollapsed = ui.collapsedSections.has('st-combat-defense');
     const atkCollapsed = ui.collapsedSections.has('st-combat-attacks');
-    const activeTarget = stActiveTarget();
     const targetFields = D.DEFENSE_ITEMS.map(d =>
       `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-st-target="${esc(d.key)}" value="${fmt(activeTarget.values[d.key] || 0)}"></div>`
     ).join('');
@@ -665,10 +666,10 @@
       if (el) el.value = fmt(active.values[d.key] || 0);
     });
     const sel = document.querySelector('[data-st-defense-source]');
-    if (sel) sel.value = stTool.combat.sourceId || '';
+    if (sel) sel.value = (stActiveTarget().sourceId || '') || '';
     const hint = document.querySelector('.st-combat-hint');
     if (hint) {
-      const entry = (stTool.entries || []).find(e => e.id === stTool.combat.sourceId);
+      const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
       hint.textContent = entry ? `当前来源：${entry.name || '调查员'}` : '当前来源：手动填写';
     }
     refreshSTCombatOutputs();
@@ -678,14 +679,16 @@
     const entry = (stTool.entries || []).find(e => e.id === sourceId);
     if (!entry) {
       stTool.combat.sourceId = '';
+      stActiveTarget().sourceId = '';
       saveSTTool();
       stSyncTargetDefenseUI();
       return;
     }
     stTool.combat.sourceId = entry.id;
+    const active = stActiveTarget();
+    active.sourceId = entry.id;
     const values = stEntryDefenseValues(entry);
     stTool.combat.values = Object.assign({}, values);
-    const active = stActiveTarget();
     D.DEFENSE_ITEMS.forEach(d => { active.values[d.key] = values[d.key] || 0; });
     saveSTTool();
     stSyncTargetDefenseUI();
@@ -695,6 +698,7 @@
   function stClearDefense() {
     stTool.combat.sourceId = '';
     const active = stActiveTarget();
+    active.sourceId = '';
     D.DEFENSE_ITEMS.forEach(d => { stTool.combat.values[d.key] = 0; active.values[d.key] = 0; });
     saveSTTool();
     stSyncTargetDefenseUI();
@@ -1053,10 +1057,20 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.97';
+  const APP_VERSION = 'V1.98';
   const UPDATES = [
     {
-      version: 'V1.97', date: '2026-11-03', title: '缩放与 ST 多目标', current: true,
+      version: 'V1.98', date: '2026-11-03', title: '字体缩放与 ST 目标来源', current: true,
+      notes: [
+        '缩放面板新增字体缩放，界面缩放改名',
+        '界面缩放拖动增加延迟应用，避免抖动拖错',
+        '防御来源合计去掉重复标签',
+        'ST 每个目标记住自己的防御来源人物',
+        '手机角色卡切换器缩短，避免超出标题栏'
+      ]
+    },
+    {
+      version: 'V1.97', date: '2026-11-03', title: '缩放与 ST 多目标',
       notes: [
         '界面缩放恢复 85% 档',
         '防御来源数值在输入时立即计入合计',
@@ -2766,9 +2780,9 @@
         parts.push(`${D.ATTR_MAP[state.defense.baseA].name}（${fmt(a.total)}）/${D.ATTR_MAP[state.defense.baseB].name}（${fmt(b.total)}）`);
         return;
       }
-      if (item.auto > 0) parts.push(`${custom || item.name}（${fmt(item.auto)}）`);
-      if (item.manual > 0) parts.push(`${custom ? custom + '·手动' : item.name + '·手动'}（${fmt(item.manual)}）`);
-      if (item.source > 0) parts.push(`${custom || item.name}（${fmt(item.source)}）`);
+      if (item.auto > 0) parts.push(`${item.name}自动（${fmt(item.auto)}）`);
+      if (item.manual > 0) parts.push(`${item.name}手动（${fmt(item.manual)}）`);
+      if (item.source > 0) parts.push(custom || `${item.name}来源（${fmt(item.source)}）`);
     });
     if (!parts.length) return '还没有可用于展示的防御来源。';
     return `防御来源：${parts.join(' + ')} = ${fmt(c.defense.sum)}`;
@@ -4439,6 +4453,8 @@
 
   let uiZoom = Math.max(85, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
   let readerZoom = Math.max(80, Math.min(180, loadZoomValue(READER_ZOOM_KEY, 100)));
+  let fontZoom = Math.max(80, Math.min(150, loadZoomValue(FONT_ZOOM_KEY, 100)));
+  let uiZoomTimer = null;
 
   function applyUiZoom(send) {
     document.documentElement.style.zoom = '';
@@ -4466,7 +4482,28 @@
   function setUiZoom(v) {
     uiZoom = Math.max(85, Math.min(150, Number(v) || 115));
     try { localStorage.setItem(UI_ZOOM_KEY, String(uiZoom)); } catch (e) { }
-    applyUiZoom(true);
+    const out = $('#ui-zoom-value');
+    if (out) out.textContent = uiZoom + '%';
+    window.clearTimeout(uiZoomTimer);
+    uiZoomTimer = window.setTimeout(() => applyUiZoom(true), 140);
+  }
+
+  function setFontZoom(v) {
+    fontZoom = Math.max(80, Math.min(150, Number(v) || 100));
+    try { localStorage.setItem(FONT_ZOOM_KEY, String(fontZoom)); } catch (e) { }
+    applyFontZoom();
+  }
+
+  function applyFontZoom() {
+    const range = $('#font-zoom-range');
+    const out = $('#font-zoom-value');
+    if (range) range.value = fontZoom;
+    if (out) out.textContent = fontZoom + '%';
+    $$('[data-font-bumped]').forEach(el => {
+      const base = Number(el.dataset.fontBase);
+      if (!Number.isFinite(base) || base <= 0) return;
+      el.style.fontSize = (Math.round((base + FONT_BUMP) * fontZoom) / 100 * 10 / 10) + 'px';
+    });
   }
 
   function setReaderZoom(v) {
@@ -5436,7 +5473,7 @@
         break;
       }
       case 'st-add-target': {
-        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), values: Object.assign({}, stActiveTarget().values) };
+        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', values: Object.assign({}, stActiveTarget().values) };
         stTool.combat.targets.push(target);
         stTool.combat.activeTargetId = target.id;
         saveSTTool(); renderView('st');
@@ -5851,6 +5888,7 @@
         return;
       }
       if (el.id === 'ui-zoom-range') { setUiZoom(el.value); return; }
+      if (el.id === 'font-zoom-range') { setFontZoom(el.value); return; }
       if (el.id === 'reader-zoom-range') { setReaderZoom(el.value); return; }
       if (el.id.indexOf('display-') === 0 && el.type === 'range') {
         const key = el.id.replace('display-', '');
@@ -6169,12 +6207,13 @@
       if (el.closest('[data-font-bumped]')) continue;
       if (el.matches('script, style, noscript, svg, path, defs, use')) continue;
       if (!hasDirectText(el) && !el.matches('input, textarea, select')) continue;
-      const size = parseFloat(getComputedStyle(el).fontSize);
-      if (size > 0) batch.push({ el, size });
+      const base = Number(el.dataset.fontBase) || parseFloat(getComputedStyle(el).fontSize);
+      if (base > 0) batch.push({ el, size: base });
     }
     batch.forEach(({ el, size }) => {
       el.dataset.fontBumped = '1';
-      el.style.fontSize = (Math.round((size + FONT_BUMP) * 10) / 10) + 'px';
+      el.dataset.fontBase = String(size);
+      el.style.fontSize = (Math.round((size + FONT_BUMP) * fontZoom) / 100 * 10 / 10) + 'px';
     });
   }
 
@@ -6216,6 +6255,7 @@
     updateChmSidebar();
     setSaveState(false);
     initFontBump();
+    applyFontZoom();
     applyUiZoom(HAS_UI_ZOOM);
     if (window.chrome && window.chrome.webview) {
       window.chrome.webview.addEventListener('message', handleBridgeMessage);

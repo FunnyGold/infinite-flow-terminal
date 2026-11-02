@@ -10,8 +10,8 @@
     <RootNamespace>InfiniteTerminal</RootNamespace>
     <ApplicationIcon>assets\app.ico</ApplicationIcon>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>1.97.0</Version>
-    <FileVersion>1.97.0.0</FileVersion>
+    <Version>1.98.0</Version>
+    <FileVersion>1.98.0.0</FileVersion>
     <Company>INFINITE TRPG</Company>
     <Product>无限流角色终端</Product>
     <Description>无限流 TRPG 角色卡、战斗计算与规则书检索终端</Description>
