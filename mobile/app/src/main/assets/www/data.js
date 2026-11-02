@@ -131,7 +131,7 @@
   ];
 
   const RESOURCE_TYPES = ['血统', '改造', '瞳术', '修真', '魔导书', '称号', '流派', '技艺', '其他'];
-  const TECH_ACTIONS = ['标准动作', '移动动作', '迅捷动作', '自由动作', '反应动作', '整轮动作'];
+  const TECH_ACTIONS = ['标准动作', '移动动作', '迅捷动作', '自由动作', '反应动作', '整轮动作', '全回合动作'];
 
   const BONUS_TYPES = [
     { key: 'internal', name: '内在' },
@@ -221,7 +221,7 @@
       },
       skills,
       customSkills: CUSTOM_DEFAULT.map(s => Object.assign(blankSkill(s.attr), s)),
-      defense: { manual, willCurrent: null, baseMode: 'low', baseA: 'agi', baseB: 'per', note: '' },
+      defense: { manual, labels: {}, willCurrent: null, baseMode: 'low', baseA: 'agi', baseB: 'per', note: '' },
       damageReductions: [],
       targetDefense: { values: targetValues, flatfooted: false, contact: false, flatfootedGrade: 'none', contactGrade: 'none' },
       health: { b: 0, l: 0, a: 0 },

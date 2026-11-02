@@ -160,6 +160,11 @@
     moreSheet = null;
   }
 
+  function applyNavFrame(on) {
+    document.body.classList.toggle('mobile-nav-frame', !!on);
+  }
+  applyNavFrame(localStorage.getItem('infinite-terminal/mobile-nav-frame') !== '0');
+
   function openMoreMenu() {
     closeMoreMenu();
     moreBackdrop = document.createElement('div');
@@ -173,6 +178,7 @@
       ['changelog-open', '更新目录'],
       ['about-open', '关于'],
       ['help', '帮助'],
+      ['nav-frame', '导航栏黑框：' + (localStorage.getItem('infinite-terminal/mobile-nav-frame') === '1' ? '开' : '关')],
       ['reset', '重置当前角色']
     ];
     items.forEach(([action, label]) => {
@@ -181,6 +187,12 @@
       b.textContent = label;
       b.onclick = () => {
         closeMoreMenu();
+        if (action === 'nav-frame') {
+          const on = localStorage.getItem('infinite-terminal/mobile-nav-frame') === '1';
+          localStorage.setItem('infinite-terminal/mobile-nav-frame', on ? '0' : '1');
+          applyNavFrame(!on);
+          return;
+        }
         if (action === 'check-update') {
           if (window.AndroidApp && window.AndroidApp.checkUpdate) window.AndroidApp.checkUpdate();
           return;

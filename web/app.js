@@ -132,6 +132,7 @@
     });
     s.defense = Object.assign({}, base.defense, raw.defense || {});
     s.defense.manual = Object.assign({}, base.defense.manual, (raw.defense || {}).manual || {});
+    s.defense.labels = Object.assign({}, base.defense.labels, (raw.defense || {}).labels || {});
     s.defense.willCurrent = (raw.defense && raw.defense.willCurrent !== undefined) ? raw.defense.willCurrent : null;
     s.targetDefense = Object.assign({}, base.targetDefense, raw.targetDefense || {});
     s.targetDefense.values = Object.assign({}, base.targetDefense.values, (raw.targetDefense || {}).values || {});
@@ -280,7 +281,7 @@
   function blankSTCombat() {
     const values = {};
     D.DEFENSE_ITEMS.forEach(d => { values[d.key] = 0; });
-    return { sourceId: '', values, attacks: [] };
+    return { sourceId: '', values, attacks: [], defenseNote: '' };
   }
 
   function blankSTAttack() {
@@ -363,6 +364,7 @@
       flatfootedGrade: 'none', contactGrade: 'none',
       defense: c.defense.scenarios.map(s => ({ key: s.key, name: s.name, value: s.value, note: s.note })),
       defenseValues: Object.fromEntries(D.DEFENSE_ITEMS.map(d => [d.key, c.defense.byKey[d.key] || 0])),
+      defenseNote: (st.defense && st.defense.note) || '',
       attacks: (c.attacks || []).map(a => ({
         id: a.id, name: a.name, dp: a.dp, cap: a.cap,
         extraSuccess: a.extraSuccess, attackCount: a.attackCount
@@ -482,6 +484,7 @@
         <span class="st-health-formula">完好生命 = 上限 − B − L − A</span>
       </div>
       <div class="st-defense-grid">${defenses}</div>
+      ${e.defenseNote ? `<div class="st-defense-note">防御备注：${esc(e.defenseNote)}</div>` : ''}
     </div>`;
   }
 
@@ -994,10 +997,21 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.93';
+  const APP_VERSION = 'V1.94';
   const UPDATES = [
     {
-      version: 'V1.93', date: '2026-11-03', title: '界面缩放、规则书缩放与检索语法', current: true,
+      version: 'V1.94', date: '2026-11-03', title: '手机适配、防御来源与检索细节', current: true,
+      notes: [
+        '界面缩放改用 CSS 缩放，减少 85% 档文字模糊',
+        '手机版更多菜单增加“导航栏黑框”开关',
+        '手机版技能表压缩行高，并增加“已点技能”筛选',
+        '动作消耗补齐全回合动作',
+        '防御表支持手动来源标签，并生成自动+手动来源合计行',
+        'ST 调查员卡显示防御备注'
+      ]
+    },
+    {
+      version: 'V1.93', date: '2026-11-03', title: '界面缩放、规则书缩放与检索语法',
       notes: [
         '标题栏新增“缩放”界面缩放条',
         '规则书阅读栏新增独立缩放条，不跟随界面缩放',
@@ -2423,7 +2437,7 @@
       const attrName = attrKey === 'none' ? '无' : (D.ATTR_MAP[attrKey] ? D.ATTR_MAP[attrKey].name : attrKey);
       const group = custom ? (D.ATTR_MAP[stored.attr] ? D.ATTR_MAP[stored.attr].group : '其他') : def.group;
       const bind = custom ? 'customSkills.' + index : 'skills.' + def.key;
-      return `<tr data-skill-row data-custom="${custom ? '1' : '0'}" data-group="${esc(group)}" data-note="${esc(def.note || '')}" data-search="${esc((stored.name || def.name) + ' ' + attrName + ' ' + group + ' ' + (stored.major || '') + ' ' + (def.note || ''))}">
+      return `<tr data-skill-row data-custom="${custom ? '1' : '0'}" data-level="${Number(stored.level) || 0}" data-group="${esc(group)}" data-note="${esc(def.note || '')}" data-search="${esc((stored.name || def.name) + ' ' + attrName + ' ' + group + ' ' + (stored.major || '') + ' ' + (def.note || ''))}">
         <td class="skill-name ${custom ? 'skill-name-user' : ''}">
           ${custom ? tInput(bind + '.name', stored.name, 'cell-input', '技能名称') : esc(def.name) + (def.note ? `<small>${esc(def.note)}</small>` : '')}
         </td>
@@ -2498,6 +2512,7 @@
               <button class="chip ${ui.skillFilter === '生理' ? 'active' : ''}" data-skill-filter="生理">生理</button>
               <button class="chip ${ui.skillFilter === '互动' ? 'active' : ''}" data-skill-filter="互动">互动</button>
               <button class="chip ${ui.skillFilter === 'custom' ? 'active' : ''}" data-skill-filter="custom">自定义</button>
+              <button class="chip ${ui.skillFilter === 'learned' ? 'active' : ''}" data-skill-filter="learned">已点技能</button>
             </div>
             <button class="btn small gold" data-action="add-custom-skill">${ic('plus')} 自定义技能</button>
           </div>
@@ -2538,9 +2553,10 @@
                 <td class="center def-auto" data-defense-auto="${d.key}">${fmt((computed.defense.items.find(i => i.key === d.key) || {}).auto || 0)}</td>
                 <td class="center">${nInput('defense.manual.' + d.key, state.defense.manual[d.key] || 0, 'cell-input defense-input')}</td>
                 <td class="center def-total" data-defense-total="${d.key}">${fmt(computed.defense.byKey[d.key] || 0)}</td>
-                <td class="def-desc">${d.key === 'base' ? `${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}` : esc(d.desc)}</td>
+                <td class="def-desc"><input class="cell-input def-label-input" data-bind="defense.labels.${d.key}" value="${esc((state.defense.labels || {})[d.key] || '')}" placeholder="${esc(d.key === 'base' ? `${baseAName} / ${baseBName} 取${state.defense.baseMode === 'high' ? '高' : '低'}` : d.desc)}"></td>
               </tr>`).join('')}</tbody>
             </table>
+            <div class="defense-formula" id="defense-formula">${defenseFormulaHTML(computed)}</div>
           </div>
           <div class="defense-note-row">
             <label>防御备注 / 附加成功<textarea data-bind="defense.note" rows="2" placeholder="记录防御附加成功、特殊防御、条件加值或需要提醒 ST 的效果…">${esc(state.defense.note || '')}</textarea></label>
@@ -2624,6 +2640,24 @@
     });
   }
 
+  function defenseFormulaHTML(c) {
+    const parts = [];
+    const labels = state.defense.labels || {};
+    (c.defense.items || []).forEach(item => {
+      const custom = (labels[item.key] || '').trim();
+      if (item.key === 'base') {
+        const a = c.attrs[state.defense.baseA] || { total: 0 };
+        const b = c.attrs[state.defense.baseB] || { total: 0 };
+        parts.push(`${D.ATTR_MAP[state.defense.baseA].name}（${fmt(a.total)}）/${D.ATTR_MAP[state.defense.baseB].name}（${fmt(b.total)}）`);
+        return;
+      }
+      if (item.auto > 0) parts.push(`${custom || item.name}（${fmt(item.auto)}）`);
+      if (item.manual > 0) parts.push(`${custom ? custom + '·手动' : item.name + '·手动'}（${fmt(item.manual)}）`);
+    });
+    if (!parts.length) return '还没有可用于展示的防御来源。';
+    return `防御来源：${parts.join(' + ')} = ${fmt(c.defense.sum)}`;
+  }
+
   function applySkillFilter() {
     const q = (ui.skillQuery || '').trim().toLowerCase();
     $$('[data-skill-row]').forEach(row => {
@@ -2631,6 +2665,7 @@
       const custom = row.dataset.custom === '1';
       let groupOk = true;
       if (ui.skillFilter === 'custom') groupOk = custom;
+      else if (ui.skillFilter === 'learned') groupOk = Number(row.dataset.level) > 0;
       else if (ui.skillFilter !== 'all') groupOk = group === ui.skillFilter;
       const hay = (row.dataset.search || '').toLowerCase();
       row.hidden = !(groupOk && (!q || hay.includes(q)));
@@ -4290,9 +4325,7 @@
   let readerZoom = Math.max(80, Math.min(180, loadZoomValue(READER_ZOOM_KEY, 100)));
 
   function applyUiZoom(send) {
-    if (HAS_UI_ZOOM && send) {
-      try { post({ type: 'ui.zoom', value: uiZoom / 100 }); } catch (e) { }
-    }
+    if (HAS_UI_ZOOM) document.documentElement.style.zoom = String(uiZoom / 100);
     const range = $('#ui-zoom-range');
     const out = $('#ui-zoom-value');
     if (range) range.value = uiZoom;

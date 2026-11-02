@@ -100,7 +100,7 @@ public partial class MainWindow : Window
 
             // Match the user's preferred reference size: everything in the
             // WebView (buttons, labels, tables, reader pages) is scaled together.
-            Web.ZoomFactor = 1.15;
+            Web.ZoomFactor = 1.0;
 
             _core.Settings.IsStatusBarEnabled = false;
             _core.Settings.AreDevToolsEnabled = debug;
@@ -258,7 +258,7 @@ public partial class MainWindow : Window
                 case "ui.zoom":
                 {
                     var z = root.TryGetProperty("value", out var zv) ? zv.GetDouble() : 1.15;
-                    Web.ZoomFactor = Math.Clamp(z, 0.85, 1.5);
+                    Web.ZoomFactor = 1.0;
                     break;
                 }
 

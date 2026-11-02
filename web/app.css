@@ -2322,3 +2322,6 @@ html[data-theme="light"] .attack-table .atk-outcome b,
 html[data-theme="light"] .attack-table .atk-computed,
 html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 
+.def-label-input { width: 100%; min-width: 120px; color: #9f9586; font-size: 9.5px; }
+.defense-formula { margin-top: 8px; padding: 8px 10px; border-left: 2px solid rgba(201,168,110,.4); background: rgba(201,168,110,.035); color: #9f9586; font-size: 9.5px; line-height: 1.8; }
+.st-defense-note { margin-top: 8px; color: #8d8679; font-size: 9px; line-height: 1.7; border-top: 1px solid rgba(255,255,255,.06); padding-top: 7px; }
