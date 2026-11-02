@@ -2333,3 +2333,9 @@ body.mobile-nav-frame::before {
 .defense-table th:nth-child(4), .defense-table td:nth-child(4) { width: 10%; }
 .def-th-help { display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; vertical-align: middle; }
 .base-defense-config .flag-toggle { vertical-align: middle; }
+.skill-table .skill-attr { font-size: 12px; font-weight: 500; }
+.skill-table .skill-attr.attr-mental { color: #8bbbd8; }
+.skill-table .skill-attr.attr-physical { color: #9fc38f; }
+.skill-table .skill-attr.attr-social { color: #e2c486; }
+.defense-table th:nth-child(2), .defense-table th:nth-child(3), .defense-table th:nth-child(4),
+.defense-table td:nth-child(2), .defense-table td:nth-child(3), .defense-table td:nth-child(4) { text-align: center; vertical-align: middle; font-variant-numeric: tabular-nums; }

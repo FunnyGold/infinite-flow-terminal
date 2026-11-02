@@ -1079,10 +1079,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.101';
+  const APP_VERSION = 'V1.102';
   const UPDATES = [
     {
-      version: 'V1.101', date: '2026-11-03', title: '防御列对齐与技能筛选', current: true,
+      version: 'V1.102', date: '2026-11-03', title: '技能属性配色', current: true,
+      notes: ['技能关键属性按类别配色', '防御列文字/数字居中']
+    },
+    {
+      version: 'V1.101', date: '2026-11-03', title: '防御列对齐与技能筛选',
       notes: ['防御列固定对齐', '已点技能筛选移动并即时更新']
     },
     {
@@ -2398,6 +2402,7 @@
       const attrKey = stored.attrOverride || def.attr;
       const attrName = attrKey === 'none' ? '无' : (D.ATTR_MAP[attrKey] ? D.ATTR_MAP[attrKey].name : attrKey);
       const group = custom ? (D.ATTR_MAP[stored.attr] ? D.ATTR_MAP[stored.attr].group : '其他') : def.group;
+      const groupClass = group === '心智' ? 'attr-mental' : group === '生理' ? 'attr-physical' : group === '互动' ? 'attr-social' : '';
       const bind = custom ? 'customSkills.' + index : 'skills.' + def.key;
       const skillId = custom ? 'custom:' + index : def.key;
       const search = (stored.name || def.name) + ' ' + attrName + ' ' + group + ' ' + (stored.major || '') + ' ' + (def.note || '');
@@ -2431,7 +2436,7 @@
         <td class="skill-name ${custom ? 'skill-name-user' : ''}">
           ${custom ? tInput(bind + '.name', stored.name, 'cell-input', '技能名称') : esc(def.name) + (def.note ? `<small>${esc(def.note)}</small>` : '')}
         </td>
-        <td class="skill-attr">${custom ? selectInput(bind + '.attr', [{ value: 'none', label: '无' }].concat(D.ATTRS.map(a => ({ value: a.key, label: a.name }))), stored.attr, 'cell-input') : esc(attrName)}</td>
+        <td class="skill-attr ${groupClass}">${custom ? selectInput(bind + '.attr', [{ value: 'none', label: '无' }].concat(D.ATTRS.map(a => ({ value: a.key, label: a.name }))), stored.attr, 'cell-input') : esc(attrName)}</td>
         <td class="center">${nInput(bind + '.level', stored.level, 'cell-input', 'min="0"')}</td>
         <td class="center">${nInput(bind + '.bonus', stored.bonus, 'cell-input')}</td>
         <td class="center">${nInput(bind + '.temp', stored.temp, 'cell-input')}</td>
