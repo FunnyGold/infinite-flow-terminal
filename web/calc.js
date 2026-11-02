@@ -76,6 +76,14 @@
     const attrs = {};
     D.ATTRS.forEach(a => { attrs[a.key] = attrOf(state, a.key); });
     const manual = (state.defense && state.defense.manual) || {};
+    const labels = (state.defense && state.defense.labels) || {};
+    const sourceValue = text => {
+      let total = 0;
+      const rx = /[（(]\s*([+-]?\d+(?:\.\d+)?)\s*[）)]/g;
+      let m;
+      while ((m = rx.exec(String(text || '')))) total += num(m[1]);
+      return total;
+    };
     const db = state.derivedBonus || {};
     const baseInfo = baseDefenseInfo(state, attrs);
     const baseMode = baseInfo.mode;
@@ -85,7 +93,8 @@
       else if (item.key === 'dodge') auto = attrs.agi.legend;
       else if (item.key === 'insight') auto = attrs.per.legend;
       const m = num(manual[item.key]);
-      return Object.assign({}, item, { auto, manual: m, total: auto + m });
+      const source = item.key === 'base' ? 0 : sourceValue(labels[item.key]);
+      return Object.assign({}, item, { auto, manual: m, source, total: auto + m + source });
     });
     const byKey = Object.fromEntries(items.map(i => [i.key, i.total]));
     const sum = items.reduce((s, i) => s + i.total, 0);

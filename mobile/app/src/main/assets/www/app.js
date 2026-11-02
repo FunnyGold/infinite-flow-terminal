@@ -1013,10 +1013,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.95';
+  const APP_VERSION = 'V1.96';
   const UPDATES = [
     {
-      version: 'V1.95', date: '2026-11-03', title: '界面缩放回归页面缩放', current: true,
+      version: 'V1.96', date: '2026-11-03', title: '防御来源语法', current: true,
+      notes: ['来源支持括号数值计入合计', '表头增加语法说明']
+    },
+    {
+      version: 'V1.95', date: '2026-11-03', title: '界面缩放回归页面缩放',
       notes: ['界面缩放最低 100%', '规则书独立缩放保留']
     },
     {
@@ -2447,7 +2451,7 @@
           <div style="overflow-x:auto;">
             <table class="defense-table">
               <colgroup><col style="width:15%"><col style="width:6%"><col style="width:8%"><col style="width:6%"><col style="width:65%"></colgroup>
-              <thead><tr><th>项目</th><th class="center">自动</th><th class="center">手动</th><th class="center">合计</th><th>来源 / 说明</th></tr></thead>
+              <thead><tr><th>项目</th><th class="center">自动</th><th class="center">手动</th><th class="center">合计</th><th>来源 / 说明 <button class="def-th-help" data-action="defense-syntax-help" title="查看来源语法">?</button></th></tr></thead>
               <tbody>${D.DEFENSE_ITEMS.map(d => `<tr>
                 <td class="def-name">${esc(d.name)}</td>
                 <td class="center def-auto" data-defense-auto="${d.key}">${fmt((computed.defense.items.find(i => i.key === d.key) || {}).auto || 0)}</td>
@@ -2545,6 +2549,30 @@
     });
   }
 
+  function showDefenseSyntaxHelp() {
+    const layer = $('#modal-layer');
+    const card = $('#modal-card');
+    card.style.width = '520px';
+    card.innerHTML = `<div class="modal-title">防御来源语法</div>
+      <div class="modal-text" style="line-height:1.9;">
+        在「来源 / 说明」里写：<br>
+        <code class="def-syntax-example">闪避与格挡（3）+ 精通先攻（3）+ 翱翔于天际（8）</code><br>
+        括号里的数字会自动加入「合计」。<br><br>
+        <b class="gold">规则</b><br>
+        · 格式：<code>XXX（数值）</code><br>
+        · 多个来源用 <code>+</code> 连接<br>
+        · 中文括号 <code>（）</code> 或英文括号 <code>()</code> 都可以<br>
+        · 「基础防御」行不会读取来源里的数字，避免和自动属性重复计算<br>
+        · 手动列仍然可以独立填写数值
+      </div>
+      <div class="modal-actions"><button class="btn gold" data-modal="ok">知道了</button></div>`;
+    layer.hidden = false;
+    const close = () => { layer.hidden = true; card.style.width = ''; };
+    card.querySelector('[data-modal="ok"]').onclick = close;
+    layer.onclick = e => { if (e.target === layer) close(); };
+    window.__modalClose = close;
+  }
+
   function defenseFormulaHTML(c) {
     const parts = [];
     const labels = state.defense.labels || {};
@@ -2558,6 +2586,7 @@
       }
       if (item.auto > 0) parts.push(`${custom || item.name}（${fmt(item.auto)}）`);
       if (item.manual > 0) parts.push(`${custom ? custom + '·手动' : item.name + '·手动'}（${fmt(item.manual)}）`);
+      if (item.source > 0) parts.push(`${custom || item.name}（${fmt(item.source)}）`);
     });
     if (!parts.length) return '还没有可用于展示的防御来源。';
     return `防御来源：${parts.join(' + ')} = ${fmt(c.defense.sum)}`;
@@ -5280,6 +5309,7 @@
         state.healthMode = el.dataset.mode === 'rm' ? 'rm' : 'fusion';
         stateChanged({ rerender: true });
         break;
+      case 'defense-syntax-help': showDefenseSyntaxHelp(); break;
       case 'toggle-base-defense':
         state.defense.baseMode = state.defense.baseMode === 'high' ? 'low' : 'high';
         stateChanged({ rerender: true });
