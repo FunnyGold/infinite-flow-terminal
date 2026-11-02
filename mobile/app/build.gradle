@@ -10,8 +10,8 @@ android {
         applicationId 'com.infinite.chmproto'
         minSdk 26
         targetSdk 35
-        versionCode 62
-        versionName '0.2.59'
+        versionCode 63
+        versionName '0.2.60'
     }
 
     buildTypes {

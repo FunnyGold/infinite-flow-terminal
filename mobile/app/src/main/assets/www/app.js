@@ -1072,10 +1072,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.98';
+  const APP_VERSION = 'V1.99';
   const UPDATES = [
     {
-      version: 'V1.98', date: '2026-11-03', title: '字体缩放与 ST 目标来源', current: true,
+      version: 'V1.99', date: '2026-11-03', title: '缩放拖动与来源配色', current: true,
+      notes: ['缩放松开后应用，避免拖错', '防御来源自动绿/手动红/来源金']
+    },
+    {
+      version: 'V1.98', date: '2026-11-03', title: '字体缩放与 ST 目标来源',
       notes: ['缩放面板新增字体缩放', 'ST 每个目标记住来源人物', '手机角色卡切换器缩短']
     },
     {
@@ -2622,7 +2626,7 @@
       el.textContent = fmt(computed.defense.byKey[key] || 0);
     });
     const formula = $('#defense-formula');
-    if (formula) formula.textContent = defenseFormulaHTML(computed);
+    if (formula) formula.innerHTML = defenseFormulaHTML(computed);
   }
 
   function showDefenseSyntaxHelp() {
@@ -2657,12 +2661,12 @@
       if (item.key === 'base') {
         const a = c.attrs[state.defense.baseA] || { total: 0 };
         const b = c.attrs[state.defense.baseB] || { total: 0 };
-        parts.push(`${D.ATTR_MAP[state.defense.baseA].name}（${fmt(a.total)}）/${D.ATTR_MAP[state.defense.baseB].name}（${fmt(b.total)}）`);
+        parts.push(`<span class="def-src-auto">${D.ATTR_MAP[state.defense.baseA].name}（${fmt(a.total)}）/${D.ATTR_MAP[state.defense.baseB].name}（${fmt(b.total)}）</span>`);
         return;
       }
-      if (item.auto > 0) parts.push(`${item.name}自动（${fmt(item.auto)}）`);
-      if (item.manual > 0) parts.push(`${item.name}手动（${fmt(item.manual)}）`);
-      if (item.source > 0) parts.push(custom || `${item.name}来源（${fmt(item.source)}）`);
+      if (item.auto > 0) parts.push(`<span class="def-src-auto">${item.name}自动（${fmt(item.auto)}）</span>`);
+      if (item.manual > 0) parts.push(`<span class="def-src-manual">${item.name}手动（${fmt(item.manual)}）</span>`);
+      if (item.source > 0) parts.push(`<span class="def-src-extra">${esc(custom || `${item.name}来源（${fmt(item.source)}）`)}</span>`);
     });
     if (!parts.length) return '还没有可用于展示的防御来源。';
     return `防御来源：${parts.join(' + ')} = ${fmt(c.defense.sum)}`;
@@ -4368,19 +4372,21 @@
     frame.style.zoom = String(Math.max(0.5, Math.min(2.5, scale)));
   }
 
-  function setUiZoom(v) {
+  function setUiZoom(v, commit) {
     uiZoom = Math.max(85, Math.min(150, Number(v) || 115));
     try { localStorage.setItem(UI_ZOOM_KEY, String(uiZoom)); } catch (e) { }
     const out = $('#ui-zoom-value');
     if (out) out.textContent = uiZoom + '%';
     window.clearTimeout(uiZoomTimer);
-    uiZoomTimer = window.setTimeout(() => applyUiZoom(true), 140);
+    if (commit) applyUiZoom(true);
   }
 
-  function setFontZoom(v) {
+  function setFontZoom(v, commit) {
     fontZoom = Math.max(80, Math.min(150, Number(v) || 100));
     try { localStorage.setItem(FONT_ZOOM_KEY, String(fontZoom)); } catch (e) { }
-    applyFontZoom();
+    const out = $('#font-zoom-value');
+    if (out) out.textContent = fontZoom + '%';
+    if (commit) applyFontZoom();
   }
 
   function applyFontZoom() {
@@ -5766,6 +5772,11 @@
       if (sectionHead) toggleSection(sectionHead.dataset.sectionHead);
     });
 
+    document.addEventListener('change', e => {
+      if (e.target && e.target.id === 'ui-zoom-range') { setUiZoom(e.target.value, true); return; }
+      if (e.target && e.target.id === 'font-zoom-range') { setFontZoom(e.target.value, true); return; }
+    });
+
     document.addEventListener('input', e => {
       const el = e.target;
       if (el.id === 'skill-search') {
@@ -5773,8 +5784,8 @@
         applySkillFilter();
         return;
       }
-      if (el.id === 'ui-zoom-range') { setUiZoom(el.value); return; }
-      if (el.id === 'font-zoom-range') { setFontZoom(el.value); return; }
+      if (el.id === 'ui-zoom-range') { setUiZoom(el.value, false); return; }
+      if (el.id === 'font-zoom-range') { setFontZoom(el.value, false); return; }
       if (el.id === 'reader-zoom-range') { setReaderZoom(el.value); return; }
       if (el.id.indexOf('display-') === 0 && el.type === 'range') {
         const key = el.id.replace('display-', '');
