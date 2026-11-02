@@ -4,6 +4,7 @@
         Title="检查更新" Width="470" Height="275"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         ShowInTaskbar="False">
     <Border Margin="18" CornerRadius="14" Background="#12151B"
             BorderBrush="#5B4A31" BorderThickness="1">

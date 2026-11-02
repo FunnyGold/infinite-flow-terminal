@@ -1007,10 +1007,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.91';
+  const APP_VERSION = 'V1.92';
   const UPDATES = [
     {
-      version: 'V1.91', date: '2026-11-04', title: '快速建卡预算', current: true,
+      version: 'V1.92', date: '2026-11-04', title: '修复弹窗抖动', current: true,
+      notes: ['移除弹窗背景模糊和透明度过渡']
+    },
+    {
+      version: 'V1.91', date: '2026-11-04', title: '快速建卡预算',
       notes: ['模板改为初始规则预算', '显示属性点 / 技能点余额']
     },
     {

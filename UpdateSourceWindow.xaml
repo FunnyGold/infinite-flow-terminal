@@ -4,6 +4,7 @@
         Title="选择下载源" Width="520" Height="360"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         ShowInTaskbar="False">
     <Window.Resources>
         <Style x:Key="SourceCard" TargetType="RadioButton">

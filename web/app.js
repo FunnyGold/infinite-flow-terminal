@@ -991,10 +991,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.91';
+  const APP_VERSION = 'V1.92';
   const UPDATES = [
     {
-      version: 'V1.91', date: '2026-11-04', title: '快速建卡预算', current: true,
+      version: 'V1.92', date: '2026-11-04', title: '修复弹窗抖动', current: true,
+      notes: [
+        '移除新弹窗的实时背景模糊',
+        '取消弹窗透明度过渡，避免 WebView2 重绘抖动',
+        '固定滚动条占位，避免内容宽度跳动',
+        '更新窗口增加像素对齐'
+      ]
+    },
+    {
+      version: 'V1.91', date: '2026-11-04', title: '快速建卡预算',
       notes: [
         '四个模板改为规则内的初始预算',
         '属性初始 9 点，4→5 额外消耗 1 点',

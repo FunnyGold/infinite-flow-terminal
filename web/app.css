@@ -508,12 +508,11 @@ html[data-theme="light"] .hero-identity-compact { color: #87622b; border-color: 
 .stat-help:hover { color: #f0d39c; border-color: rgba(201,168,110,.6); background: rgba(201,168,110,.12); }
 .stat-guide-layer {
   position: fixed; inset: 0; z-index: 320; display: flex; align-items: center; justify-content: center;
-  padding: 24px; background: rgba(4,6,9,.74); backdrop-filter: blur(7px);
-  opacity: 0; transition: opacity .18s ease;
+  padding: 24px; background: rgba(4,6,9,.82);
+  opacity: 1;
 }
-.stat-guide-layer.show { opacity: 1; }
 .stat-guide-card {
-  position: relative; width: min(660px, 94vw); max-height: 88vh; overflow: auto;
+  position: relative; width: min(660px, 94vw); max-height: 88vh; overflow: auto; scrollbar-gutter: stable;
   padding: 26px 30px 22px; border-radius: 14px;
   border: 1px solid rgba(201,168,110,.3);
   background: radial-gradient(520px 220px at 50% -10%, rgba(201,168,110,.1), transparent 70%), #12151b;
