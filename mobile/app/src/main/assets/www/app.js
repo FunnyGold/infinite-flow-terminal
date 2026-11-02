@@ -1079,10 +1079,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.100';
+  const APP_VERSION = 'V1.101';
   const UPDATES = [
     {
-      version: 'V1.100', date: '2026-11-03', title: 'ST 目标改名与规则书排除', current: true,
+      version: 'V1.101', date: '2026-11-03', title: '防御列对齐与技能筛选', current: true,
+      notes: ['防御列固定对齐', '已点技能筛选移动并即时更新']
+    },
+    {
+      version: 'V1.100', date: '2026-11-03', title: 'ST 目标改名与规则书排除',
       notes: ['ST 目标改名即时更新', '目录信息支持不扫描规则书', '关于致谢更新']
     },
     {
@@ -2494,11 +2498,11 @@
             <div class="search">${ic('search')}<input type="text" id="skill-search" value="${esc(ui.skillQuery)}" placeholder="筛选技能…"></div>
             <div class="filter-chips">
               <button class="chip ${ui.skillFilter === 'all' ? 'active' : ''}" data-skill-filter="all">全部</button>
+              <button class="chip ${ui.skillFilter === 'learned' ? 'active' : ''}" data-skill-filter="learned">已点技能</button>
               <button class="chip ${ui.skillFilter === '心智' ? 'active' : ''}" data-skill-filter="心智">心智</button>
               <button class="chip ${ui.skillFilter === '生理' ? 'active' : ''}" data-skill-filter="生理">生理</button>
               <button class="chip ${ui.skillFilter === '互动' ? 'active' : ''}" data-skill-filter="互动">互动</button>
               <button class="chip ${ui.skillFilter === 'custom' ? 'active' : ''}" data-skill-filter="custom">自定义</button>
-              <button class="chip ${ui.skillFilter === 'learned' ? 'active' : ''}" data-skill-filter="learned">已点技能</button>
             </div>
             <button class="btn small gold" data-action="add-custom-skill">${ic('plus')} 自定义技能</button>
           </div>
@@ -5862,6 +5866,11 @@
       if (el.closest('[data-skill-row]') && bind.endsWith('.name')) {
         const row = el.closest('[data-skill-row]');
         row.dataset.search = [el.value || '', row.dataset.group || '', row.dataset.note || ''].join(' ');
+      }
+      if (el.closest('[data-skill-row]') && bind.endsWith('.level')) {
+        const row = el.closest('[data-skill-row]');
+        row.dataset.level = String(Math.max(0, Number(val) || 0));
+        if (ui.skillFilter === 'learned') applySkillFilter();
       }
       if (bind.startsWith('defense.labels.')) {
         computed = C.compute(state);

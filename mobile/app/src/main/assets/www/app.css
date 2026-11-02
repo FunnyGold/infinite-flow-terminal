@@ -2326,3 +2326,10 @@ body.mobile-nav-frame::before {
 .def-src-extra { color: #e2c486; }
 .book-ignore { display:flex; align-items:center; gap:4px; align-self:center; color:#777064; font-size:8px; white-space:nowrap; }
 .book-ignore input { accent-color:#c9a35f; }
+.defense-table th, .defense-table td { vertical-align: middle; }
+.defense-table th:nth-child(1), .defense-table td:nth-child(1) { width: 18%; }
+.defense-table th:nth-child(2), .defense-table td:nth-child(2) { width: 10%; }
+.defense-table th:nth-child(3), .defense-table td:nth-child(3) { width: 14%; }
+.defense-table th:nth-child(4), .defense-table td:nth-child(4) { width: 10%; }
+.def-th-help { display: inline-flex; align-items: center; justify-content: center; padding: 0; line-height: 1; vertical-align: middle; }
+.base-defense-config .flag-toggle { vertical-align: middle; }
