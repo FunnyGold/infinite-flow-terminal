@@ -1079,10 +1079,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.102';
+  const APP_VERSION = 'V1.103';
   const UPDATES = [
     {
-      version: 'V1.102', date: '2026-11-03', title: '技能属性配色', current: true,
+      version: 'V1.103', date: '2026-11-03', title: '技能属性配色修复', current: true,
+      notes: ['修复技能属性颜色被通用样式覆盖']
+    },
+    {
+      version: 'V1.102', date: '2026-11-03', title: '技能属性配色',
       notes: ['技能关键属性按类别配色', '防御列文字/数字居中']
     },
     {

@@ -1064,10 +1064,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.102';
+  const APP_VERSION = 'V1.103';
   const UPDATES = [
     {
-      version: 'V1.102', date: '2026-11-03', title: '技能属性配色', current: true,
+      version: 'V1.103', date: '2026-11-03', title: '技能属性配色修复', current: true,
+      notes: ['用更高优先级覆盖通用技能颜色', '心智/生理/互动颜色和字号现在实际生效']
+    },
+    {
+      version: 'V1.102', date: '2026-11-03', title: '技能属性配色',
       notes: [
         '防御表自动/手动/合计列文字和数字统一居中',
         '技能关键属性按类别配色：心智浅蓝、生理浅绿、互动浅黄',

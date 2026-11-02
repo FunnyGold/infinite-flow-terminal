@@ -2353,3 +2353,6 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .skill-table .skill-attr.attr-social { color: #e2c486; }
 .defense-table th:nth-child(2), .defense-table th:nth-child(3), .defense-table th:nth-child(4),
 .defense-table td:nth-child(2), .defense-table td:nth-child(3), .defense-table td:nth-child(4) { text-align: center; vertical-align: middle; font-variant-numeric: tabular-nums; }
+.skill-table td.skill-attr.attr-mental { color: #8bbbd8 !important; font-size: 12px !important; font-weight: 500 !important; }
+.skill-table td.skill-attr.attr-physical { color: #9fc38f !important; font-size: 12px !important; font-weight: 500 !important; }
+.skill-table td.skill-attr.attr-social { color: #e2c486 !important; font-size: 12px !important; font-weight: 500 !important; }
