@@ -9,6 +9,9 @@
   const ST_KEY = 'infinite-terminal/st-tool/v1';
   const DISPLAY_KEY = 'infinite-terminal/display/v1';
   const FAVORITES_KEY = 'infinite-terminal/rules-favorites/v1';
+  const UI_ZOOM_KEY = 'infinite-terminal/ui-zoom/v1';
+  const READER_ZOOM_KEY = 'infinite-terminal/reader-zoom/v1';
+  const HAS_UI_ZOOM = !!(window.chrome && window.chrome.webview);
   const LEDGER_UI_KEY = 'infinite-terminal/ledger-ui/v1';
   let ledgerDrag = null;
   let favorites = loadFavorites();
@@ -1007,10 +1010,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.92';
+  const APP_VERSION = 'V1.93';
   const UPDATES = [
     {
-      version: 'V1.92', date: '2026-11-04', title: '修复弹窗抖动', current: true,
+      version: 'V1.93', date: '2026-11-03', title: '规则书缩放与检索语法', current: true,
+      notes: ['阅读栏新增规则书缩放条', '检索支持 AND / OR / NOT / NEAR / 短语 / 括号 / 通配符', '检索结果增加序号并移除页面路径']
+    },
+    {
+      version: 'V1.92', date: '2026-11-04', title: '修复弹窗抖动',
       notes: ['移除弹窗背景模糊和透明度过渡']
     },
     {
@@ -3496,7 +3503,7 @@
       <div class="rules-toolbar">
         <div class="rules-search">
           ${ic('search')}
-          <input type="text" id="chm-search" value="${esc(ui.rules.searchQuery)}" placeholder="搜索全部规则书：技能、血统、物品、法术、关键词…" autocomplete="off">
+          <input type="text" id="chm-search" value="${esc(ui.rules.searchQuery)}" placeholder="搜索全部规则书：技能、血统、物品、法术、关键词…" title="支持 AND / OR / NOT / NEAR / &quot;完整短语&quot; / ( ) / wild*" autocomplete="off">
           <button class="search-clear" data-action="chm-clear-search" style="${ui.rules.searchQuery ? 'display:flex' : 'display:none'}">${ic('close')}</button>
           <span class="search-hint">CTRL + K</span>
         </div>
@@ -3811,17 +3818,21 @@
     if (!r.results.length) return `<div class="toc-empty">没有找到「${esc(r.searchQuery)}」。<br>试试更短的关键词，或只输入核心名词。</div>`;
     return `<div class="search-summary">${r.searchScope === 'book' ? '本书内' : '全部规则书'} · 找到 ${r.total} 条${r.total > r.results.length ? '，显示前 ' + r.results.length + ' 条' : ''} · ${r.elapsed} ms</div>` +
       r.results.map((h, i) => `<div class="toc-search-result" data-result-index="${i}">
-        <div class="result-book">${esc(h.bookTitle)}</div>
-        <div class="result-title">${highlightText(h.title, r.searchQuery)}</div>
+        <div class="result-line">
+          <span class="result-rank">${i + 1}</span>
+          <span class="result-title">${highlightText(h.title, r.searchQuery)}</span>
+          <span class="result-book-inline">${esc(h.bookTitle)}</span>
+        </div>
         ${r.showSnippet !== false ? `<div class="result-snippet">${highlightText(h.snippet, r.searchQuery)}</div>` : ''}
-        <div class="result-meta">${esc(h.path)}</div>
       </div>`).join('');
   }
 
   function escapeRegExp(s) { return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
   function highlightText(text, query) {
     let out = esc(text || '');
-    const terms = (query || '').trim().split(/\s+/).filter(Boolean).slice(0, 6);
+    const terms = (query || '').replace(/[()\"]/g, ' ').split(/\s+/)
+      .filter(t => t && !['AND', 'OR', 'NOT', 'NEAR'].includes(t.toUpperCase()))
+      .map(t => t.replace(/\*/g, '')).filter(Boolean).slice(0, 6);
     terms.forEach(t => {
       try {
         const rx = new RegExp('(' + escapeRegExp(esc(t)) + ')', 'gi');
@@ -3935,6 +3946,11 @@
           <span class="crumb-sep">/</span>
           <span class="crumb-page" id="reader-page">${esc(r.pageTitle || r.pagePath)}</span>
         </div>
+        <label class="reader-zoom" title="只缩放规则书正文">
+          <span>缩放</span>
+          <input id="reader-zoom-range" type="range" min="80" max="180" step="5" value="100">
+          <output id="reader-zoom-value">100%</output>
+        </label>
         <div class="reader-actions">
           <button class="reader-action favorite-btn ${favorite ? 'active' : ''}" data-action="reader-favorite" title="${favorite ? '取消收藏此页' : '收藏此页'}" aria-pressed="${favorite ? 'true' : 'false'}">${ic('star')}</button>
           <button class="reader-action" data-action="reader-refresh" title="刷新页面">${ic('refresh')}</button>
@@ -3949,7 +3965,7 @@
     const frame = $('#chm-frame');
     const hide = () => { const el = $('#reader-loading'); if (el) el.remove(); };
     if (frame) {
-      frame.addEventListener('load', () => window.setTimeout(hide, 80));
+      frame.addEventListener('load', () => { applyReaderZoom(); window.setTimeout(hide, 80); });
       // Local CHM pages are usually instantaneous; never leave the overlay
       // covering a page if the load event raced with listener attachment.
       window.setTimeout(hide, 700);
@@ -4180,6 +4196,71 @@
     try { localStorage.setItem(DISPLAY_KEY, JSON.stringify(displaySettings)); } catch (e) { }
   }
 
+  function loadZoomValue(key, fallback) {
+    try {
+      const v = Number(localStorage.getItem(key));
+      return Number.isFinite(v) && v > 0 ? v : fallback;
+    } catch (e) { return fallback; }
+  }
+
+  let uiZoom = Math.max(85, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
+  let readerZoom = Math.max(80, Math.min(180, loadZoomValue(READER_ZOOM_KEY, 100)));
+
+  function applyUiZoom(send) {
+    if (HAS_UI_ZOOM && send) {
+      try { post({ type: 'ui.zoom', value: uiZoom / 100 }); } catch (e) { }
+    }
+    const range = $('#ui-zoom-range');
+    const out = $('#ui-zoom-value');
+    if (range) range.value = uiZoom;
+    if (out) out.textContent = uiZoom + '%';
+    applyReaderZoom();
+  }
+
+  function applyReaderZoom() {
+    const frame = $('#chm-frame');
+    const out = $('#reader-zoom-value');
+    const range = $('#reader-zoom-range');
+    if (range) range.value = readerZoom;
+    if (out) out.textContent = readerZoom + '%';
+    if (!frame) return;
+    const scale = HAS_UI_ZOOM ? (readerZoom / uiZoom) : (readerZoom / 100);
+    frame.style.zoom = String(Math.max(0.5, Math.min(2.5, scale)));
+  }
+
+  function setUiZoom(v) {
+    uiZoom = Math.max(85, Math.min(150, Number(v) || 115));
+    try { localStorage.setItem(UI_ZOOM_KEY, String(uiZoom)); } catch (e) { }
+    applyUiZoom(true);
+  }
+
+  function setReaderZoom(v) {
+    readerZoom = Math.max(80, Math.min(180, Number(v) || 100));
+    try { localStorage.setItem(READER_ZOOM_KEY, String(readerZoom)); } catch (e) { }
+    applyReaderZoom();
+  }
+
+  function toggleZoomPanel() {
+    const panel = $('#zoom-panel');
+    if (!panel) return;
+    const open = !panel.hidden;
+    closeDisplayPanel();
+    if (open) panel.hidden = true;
+    else { applyUiZoom(false); panel.hidden = false; }
+  }
+
+  function closeZoomPanel() {
+    const panel = $('#zoom-panel');
+    if (panel) panel.hidden = true;
+  }
+
+  function resetUiZoom() {
+    uiZoom = 115;
+    try { localStorage.setItem(UI_ZOOM_KEY, '115'); } catch (e) { }
+    applyUiZoom(true);
+    toast('界面缩放已恢复为 115%');
+  }
+
   function applyDisplayFilter() {
     const app = $('#app');
     const s = displaySettings[currentTheme()] || DISPLAY_DEFAULTS[currentTheme()];
@@ -4213,6 +4294,7 @@
   function toggleDisplayPanel() {
     const panel = $('#display-panel');
     if (!panel) return;
+    closeZoomPanel();
     const open = !panel.hidden;
     if (open) panel.hidden = true;
     else {
@@ -5307,6 +5389,9 @@
         applyTheme(currentTheme() === 'light' ? 'dark' : 'light', true);
         break;
       case 'toggle-display-panel': toggleDisplayPanel(); break;
+      case 'toggle-zoom-panel': toggleZoomPanel(); break;
+      case 'close-zoom-panel': closeZoomPanel(); break;
+      case 'reset-ui-zoom': resetUiZoom(); break;
       case 'close-display-panel': closeDisplayPanel(); break;
       case 'reset-display': resetDisplaySettings(); break;
       case 'changelog-open': openChangelog(); break;
@@ -5422,7 +5507,7 @@
       case 'chmSearch':
         if (msg.requestId !== ui.rules.currentSearch) return;
         ui.rules.searching = false;
-        ui.rules.error = '';
+        ui.rules.error = (msg.response && msg.response.error) || '';
         ui.rules.results = (msg.response && Array.isArray(msg.response.results)) ? msg.response.results : [];
         ui.rules.total = (msg.response && msg.response.total) || ui.rules.results.length;
         ui.rules.elapsed = (msg.response && msg.response.elapsedMs) || 0;
@@ -5464,7 +5549,7 @@
   function bindGlobalEvents() {
     document.addEventListener('click', e => {
       if (!e.target.closest('.character-switcher')) closeCharacterMenu();
-      if (!e.target.closest('.display-control')) closeDisplayPanel();
+      if (!e.target.closest('.display-control')) { closeDisplayPanel(); closeZoomPanel(); }
       const nav = e.target.closest('[data-nav]');
       if (nav) { switchView(nav.dataset.nav); return; }
       const win = e.target.closest('[data-window]');
@@ -5511,6 +5596,8 @@
         applySkillFilter();
         return;
       }
+      if (el.id === 'ui-zoom-range') { setUiZoom(el.value); return; }
+      if (el.id === 'reader-zoom-range') { setReaderZoom(el.value); return; }
       if (el.id.indexOf('display-') === 0 && el.type === 'range') {
         const key = el.id.replace('display-', '');
         if (['brightness', 'contrast', 'grayscale'].includes(key)) {
@@ -5854,6 +5941,7 @@
     updateChmSidebar();
     setSaveState(false);
     initFontBump();
+    applyUiZoom(HAS_UI_ZOOM);
     if (window.chrome && window.chrome.webview) {
       window.chrome.webview.addEventListener('message', handleBridgeMessage);
     }

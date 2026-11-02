@@ -106,6 +106,34 @@ public sealed class ChmLibrary : IDisposable
         }
     }
 
+    public (bool Ok, string Error) DeleteBook(string key)
+    {
+        BookRuntime? book;
+        lock (_gate)
+        {
+            book = _books.FirstOrDefault(b => b.Info.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            if (book == null) return (false, "规则书不存在");
+            _books.Remove(book);
+        }
+
+        var error = "";
+        try
+        {
+            if (File.Exists(book.Info.FilePath)) File.Delete(book.Info.FilePath);
+        }
+        catch (Exception ex) { error = "CHM 文件删除失败：" + ex.Message; }
+
+        try
+        {
+            if (Directory.Exists(book.CacheDir)) Directory.Delete(book.CacheDir, true);
+        }
+        catch (Exception ex)
+        {
+            if (error.Length == 0) error = "缓存删除失败：" + ex.Message;
+        }
+        return (error.Length == 0, error);
+    }
+
     public List<BookInfo> GetBooks()
     {
         lock (_gate)
@@ -592,13 +620,248 @@ public sealed class ChmLibrary : IDisposable
         public int Score { get; init; }
     }
 
+    private enum SearchTokenKind { Term, And, Or, Not, Near, LParen, RParen, End }
+
+    private sealed record SearchToken(SearchTokenKind Kind, string Text);
+
+    private abstract class SearchNode
+    {
+        public abstract bool Match(string text);
+        public abstract void CollectTerms(HashSet<string> terms);
+    }
+
+    private sealed class SearchTermNode : SearchNode
+    {
+        public string Term { get; }
+        public bool IsWildcard { get; }
+        private readonly Regex? _pattern;
+
+        public SearchTermNode(string term)
+        {
+            Term = term;
+            IsWildcard = term.Contains('*');
+            if (IsWildcard)
+            {
+                var body = Regex.Escape(term).Replace("\\*", ".*");
+                _pattern = new Regex(body, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+            }
+        }
+
+        public override bool Match(string text)
+            => IsWildcard ? _pattern!.IsMatch(text) : text.Contains(Term, StringComparison.OrdinalIgnoreCase);
+
+        public override void CollectTerms(HashSet<string> terms)
+        {
+            var t = Term.Replace("*", "").Trim();
+            if (t.Length > 0) terms.Add(t);
+        }
+    }
+
+    private sealed class SearchAndNode : SearchNode
+    {
+        private readonly SearchNode _left, _right;
+        public SearchAndNode(SearchNode left, SearchNode right) { _left = left; _right = right; }
+        public override bool Match(string text) => _left.Match(text) && _right.Match(text);
+        public override void CollectTerms(HashSet<string> terms) { _left.CollectTerms(terms); _right.CollectTerms(terms); }
+    }
+
+    private sealed class SearchOrNode : SearchNode
+    {
+        private readonly SearchNode _left, _right;
+        public SearchOrNode(SearchNode left, SearchNode right) { _left = left; _right = right; }
+        public override bool Match(string text) => _left.Match(text) || _right.Match(text);
+        public override void CollectTerms(HashSet<string> terms) { _left.CollectTerms(terms); _right.CollectTerms(terms); }
+    }
+
+    private sealed class SearchNotNode : SearchNode
+    {
+        private readonly SearchNode _inner;
+        public SearchNotNode(SearchNode inner) { _inner = inner; }
+        public override bool Match(string text) => !_inner.Match(text);
+        public override void CollectTerms(HashSet<string> terms) => _inner.CollectTerms(terms);
+    }
+
+    private sealed class SearchNearNode : SearchNode
+    {
+        private readonly SearchNode _left, _right;
+        public SearchNearNode(SearchNode left, SearchNode right) { _left = left; _right = right; }
+
+        public override bool Match(string text)
+        {
+            if (_left is SearchTermNode a && _right is SearchTermNode b && !a.IsWildcard && !b.IsWildcard)
+            {
+                foreach (var lp in Positions(text, a.Term))
+                {
+                    foreach (var rp in Positions(text, b.Term))
+                    {
+                        var gap = rp >= lp ? rp - (lp + a.Term.Length) : lp - (rp + b.Term.Length);
+                        if (gap <= 8) return true;
+                    }
+                }
+                return false;
+            }
+            return _left.Match(text) && _right.Match(text);
+        }
+
+        public override void CollectTerms(HashSet<string> terms) { _left.CollectTerms(terms); _right.CollectTerms(terms); }
+
+        private static IEnumerable<int> Positions(string text, string term)
+        {
+            var from = 0;
+            while (from <= text.Length - term.Length)
+            {
+                var i = text.IndexOf(term, from, StringComparison.OrdinalIgnoreCase);
+                if (i < 0) yield break;
+                yield return i;
+                from = i + Math.Max(1, term.Length);
+            }
+        }
+    }
+
+    private sealed class SearchQueryPlan
+    {
+        public required SearchNode Root { get; init; }
+        public required string[] Terms { get; init; }
+    }
+
+    private sealed class SearchParser
+    {
+        private readonly List<SearchToken> _tokens;
+        private int _pos;
+
+        public SearchParser(List<SearchToken> tokens) { _tokens = tokens; }
+
+        public SearchNode Parse()
+        {
+            var node = ParseOr();
+            if (Current.Kind != SearchTokenKind.End)
+                throw new FormatException("检索语法有误");
+            return node;
+        }
+
+        private SearchToken Current => _tokens[Math.Min(_pos, _tokens.Count - 1)];
+
+        private SearchNode ParseOr()
+        {
+            var left = ParseAnd();
+            while (Current.Kind == SearchTokenKind.Or)
+            {
+                _pos++;
+                left = new SearchOrNode(left, ParseAnd());
+            }
+            return left;
+        }
+
+        private SearchNode ParseAnd()
+        {
+            var left = ParseUnary();
+            while (true)
+            {
+                if (Current.Kind == SearchTokenKind.And)
+                {
+                    _pos++;
+                    left = new SearchAndNode(left, ParseUnary());
+                }
+                else if (Current.Kind == SearchTokenKind.Not)
+                {
+                    _pos++;
+                    left = new SearchAndNode(left, new SearchNotNode(ParseUnary()));
+                }
+                else if (Current.Kind == SearchTokenKind.Near)
+                {
+                    _pos++;
+                    left = new SearchNearNode(left, ParseUnary());
+                }
+                else if (StartsPrimary(Current.Kind))
+                {
+                    left = new SearchAndNode(left, ParseUnary());
+                }
+                else break;
+            }
+            return left;
+        }
+
+        private SearchNode ParseUnary()
+        {
+            if (Current.Kind == SearchTokenKind.Not)
+            {
+                _pos++;
+                return new SearchNotNode(ParseUnary());
+            }
+            if (Current.Kind == SearchTokenKind.LParen)
+            {
+                _pos++;
+                var inner = ParseOr();
+                if (Current.Kind != SearchTokenKind.RParen) throw new FormatException("缺少右括号");
+                _pos++;
+                return inner;
+            }
+            if (Current.Kind == SearchTokenKind.Term)
+            {
+                var term = Current.Text;
+                _pos++;
+                return new SearchTermNode(term);
+            }
+            throw new FormatException("检索语法有误");
+        }
+
+        private static bool StartsPrimary(SearchTokenKind kind)
+            => kind is SearchTokenKind.Term or SearchTokenKind.LParen or SearchTokenKind.Not;
+    }
+
+    private static List<SearchToken> TokenizeSearch(string query)
+    {
+        var tokens = new List<SearchToken>();
+        var i = 0;
+        while (i < query.Length)
+        {
+            if (char.IsWhiteSpace(query[i])) { i++; continue; }
+            if (query[i] == '(') { tokens.Add(new(SearchTokenKind.LParen, "(")); i++; continue; }
+            if (query[i] == ')') { tokens.Add(new(SearchTokenKind.RParen, ")")); i++; continue; }
+            if (query[i] == '"')
+            {
+                i++;
+                var start = i;
+                while (i < query.Length && query[i] != '"') i++;
+                tokens.Add(new(SearchTokenKind.Term, query[start..i]));
+                if (i < query.Length) i++;
+                continue;
+            }
+            var from = i;
+            while (i < query.Length && !char.IsWhiteSpace(query[i]) && query[i] != '(' && query[i] != ')') i++;
+            var word = query[from..i];
+            var kind = word.ToUpperInvariant() switch
+            {
+                "AND" => SearchTokenKind.And,
+                "OR" => SearchTokenKind.Or,
+                "NOT" => SearchTokenKind.Not,
+                "NEAR" => SearchTokenKind.Near,
+                _ => SearchTokenKind.Term
+            };
+            tokens.Add(new(kind, word));
+        }
+        tokens.Add(new(SearchTokenKind.End, ""));
+        return tokens;
+    }
+
+    private static SearchQueryPlan BuildSearchPlan(string query)
+    {
+        var tokens = TokenizeSearch(query);
+        var root = new SearchParser(tokens).Parse();
+        var terms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        root.CollectTerms(terms);
+        return new SearchQueryPlan { Root = root, Terms = terms.Take(8).ToArray() };
+    }
+
     public async Task<SearchResponse> SearchAsync(string query, string? bookKey, int limit, CancellationToken token)
     {
         var started = Stopwatch.StartNew();
         query = (query ?? "").Trim();
         if (query.Length == 0) return new SearchResponse { Query = query };
-        var terms = query.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Distinct(StringComparer.OrdinalIgnoreCase).Take(8).ToArray();
+        SearchQueryPlan plan;
+        try { plan = BuildSearchPlan(query); }
+        catch (FormatException ex) { return new SearchResponse { Query = query, Error = "检索语法：" + ex.Message }; }
+        var terms = plan.Terms;
         if (terms.Length == 0) return new SearchResponse { Query = query };
 
         List<BookRuntime> books;
@@ -625,30 +888,25 @@ public sealed class ChmLibrary : IDisposable
             var book = pair.Book;
             var doc = pair.Doc;
             var title = doc.Page.Title ?? "";
-            var all = true;
+            if (!plan.Root.Match(title + "\n" + doc.Text)) return;
             var titleHits = 0;
             var bodyHits = 0;
-            foreach (var term in terms)
+            foreach (var rawTerm in terms)
             {
-                var ti = title.IndexOf(term, StringComparison.OrdinalIgnoreCase);
-                var bi = doc.Text.IndexOf(term, StringComparison.OrdinalIgnoreCase);
-                if (ti < 0 && bi < 0) { all = false; break; }
-                if (ti >= 0) titleHits++;
-                if (bi >= 0)
+                var term = rawTerm.Replace("*", "");
+                if (term.Length == 0) continue;
+                if (title.IndexOf(term, StringComparison.OrdinalIgnoreCase) >= 0) titleHits++;
+                var from = 0;
+                var count = 0;
+                while (count < 8)
                 {
-                    var from = 0;
-                    var count = 0;
-                    while (count < 8)
-                    {
-                        var idx = doc.Text.IndexOf(term, from, StringComparison.OrdinalIgnoreCase);
-                        if (idx < 0) break;
-                        count++;
-                        from = idx + Math.Max(1, term.Length);
-                    }
-                    bodyHits += count;
+                    var idx = doc.Text.IndexOf(term, from, StringComparison.OrdinalIgnoreCase);
+                    if (idx < 0) break;
+                    count++;
+                    from = idx + Math.Max(1, term.Length);
                 }
+                bodyHits += count;
             }
-            if (!all) return;
             Interlocked.Increment(ref total);
             var score = titleHits * 90 + Math.Min(bodyHits, 40) * 3;
             if (title.Equals(query, StringComparison.OrdinalIgnoreCase)) score += 160;

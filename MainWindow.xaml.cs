@@ -255,6 +255,13 @@ public partial class MainWindow : Window
                     HandleWindow(root.TryGetProperty("action", out var act) ? act.GetString() ?? "" : "");
                     break;
 
+                case "ui.zoom":
+                {
+                    var z = root.TryGetProperty("value", out var zv) ? zv.GetDouble() : 1.15;
+                    Web.ZoomFactor = Math.Clamp(z, 0.85, 1.5);
+                    break;
+                }
+
                 case "chm.refresh":
                     if (_library != null) await _library.RefreshAsync();
                     break;
@@ -294,6 +301,19 @@ public partial class MainWindow : Window
                 case "chm.resetFolders":
                     _library?.RemoveExtraFolders();
                     break;
+
+                case "chm.deleteBook":
+                {
+                    var key = root.TryGetProperty("bookKey", out var bk) ? bk.GetString() ?? "" : "";
+                    if (_library != null)
+                    {
+                        var result = _library.DeleteBook(key);
+                        await _library.RefreshAsync();
+                        if (!result.Ok)
+                            Post(new { type = "toast", message = result.Error });
+                    }
+                    break;
+                }
 
                 case "file.export":
                     HandleExport(root);

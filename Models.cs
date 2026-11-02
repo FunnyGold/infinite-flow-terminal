@@ -46,6 +46,7 @@ public sealed class SearchResponse
     public int Total { get; set; }
     public long ElapsedMs { get; set; }
     public bool Truncated { get; set; }
+    public string? Error { get; set; }
     public List<SearchHit> Results { get; set; } = new();
 }
 
