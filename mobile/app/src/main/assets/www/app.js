@@ -298,6 +298,13 @@
     return targets.find(t => t.id === stTool.combat.activeTargetId) || targets[0];
   }
 
+  function stUpdateTargetNames() {
+    const active = stActiveTarget();
+    document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
+      if (opt.value === active.id) opt.textContent = active.name || '未命名目标';
+    });
+  }
+
   function stTargetForAttack(attack) {
     const targets = stTargets();
     return targets.find(t => t.id === attack.targetId) || stActiveTarget();
@@ -1072,10 +1079,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.99';
+  const APP_VERSION = 'V1.100';
   const UPDATES = [
     {
-      version: 'V1.99', date: '2026-11-03', title: '缩放拖动与来源配色', current: true,
+      version: 'V1.100', date: '2026-11-03', title: 'ST 目标改名与规则书排除', current: true,
+      notes: ['ST 目标改名即时更新', '目录信息支持不扫描规则书', '关于致谢更新']
+    },
+    {
+      version: 'V1.99', date: '2026-11-03', title: '缩放拖动与来源配色',
       notes: ['缩放松开后应用，避免拖错', '防御来源自动绿/手动红/来源金']
     },
     {
@@ -3614,6 +3625,7 @@
     if (b.status === 'extracting') return '解包 ' + b.progress + '%';
     if (b.status === 'indexing') return '索引 ' + b.progress + '%';
     if (b.status === 'error') return '读取失败';
+    if (b.status === 'ignored') return '不扫描';
     return b.status;
   }
 
@@ -5773,6 +5785,11 @@
     });
 
     document.addEventListener('change', e => {
+      if (e.target && e.target.matches('[data-book-ignore]')) {
+        post({ type: 'chm.setIgnored', bookKey: e.target.dataset.bookIgnore, ignored: e.target.checked });
+        if (window.__modalClose) window.__modalClose();
+        return;
+      }
       if (e.target && e.target.id === 'ui-zoom-range') { setUiZoom(e.target.value, true); return; }
       if (e.target && e.target.id === 'font-zoom-range') { setFontZoom(e.target.value, true); return; }
     });
@@ -5820,6 +5837,7 @@
       if (el.matches('[data-st-target-name]')) {
         stActiveTarget().name = el.value;
         saveSTTool();
+        stUpdateTargetNames();
         return;
       }
       if (el.matches('[data-st-target]')) {

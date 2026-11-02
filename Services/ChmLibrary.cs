@@ -106,6 +106,21 @@ public sealed class ChmLibrary : IDisposable
         }
     }
 
+    public bool SetIgnored(string key, bool ignored)
+    {
+        lock (_gate)
+        {
+            var book = _books.FirstOrDefault(b => b.Info.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
+            if (book == null) return false;
+            var path = book.Info.FilePath;
+            _settings.IgnoredBooks.RemoveAll(p => p.Equals(path, StringComparison.OrdinalIgnoreCase));
+            if (ignored) _settings.IgnoredBooks.Add(path);
+            SaveSettings();
+        }
+        _ = RefreshAsync();
+        return true;
+    }
+
     public (bool Ok, string Error) DeleteBook(string key)
     {
         BookRuntime? book;
@@ -360,9 +375,17 @@ public sealed class ChmLibrary : IDisposable
                     if (!fi.Exists || fi.Length < 1024) continue;
                     var key = ComputeKey(fi.FullName, fi.Length, fi.LastWriteTimeUtc.Ticks);
                     activeKeys.Add(key);
+                    var ignored = _settings.IgnoredBooks.Any(p => p.Equals(fi.FullName, StringComparison.OrdinalIgnoreCase));
                     var existing = _books.FirstOrDefault(b => b.Info.Key == key);
                     if (existing != null)
                     {
+                        if (ignored)
+                        {
+                            existing.Info.Status = "ignored";
+                            continue;
+                        }
+                        if (existing.Info.Status == "ignored")
+                            existing.Info.Status = "queued";
                         queue.Add(existing);
                         continue;
                     }
@@ -376,7 +399,7 @@ public sealed class ChmLibrary : IDisposable
                         Title = Path.GetFileNameWithoutExtension(fi.Name).Trim(),
                         FileName = fi.Name,
                         FilePath = fi.FullName,
-                        Status = "queued",
+                        Status = ignored ? "ignored" : "queued",
                         Size = fi.Length,
                         ModifiedTicks = fi.LastWriteTimeUtc.Ticks,
                         Progress = 0
@@ -387,7 +410,7 @@ public sealed class ChmLibrary : IDisposable
                         CacheDir = Path.Combine(CacheRoot, key)
                     };
                     _books.Add(rt);
-                    queue.Add(rt);
+                    if (!ignored) queue.Add(rt);
                 }
                 foreach (var b in _books.Where(b => !activeKeys.Contains(b.Info.Key)).ToList())
                 {

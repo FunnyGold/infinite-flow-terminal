@@ -302,6 +302,14 @@ public partial class MainWindow : Window
                     _library?.RemoveExtraFolders();
                     break;
 
+                case "chm.setIgnored":
+                {
+                    var key = root.TryGetProperty("bookKey", out var bk) ? bk.GetString() ?? "" : "";
+                    var ignored = root.TryGetProperty("ignored", out var ig) && ig.GetBoolean();
+                    if (_library != null) await Task.Run(() => _library.SetIgnored(key, ignored));
+                    break;
+                }
+
                 case "chm.deleteBook":
                 {
                     var key = root.TryGetProperty("bookKey", out var bk) ? bk.GetString() ?? "" : "";

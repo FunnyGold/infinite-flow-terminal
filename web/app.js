@@ -308,6 +308,13 @@
     return targets.find(t => t.id === stTool.combat.activeTargetId) || targets[0];
   }
 
+  function stUpdateTargetNames() {
+    const active = stActiveTarget();
+    document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
+      if (opt.value === active.id) opt.textContent = active.name || '未命名目标';
+    });
+  }
+
   function stTargetForAttack(attack) {
     const targets = stTargets();
     return targets.find(t => t.id === attack.targetId) || stActiveTarget();
@@ -1057,10 +1064,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.99';
+  const APP_VERSION = 'V1.100';
   const UPDATES = [
     {
-      version: 'V1.99', date: '2026-11-03', title: '缩放拖动与防御来源配色', current: true,
+      version: 'V1.100', date: '2026-11-03', title: 'ST 目标改名与规则书排除', current: true,
+      notes: [
+        'ST 目标改名即时更新到下拉框',
+        '目录信息增加“不扫描”规则书开关',
+        '被排除的规则书保留显示，可随时恢复扫描',
+        '关于页软件构建致谢补充立项与维护'
+      ]
+    },
+    {
+      version: 'V1.99', date: '2026-11-03', title: '缩放拖动与防御来源配色',
       notes: [
         '界面/字体缩放拖动时只更新数字，松开后才应用',
         '避免缩放过程中布局变化导致拖错',
@@ -3729,6 +3745,7 @@
     if (b.status === 'extracting') return '解包 ' + b.progress + '%';
     if (b.status === 'indexing') return '索引 ' + b.progress + '%';
     if (b.status === 'error') return '读取失败';
+    if (b.status === 'ignored') return '不扫描';
     return b.status;
   }
 
@@ -5400,6 +5417,7 @@
               <span><b>${esc(b.title)}</b><small>${esc(b.fileName)} · ${esc(bookStatusLabel(b))}</small></span>
             </button>
             <button class="folder-delete" data-action="delete-book" data-key="${esc(b.key)}" data-title="${esc(b.title)}" title="删除此 CHM 及缓存">${ic('trash')}</button>
+            <label class="book-ignore" title="勾选后不扫描、不索引这本规则书"><input type="checkbox" data-book-ignore="${esc(b.key)}" ${b.status === 'ignored' ? 'checked' : ''}> 不扫描</label>
           </div>`).join('') : '<div class="toc-empty">当前目录下没有已识别的 CHM 文件。</div>'}
         </div>
       </div>
@@ -5891,6 +5909,11 @@
     });
 
     document.addEventListener('change', e => {
+      if (e.target && e.target.matches('[data-book-ignore]')) {
+        post({ type: 'chm.setIgnored', bookKey: e.target.dataset.bookIgnore, ignored: e.target.checked });
+        if (window.__modalClose) window.__modalClose();
+        return;
+      }
       if (e.target && e.target.id === 'ui-zoom-range') { setUiZoom(e.target.value, true); return; }
       if (e.target && e.target.id === 'font-zoom-range') { setFontZoom(e.target.value, true); return; }
     });
@@ -5938,6 +5961,7 @@
       if (el.matches('[data-st-target-name]')) {
         stActiveTarget().name = el.value;
         saveSTTool();
+        stUpdateTargetNames();
         return;
       }
       if (el.matches('[data-st-target]')) {

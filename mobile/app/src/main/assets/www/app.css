@@ -2324,3 +2324,5 @@ body.mobile-nav-frame::before {
 .def-src-auto { color: #9fc38f; }
 .def-src-manual { color: #e2a19b; }
 .def-src-extra { color: #e2c486; }
+.book-ignore { display:flex; align-items:center; gap:4px; align-self:center; color:#777064; font-size:8px; white-space:nowrap; }
+.book-ignore input { accent-color:#c9a35f; }

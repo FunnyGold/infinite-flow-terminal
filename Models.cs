@@ -53,6 +53,7 @@ public sealed class SearchResponse
 public sealed class AppSettings
 {
     public List<string> ExtraFolders { get; set; } = new();
+    public List<string> IgnoredBooks { get; set; } = new();
     public string? LastBook { get; set; }
     public string? LastPage { get; set; }
 }
