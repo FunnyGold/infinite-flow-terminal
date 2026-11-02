@@ -1013,10 +1013,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.94';
+  const APP_VERSION = 'V1.95';
   const UPDATES = [
     {
-      version: 'V1.94', date: '2026-11-03', title: '手机适配与防御来源', current: true,
+      version: 'V1.95', date: '2026-11-03', title: '界面缩放回归页面缩放', current: true,
+      notes: ['界面缩放最低 100%', '规则书独立缩放保留']
+    },
+    {
+      version: 'V1.94', date: '2026-11-03', title: '手机适配与防御来源',
       notes: ['更多菜单增加导航栏黑框开关', '技能表压缩并支持已点技能筛选', '防御表支持来源标签与合计公式', 'ST 显示防御备注']
     },
     {
@@ -4231,11 +4235,14 @@
     } catch (e) { return fallback; }
   }
 
-  let uiZoom = Math.max(85, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
+  let uiZoom = Math.max(100, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
   let readerZoom = Math.max(80, Math.min(180, loadZoomValue(READER_ZOOM_KEY, 100)));
 
   function applyUiZoom(send) {
-    if (HAS_UI_ZOOM) document.documentElement.style.zoom = String(uiZoom / 100);
+    document.documentElement.style.zoom = '';
+    if (HAS_UI_ZOOM && send) {
+      try { post({ type: 'ui.zoom', value: uiZoom / 100 }); } catch (e) { }
+    }
     const range = $('#ui-zoom-range');
     const out = $('#ui-zoom-value');
     if (range) range.value = uiZoom;
@@ -4255,7 +4262,7 @@
   }
 
   function setUiZoom(v) {
-    uiZoom = Math.max(85, Math.min(150, Number(v) || 115));
+    uiZoom = Math.max(100, Math.min(150, Number(v) || 115));
     try { localStorage.setItem(UI_ZOOM_KEY, String(uiZoom)); } catch (e) { }
     applyUiZoom(true);
   }
