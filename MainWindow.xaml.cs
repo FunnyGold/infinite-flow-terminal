@@ -258,7 +258,7 @@ public partial class MainWindow : Window
                 case "ui.zoom":
                 {
                     var z = root.TryGetProperty("value", out var zv) ? zv.GetDouble() : 1.15;
-                    Web.ZoomFactor = Math.Clamp(z, 1.0, 1.5);
+                    Web.ZoomFactor = Math.Clamp(z, 0.85, 1.5);
                     break;
                 }
 

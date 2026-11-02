@@ -281,7 +281,35 @@
   function blankSTCombat() {
     const values = {};
     D.DEFENSE_ITEMS.forEach(d => { values[d.key] = 0; });
-    return { sourceId: '', values, attacks: [], defenseNote: '' };
+    const targetId = 'stt_' + uid();
+    return {
+      sourceId: '', values,
+      targets: [{ id: targetId, name: '目标 1', values: Object.assign({}, values) }],
+      activeTargetId: targetId,
+      attacks: [], defenseNote: ''
+    };
+  }
+
+  function stTargets() {
+    const c = stTool.combat;
+    if (!Array.isArray(c.targets) || !c.targets.length) {
+      const values = Object.assign({}, c.values || {});
+      const targetId = 'stt_' + uid();
+      c.targets = [{ id: targetId, name: '目标 1', values }];
+      c.activeTargetId = targetId;
+    }
+    if (!c.targets.some(t => t.id === c.activeTargetId)) c.activeTargetId = c.targets[0].id;
+    return c.targets;
+  }
+
+  function stActiveTarget() {
+    const targets = stTargets();
+    return targets.find(t => t.id === stTool.combat.activeTargetId) || targets[0];
+  }
+
+  function stTargetForAttack(attack) {
+    const targets = stTargets();
+    return targets.find(t => t.id === attack.targetId) || stActiveTarget();
   }
 
   function blankSTAttack() {
@@ -292,6 +320,7 @@
       cap: 0,
       extra: 0,
       count: 1,
+      targetId: '',
       highSpeed: 0,
       armorPierce: 0,
       magicPierce: 0,
@@ -309,6 +338,17 @@
     D.DEFENSE_ITEMS.forEach(d => {
       combat.values[d.key] = C.num((raw.values || {})[d.key]);
     });
+    const targetRaw = Array.isArray(raw.targets) ? raw.targets : [];
+    if (targetRaw.length) {
+      combat.targets = targetRaw.map((t, i) => {
+        const values = {};
+        D.DEFENSE_ITEMS.forEach(d => { values[d.key] = C.num((t && t.values || {})[d.key]); });
+        return { id: (t && t.id) || ('stt_' + uid()), name: (t && t.name) || ('目标 ' + (i + 1)), values };
+      });
+      combat.activeTargetId = combat.targets.some(t => t.id === raw.activeTargetId) ? raw.activeTargetId : combat.targets[0].id;
+      const active = combat.targets.find(t => t.id === combat.activeTargetId);
+      if (active) D.DEFENSE_ITEMS.forEach(d => { combat.values[d.key] = active.values[d.key]; });
+    }
     combat.attacks = (Array.isArray(raw.attacks) ? raw.attacks : []).map(a => {
       const x = blankSTAttack();
       Object.assign(x, a || {});
@@ -508,7 +548,8 @@
       flatfooted: !!(attack.flatfootedGrade && attack.flatfootedGrade !== 'none'),
       contact: !!(attack.contactGrade && attack.contactGrade !== 'none')
     };
-    const eff = C.effectiveDefense(stTool.combat.values || {}, {
+    const target = stTargetForAttack(attack);
+    const eff = C.effectiveDefense((target && target.values) || stTool.combat.values || {}, {
       highSpeed: C.num(attack.highSpeed),
       armorPierce: C.num(attack.armorPierce),
       magicPierce: C.num(attack.magicPierce)
@@ -530,9 +571,12 @@
     const options = entries.map(e => `<option value="${esc(e.id)}" ${e.id === selected ? 'selected' : ''}>${esc(e.name || '未命名调查员')}</option>`).join('');
     const defCollapsed = ui.collapsedSections.has('st-combat-defense');
     const atkCollapsed = ui.collapsedSections.has('st-combat-attacks');
+    const activeTarget = stActiveTarget();
     const targetFields = D.DEFENSE_ITEMS.map(d =>
-      `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-st-target="${esc(d.key)}" value="${fmt(combat.values[d.key] || 0)}"></div>`
+      `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-st-target="${esc(d.key)}" value="${fmt(activeTarget.values[d.key] || 0)}"></div>`
     ).join('');
+    const targetTabs = stTargets().map(t => `<option value="${esc(t.id)}" ${t.id === activeTarget.id ? 'selected' : ''}>${esc(t.name || '未命名目标')}</option>`).join('');
+    const attackTargetOptions = stTargets().map(t => `<option value="${esc(t.id)}">${esc(t.name || '未命名目标')}</option>`).join('');
     const importOptions = stAttackImportOptions();
     const attacks = (combat.attacks || []).map(a => {
       const c = stAttackCalc(a);
@@ -540,6 +584,7 @@
       const grades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.flatfootedGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       const contactGrades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.contactGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       return `<tr data-st-attack-row="${id}">
+        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="targetId">${stTargets().map(t => `<option value="${esc(t.id)}" ${t.id === (a.targetId || stActiveTarget().id) ? 'selected' : ''}>${esc(t.name || '未命名目标')}</option>`).join('')}</select></td>
         <td><input class="cell-input st-attack-name" data-st-attack="${id}" data-st-field="name" value="${esc(a.name || '')}" placeholder="攻击名"></td>
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="dp" value="${esc(C.num(a.dp))}" title="由 ST 直接填写总攻击 DP"></td>
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="由 ST 直接填写伤害上限"></td>
@@ -553,7 +598,7 @@
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(c.total))}</td>
         <td><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
       </tr>
-      <tr class="st-attack-detail"><td colspan="12">
+      <tr class="st-attack-detail"><td colspan="13">
         <div class="st-attack-detail-fields">
           <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
           <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
@@ -573,6 +618,12 @@
           </div>
         </div>
         <div class="panel-body ${defCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-defense">
+          <div class="st-target-picker">
+            <label>目标<select class="cell-input" data-st-active-target>${targetTabs}</select></label>
+            <input class="cell-input" data-st-target-name value="${esc(activeTarget.name || '')}" placeholder="目标名称">
+            <button class="btn small" data-action="st-add-target">${ic('plus')} 新增目标</button>
+            <button class="btn small" data-action="st-remove-target">删除目标</button>
+          </div>
           <div class="st-combat-toolbar">
             <label class="st-source-picker">读取自
               <select class="cell-input" data-st-defense-source>
@@ -599,7 +650,7 @@
         </div>
         <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
           ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
-            <thead><tr><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>措手不及</th><th>接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
+            <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>措手不及</th><th>接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
             <tbody>${attacks}</tbody>
           </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。所有加值来源由 ST 自行填写，不读取玩家攻击预设。</div>
@@ -608,9 +659,10 @@
   }
 
   function stSyncTargetDefenseUI() {
+    const active = stActiveTarget();
     D.DEFENSE_ITEMS.forEach(d => {
       const el = document.querySelector(`[data-st-target="${d.key}"]`);
-      if (el) el.value = fmt(stTool.combat.values[d.key] || 0);
+      if (el) el.value = fmt(active.values[d.key] || 0);
     });
     const sel = document.querySelector('[data-st-defense-source]');
     if (sel) sel.value = stTool.combat.sourceId || '';
@@ -631,7 +683,10 @@
       return;
     }
     stTool.combat.sourceId = entry.id;
-    stTool.combat.values = stEntryDefenseValues(entry);
+    const values = stEntryDefenseValues(entry);
+    stTool.combat.values = Object.assign({}, values);
+    const active = stActiveTarget();
+    D.DEFENSE_ITEMS.forEach(d => { active.values[d.key] = values[d.key] || 0; });
     saveSTTool();
     stSyncTargetDefenseUI();
     toast(`已读取 ${entry.name || '调查员'} 的防御`);
@@ -639,7 +694,8 @@
 
   function stClearDefense() {
     stTool.combat.sourceId = '';
-    D.DEFENSE_ITEMS.forEach(d => { stTool.combat.values[d.key] = 0; });
+    const active = stActiveTarget();
+    D.DEFENSE_ITEMS.forEach(d => { stTool.combat.values[d.key] = 0; active.values[d.key] = 0; });
     saveSTTool();
     stSyncTargetDefenseUI();
   }
@@ -997,10 +1053,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.96';
+  const APP_VERSION = 'V1.97';
   const UPDATES = [
     {
-      version: 'V1.96', date: '2026-11-03', title: '缩放修复与防御来源语法', current: true,
+      version: 'V1.97', date: '2026-11-03', title: '缩放与 ST 多目标', current: true,
+      notes: [
+        '界面缩放恢复 85% 档',
+        '防御来源数值在输入时立即计入合计',
+        'ST 战斗支持多个目标防御档案',
+        '每条攻击可以选择自己的目标'
+      ]
+    },
+    {
+      version: 'V1.96', date: '2026-11-03', title: '缩放修复与防御来源语法',
       notes: [
         '修复界面缩放条不生效的问题',
         '防御来源支持“名称（数值）+名称（数值）”，括号数值计入合计',
@@ -2655,6 +2720,15 @@
       const item = computed.defense.items.find(i => i.key === el.dataset.defenseAuto);
       el.textContent = fmt((item && item.auto) || 0);
     });
+  }
+
+  function refreshDefenseOutputs() {
+    $$('[data-defense-total]').forEach(el => {
+      const key = el.dataset.defenseTotal;
+      el.textContent = fmt(computed.defense.byKey[key] || 0);
+    });
+    const formula = $('#defense-formula');
+    if (formula) formula.textContent = defenseFormulaHTML(computed);
   }
 
   function showDefenseSyntaxHelp() {
@@ -4363,7 +4437,7 @@
     } catch (e) { return fallback; }
   }
 
-  let uiZoom = Math.max(100, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
+  let uiZoom = Math.max(85, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
   let readerZoom = Math.max(80, Math.min(180, loadZoomValue(READER_ZOOM_KEY, 100)));
 
   function applyUiZoom(send) {
@@ -4390,7 +4464,7 @@
   }
 
   function setUiZoom(v) {
-    uiZoom = Math.max(100, Math.min(150, Number(v) || 115));
+    uiZoom = Math.max(85, Math.min(150, Number(v) || 115));
     try { localStorage.setItem(UI_ZOOM_KEY, String(uiZoom)); } catch (e) { }
     applyUiZoom(true);
   }
@@ -5361,6 +5435,21 @@
         stRerenderPreserve();
         break;
       }
+      case 'st-add-target': {
+        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), values: Object.assign({}, stActiveTarget().values) };
+        stTool.combat.targets.push(target);
+        stTool.combat.activeTargetId = target.id;
+        saveSTTool(); renderView('st');
+        break;
+      }
+      case 'st-remove-target': {
+        if (stTargets().length <= 1) { toast('至少保留一个目标'); break; }
+        stTool.combat.targets = stTargets().filter(t => t.id !== stTool.combat.activeTargetId);
+        stTool.combat.activeTargetId = stTool.combat.targets[0].id;
+        saveSTTool(); renderView('st');
+        break;
+      }
+      case 'st-active-target': break;
       case 'st-load-defense': {
         const source = document.querySelector('[data-st-defense-source]');
         stLoadDefense(source ? source.value : '');
@@ -5787,7 +5876,20 @@
         ui.rules.searchTimer = window.setTimeout(() => startSearch(el.value), 420);
         return;
       }
+      if (el.matches('[data-st-active-target]')) {
+        stTool.combat.activeTargetId = el.value;
+        stSyncTargetDefenseUI();
+        saveSTTool();
+        return;
+      }
+      if (el.matches('[data-st-target-name]')) {
+        stActiveTarget().name = el.value;
+        saveSTTool();
+        return;
+      }
       if (el.matches('[data-st-target]')) {
+        const active = stActiveTarget();
+        active.values[el.dataset.stTarget] = C.num(el.value);
         stTool.combat.values[el.dataset.stTarget] = C.num(el.value);
         saveSTTool();
         refreshSTCombatOutputs();
@@ -5807,6 +5909,13 @@
       if (el.closest('[data-skill-row]') && bind.endsWith('.name')) {
         const row = el.closest('[data-skill-row]');
         row.dataset.search = [el.value || '', row.dataset.group || '', row.dataset.note || ''].join(' ');
+      }
+      if (bind.startsWith('defense.labels.')) {
+        computed = C.compute(state);
+        refreshDefenseOutputs();
+        scheduleSave();
+        updateSidebar();
+        return;
       }
       if (bind === 'defense.baseA' || bind === 'defense.baseB') {
         stateChanged({ rerender: true });
