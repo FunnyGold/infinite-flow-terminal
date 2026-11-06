@@ -315,13 +315,8 @@
     stTool.combat.activeTargetId = id;
     saveSTTool();
     const active = stActiveTarget();
-    document.querySelectorAll('.st-target-card[data-id]').forEach(card => {
-      card.classList.toggle('active', card.dataset.id === id);
-    });
-    const nameInput = document.querySelector('[data-st-target-name]');
-    if (nameInput) nameInput.value = active.name || '';
-    document.querySelectorAll('[data-st-target-grade]').forEach(sel => {
-      sel.value = active[sel.dataset.stTargetGrade] || 'none';
+    document.querySelectorAll('.st-target-card[data-target-card]').forEach(card => {
+      card.classList.toggle('active', card.dataset.targetCard === id);
     });
     D.DEFENSE_ITEMS.forEach(d => {
       const input = document.querySelector(`[data-st-target="${d.key}"]`);
@@ -346,8 +341,8 @@
     document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
       if (opt.value === active.id) opt.textContent = active.name || '未命名目标';
     });
-    document.querySelectorAll('.st-target-card[data-id]').forEach(card => {
-      if (card.dataset.id === active.id) {
+    document.querySelectorAll('.st-target-card[data-target-card]').forEach(card => {
+      if (card.dataset.targetCard === active.id) {
         const b = card.querySelector('b');
         if (b) b.textContent = active.name || '未命名目标';
       }
@@ -659,7 +654,17 @@
     const targetCards = stTargets().map(t => {
       const src = (stTool.entries || []).find(e => e.id === t.sourceId);
       const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
-      return `<button class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>`;
+      return `<div class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-target-card="${esc(t.id)}">
+        <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>
+        <div class="st-target-card-edit">
+          <input class="cell-input st-target-name-input" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
+          <div class="st-target-card-controls">
+            <label class="st-target-grade">措手不及<select class="cell-input" data-st-target-grade="flatfootedGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.flatfootedGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
+            <label class="st-target-grade">接触<select class="cell-input" data-st-target-grade="contactGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.contactGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
+            <button class="st-target-remove" data-action="st-remove-target" data-id="${esc(t.id)}">删除</button>
+          </div>
+        </div>
+      </div>`;
     }).join('');
     const importOptions = stAttackImportOptions();
     const attacks = (combat.attacks || []).map(a => {
@@ -704,12 +709,6 @@
         </div>
         <div class="panel-body ${defCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-defense">
           <div class="st-target-cards">${targetCards}<button class="st-target-card st-target-add" data-action="st-add-target">${ic('plus')} 新目标</button></div>
-          <div class="st-target-editor-head">
-            <input class="cell-input" data-st-target-name value="${esc(activeTarget.name || '')}" placeholder="目标名称">
-            <label class="st-target-grade">措手不及<select class="cell-input" data-st-target-grade="flatfootedGrade">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (activeTarget.flatfootedGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
-            <label class="st-target-grade">接触<select class="cell-input" data-st-target-grade="contactGrade">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (activeTarget.contactGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
-            <button class="btn small" data-action="st-remove-target">删除当前目标</button>
-          </div>
           <div class="st-combat-toolbar">
             <label class="st-source-picker">读取自
               <select class="cell-input" data-st-defense-source>
@@ -1211,10 +1210,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.114';
+  const APP_VERSION = 'V1.115';
   const UPDATES = [
     {
-      version: 'V1.114', date: '2026-11-06', title: '更多局部刷新', current: true,
+      version: 'V1.115', date: '2026-11-06', title: 'ST 目标卡内编辑', current: true,
+      notes: [
+        '目标名称、措手不及、接触等级直接放进目标卡片',
+        '每个目标卡片自带删除按钮',
+        '移除目标卡片下方的独立编辑行',
+        '切换目标仍只更新防御字段和来源'
+      ]
+    },
+    {
+      version: 'V1.114', date: '2026-11-06', title: '更多局部刷新',
       notes: [
         '生命口径切换不再整页重绘',
         '意志回满不再整页重绘',
@@ -5876,8 +5884,9 @@
       }
       case 'st-remove-target': {
         if (stTargets().length <= 1) { toast('至少保留一个目标'); break; }
-        stTool.combat.targets = stTargets().filter(t => t.id !== stTool.combat.activeTargetId);
-        stTool.combat.activeTargetId = stTool.combat.targets[0].id;
+        const removeId = el.dataset.id || stTool.combat.activeTargetId;
+        stTool.combat.targets = stTargets().filter(t => t.id !== removeId);
+        if (stTool.combat.activeTargetId === removeId) stTool.combat.activeTargetId = stTool.combat.targets[0].id;
         saveSTTool(); renderView('st');
         break;
       }
@@ -6366,12 +6375,14 @@
         return;
       }
       if (el.matches('[data-st-target-grade]')) {
-        stActiveTarget()[el.dataset.stTargetGrade] = el.value;
+        const target = stTargets().find(t => t.id === el.dataset.targetId) || stActiveTarget();
+        target[el.dataset.stTargetGrade] = el.value;
         saveSTTool();
         return;
       }
       if (el.matches('[data-st-target-name]')) {
-        stActiveTarget().name = el.value;
+        const target = stTargets().find(t => t.id === el.dataset.stTargetName) || stActiveTarget();
+        target.name = el.value;
         saveSTTool();
         stUpdateTargetNames();
         return;

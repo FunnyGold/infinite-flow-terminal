@@ -2395,3 +2395,12 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-card-btn.danger { color:#b98c86; }
 .st-card-btn.danger:hover { color:#e2a19b; border-color:rgba(226,161,155,.4); }
 #st-section-characters, #st-section-targets, #st-section-attacks, #st-section-compare, #st-section-notes { scroll-margin-top: 46px; }
+.st-target-card { min-width:250px; padding:0; overflow:hidden; display:flex; flex-direction:column; }
+.st-target-card-pick { border:0; background:transparent; color:inherit; text-align:left; padding:7px 9px 5px; cursor:pointer; display:flex; flex-direction:column; gap:2px; }
+.st-target-card-edit { display:flex; flex-direction:column; gap:4px; padding:0 8px 8px; }
+.st-target-name-input { height:24px; font-size:9px; }
+.st-target-card-controls { display:flex; align-items:center; gap:5px; flex-wrap:wrap; }
+.st-target-card-controls .st-target-grade { font-size:7.5px; }
+.st-target-card-controls select { width:60px; height:22px; }
+.st-target-remove { border:1px solid rgba(226,161,155,.22); background:transparent; color:#b98c86; border-radius:4px; padding:2px 6px; font:8px var(--sans); cursor:pointer; }
+.st-target-remove:hover { color:#e2a19b; border-color:rgba(226,161,155,.5); }
