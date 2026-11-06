@@ -340,6 +340,7 @@
     stTool.combat.activeTargetId = id;
     saveSTTool();
     stSyncChips();
+    stRefreshInspector();
     document.querySelectorAll('[data-st-attack][data-st-field="targetId"]').forEach(sel => {
       const a = (stTool.combat.attacks || []).find(x => x.id === sel.dataset.stAttack);
       if (a && !a.targetId) sel.value = id;
@@ -703,60 +704,33 @@
       <div class="panel mt18" id="st-section-targets">
         <div class="panel-head">
           <div class="panel-title">战斗 · 目标<span class="st-count">${stTargets().length}</span></div>
-          <div class="panel-head-right"><span class="panel-sub">点目标卡编辑它的防御与状态；攻击行没有单独选目标时使用当前目标</span></div>
+          <div class="panel-head-right"><span class="panel-sub">点目标卡切换，右侧直接改它的防御；攻击行没单独选目标时用当前目标</span></div>
         </div>
         <div class="panel-body"><div class="st-chips">${stChipsHTML()}<button class="st-chip add" data-action="st-add-target">${ic('plus')} 新目标</button></div></div>
       </div>
-      <div class="panel mt18 collapsible" id="st-section-attacks">
-        <div class="panel-head">
-          <div class="panel-title">战斗 · 攻击预设</div>
-          <div class="panel-head-right">
-            <span class="panel-sub">可直接填写，也可从角色攻击预设一次读取全部字段</span>
-            <button class="btn small gold" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
-            <button class="collapse-btn ${atkCollapsed ? 'collapsed' : ''}" data-action="toggle-section" data-section="st-combat-attacks" aria-expanded="${atkCollapsed ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
+      <div class="st-battle">
+        <div class="panel collapsible" id="st-section-attacks">
+          <div class="panel-head">
+            <div class="panel-title">攻击预设<span class="st-count">${(combat.attacks || []).length}</span></div>
+            <div class="panel-head-right">
+              <button class="btn small gold" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
+              <button class="collapse-btn ${atkCollapsed ? 'collapsed' : ''}" data-action="toggle-section" data-section="st-combat-attacks" aria-expanded="${atkCollapsed ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
+            </div>
+          </div>
+          <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
+            ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
+              <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
+              <tbody>${attacks}</tbody>
+            </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
+            <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
           </div>
         </div>
-        <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
-          ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
-            <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
-            <tbody>${attacks}</tbody>
-          </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
-          <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
-        </div>
+        ${stInspectorHTML()}
       </div>
       ${stTargetComparisonHTML()}`;
   }
 
-  function stSyncTargetDefenseUI() {
-    const active = stActiveTarget();
-    D.DEFENSE_ITEMS.forEach(d => {
-      const el = document.querySelector(`[data-st-target="${d.key}"]`);
-      if (el && document.activeElement !== el) el.value = fmt(active.values[d.key] || 0);
-    });
-    const sel = document.querySelector('[data-st-defense-source]');
-    if (sel) sel.value = active.sourceId || '';
-    const hint = document.querySelector('.st-combat-hint');
-    if (hint) {
-      const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
-      hint.textContent = entry ? `来源：${entry.name || '调查员'}` : '来源：手动填写';
-    }
-    stSyncTargetDialogTotals();
-    refreshSTCombatOutputs();
-  }
-
-  function stSyncTargetDialogTotals() {
-    const el = document.querySelector('[data-st-dlg-total]');
-    if (!el) return;
-    el.textContent = fmt(stTargetDefTotal(stActiveTarget()));
-    const src = document.querySelector('[data-st-dlg-src]');
-    if (src) {
-      const t = stActiveTarget();
-      const entry = (stTool.entries || []).find(e => e.id === t.sourceId);
-      src.textContent = entry ? (entry.name || '调查员') : '手动防御';
-    }
-  }
-
-  function stTargetDialogHTML() {
+  function stInspectorHTML() {
     const t = stActiveTarget();
     const entries = stTool.entries || [];
     const selected = entries.some(e => e.id === t.sourceId) ? t.sourceId : '';
@@ -775,84 +749,67 @@
           return `<label class="st-def" title="${esc((item && item.desc) || '')}"><em>${esc(item ? item.name : k)}</em><input class="cell-input" type="number" data-st-target="${esc(k)}" value="${fmt(t.values[k] || 0)}"></label>`;
         }).join('')}</div>
       </section>`).join('');
-    return `<div class="st-dlg" data-st-dlg>
-      <div class="st-dlg-bar"><span>目标防御</span><button type="button" class="st-dlg-x" data-modal="close" title="关闭">×</button></div>
-      <div class="st-dlg-head">
-        <input class="st-dlg-name" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
-        <span class="st-dlg-src" data-st-dlg-src>${entry ? esc(entry.name || '调查员') : '手动防御'}</span>
+    const note = entry && entry.defenseNote
+      ? `<div class="st-insp-note" title="${esc(entry.defenseNote)}">${esc(entry.defenseNote)}</div>` : '';
+    return `<div class="panel st-insp" id="st-section-inspector">
+      <div class="st-insp-head">
+        <input class="st-insp-name" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称" title="点击可直接改名">
+        <span class="st-insp-src" data-st-insp-src>${entry ? esc(entry.name || '调查员') : '手动防御'}</span>
       </div>
-      <div class="st-dlg-tools">
+      <div class="st-insp-tools">
         <label>读取自
           <select class="cell-input" data-st-defense-source>
             <option value="">手动填写</option>
             ${entries.map(e => `<option value="${esc(e.id)}" ${e.id === selected ? 'selected' : ''}>${esc(e.name || '未命名调查员')}</option>`).join('')}
           </select>
         </label>
-        <button class="btn small" data-action="st-load-defense">${ic('refresh')} 重新读取</button>
-        <button class="btn small" data-action="st-clear-defense">清空防御</button>
+        <button class="btn small" data-action="st-load-defense" title="按来源重新读取防御">${ic('refresh')}</button>
+        <button class="btn small" data-action="st-clear-defense">清空</button>
       </div>
-      <div class="st-def-groups">${groupsHTML}</div>
-      <div class="st-dlg-foot">
-        <div class="st-dlg-grades">
-          <label>目标 · 措手不及${gradeSelect('flatfootedGrade', t.flatfootedGrade)}</label>
-          <label>目标 · 接触${gradeSelect('contactGrade', t.contactGrade)}</label>
+      <div class="st-insp-body">
+        ${groupsHTML}
+        <div class="st-insp-total"><span>防御合计</span><b data-st-insp-total>${fmt(stTargetDefTotal(t))}</b></div>
+        <div class="st-insp-grades">
+          <label>措手不及${gradeSelect('flatfootedGrade', t.flatfootedGrade)}</label>
+          <label>接触${gradeSelect('contactGrade', t.contactGrade)}</label>
         </div>
-        <div class="st-dlg-total"><span>防御合计</span><b data-st-dlg-total>${fmt(stTargetDefTotal(t))}</b></div>
+        ${note}
       </div>
-      <div class="st-dlg-actions">
+      <div class="st-insp-actions">
         <button class="btn small danger" data-action="st-remove-target" data-id="${esc(t.id)}">删除目标</button>
-        <button class="btn" data-modal="close">完成</button>
       </div>
     </div>`;
   }
 
-  function stCloseTargetDialog() {
-    const layer = $('#modal-layer');
-    const card = $('#modal-card');
-    if (!layer) return;
-    layer.hidden = true;
-    if (card) {
-      card.style.width = '';
-      card.style.position = '';
-      card.style.left = '';
-      card.style.top = '';
-      card.style.right = '';
-      card.style.margin = '';
+  function stRefreshInspector() {
+    const box = document.getElementById('st-section-inspector');
+    if (!box) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = stInspectorHTML();
+    if (tmp.firstElementChild) box.replaceWith(tmp.firstElementChild);
+  }
+
+  function stSyncInspectorTotal() {
+    const el = document.querySelector('[data-st-insp-total]');
+    if (el) el.textContent = fmt(stTargetDefTotal(stActiveTarget()));
+    const src = document.querySelector('[data-st-insp-src]');
+    if (src) {
+      const t = stActiveTarget();
+      const entry = (stTool.entries || []).find(e => e.id === t.sourceId);
+      src.textContent = entry ? (entry.name || '调查员') : '手动防御';
     }
-    window.__modalClose = null;
   }
 
-  function bindSTTargetDialog() {
-    const card = $('#modal-card');
-    const layer = $('#modal-layer');
-    if (!card || !layer) return;
-    card.querySelectorAll('[data-modal="close"]').forEach(btn => { btn.onclick = stCloseTargetDialog; });
-    layer.onpointerdown = e => { layer.dataset.downOnLayer = (e.target === layer) ? '1' : '0'; };
-    layer.onclick = e => { if (e.target === layer && layer.dataset.downOnLayer === '1') stCloseTargetDialog(); };
-    window.__modalClose = stCloseTargetDialog;
-    if (typeof setupAttackWindowDrag === 'function') setupAttackWindowDrag(card, 'stTargetDlgPos', '.st-dlg-bar');
-  }
-
-  function stRefreshTargetDialog() {
-    const card = $('#modal-card');
-    const layer = $('#modal-layer');
-    if (!card || !layer || layer.hidden) return;
-    if (!card.querySelector('[data-st-dlg]')) return;
-    card.innerHTML = stTargetDialogHTML();
-    bindSTTargetDialog();
-  }
-
-  function stOpenTargetDialog(id) {
-    const layer = $('#modal-layer');
-    const card = $('#modal-card');
-    if (!layer || !card) return;
-    stTool.combat.activeTargetId = id;
-    saveSTTool();
-    stSyncChips();
-    card.style.width = '640px';
-    card.innerHTML = stTargetDialogHTML();
-    layer.hidden = false;
-    bindSTTargetDialog();
+  function stSyncTargetDefenseUI() {
+    const active = stActiveTarget();
+    D.DEFENSE_ITEMS.forEach(d => {
+      const el = document.querySelector(`[data-st-target="${d.key}"]`);
+      if (el && document.activeElement !== el) el.value = fmt(active.values[d.key] || 0);
+    });
+    const sel = document.querySelector('[data-st-defense-source]');
+    if (sel) sel.value = active.sourceId || '';
+    stSyncInspectorTotal();
+    refreshSTCombatOutputs();
   }
 
   function stLoadDefense(sourceId) {
@@ -863,8 +820,8 @@
       active.sourceId = '';
       saveSTTool();
       stUpdateTargetNames();
-      stSyncTargetDefenseUI();
-      stRefreshTargetDialog();
+      stRefreshInspector();
+      refreshSTCombatOutputs();
       return;
     }
     stTool.combat.sourceId = entry.id;
@@ -876,8 +833,8 @@
     D.DEFENSE_ITEMS.forEach(d => { active.values[d.key] = values[d.key] || 0; });
     saveSTTool();
     stUpdateTargetNames();
-    stSyncTargetDefenseUI();
-    stRefreshTargetDialog();
+    stRefreshInspector();
+    refreshSTCombatOutputs();
     toast(`已读取 ${entry.name || '调查员'} 的防御`);
   }
 
@@ -890,8 +847,8 @@
     active.contactGrade = 'none';
     saveSTTool();
     stUpdateTargetNames();
-    stSyncTargetDefenseUI();
-    stRefreshTargetDialog();
+    stRefreshInspector();
+    refreshSTCombatOutputs();
   }
 
   function stRerenderPreserve() {
@@ -1315,10 +1272,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.128';
+  const APP_VERSION = 'V1.129';
   const UPDATES = [
     {
-      version: 'V1.128', date: '2026-11-06', title: '弹层可拖动与字体缩放裁字修复', current: true,
+      version: 'V1.129', date: '2026-11-06', title: 'ST 战斗区改为双栏检视', current: true,
+      notes: [
+        '目标防御改为右侧常驻检视栏，点目标卡只是切换',
+        '检视栏内直接改 16 项防御、读取来源、措手不及与接触、删除目标',
+        '攻击预设与检视栏左右分栏，攻击结果和防御数值同屏可见',
+        '移除目标防御弹层，窄窗口下自动上下堆叠'
+      ]
+    },
+    {
+      version: 'V1.128', date: '2026-11-06', title: '弹层可拖动与字体缩放裁字修复',
       notes: [
         'ST 目标防御弹层可以拖动，位置会记住',
         '弹层加标题栏与关闭按钮，Esc / 点背景照旧关闭',
@@ -6090,7 +6056,7 @@
         break;
       }
       case 'st-note-expand': openSTNotesFloat(); break;
-      case 'st-select-target': stOpenTargetDialog(el.dataset.id); break;
+      case 'st-select-target': stSwitchTarget(el.dataset.id); break;
       case 'st-add-target': {
         const base = stActiveTarget();
         const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, base ? base.values : {}) };
@@ -6098,7 +6064,6 @@
         stTool.combat.activeTargetId = target.id;
         saveSTTool();
         renderView('st');
-        stOpenTargetDialog(target.id);
         break;
       }
       case 'st-remove-target': {
@@ -6107,7 +6072,6 @@
         stTool.combat.targets = stTargets().filter(t => t.id !== removeId);
         if (stTool.combat.activeTargetId === removeId) stTool.combat.activeTargetId = stTool.combat.targets[0].id;
         saveSTTool();
-        stCloseTargetDialog();
         renderView('st');
         break;
       }
@@ -6601,7 +6565,7 @@
         target[el.dataset.stTargetGrade] = el.value;
         saveSTTool();
         refreshSTCombatOutputs();
-        stSyncTargetDialogTotals();
+        stSyncInspectorTotal();
         return;
       }
       if (el.matches('[data-st-target-name]')) {
@@ -6618,7 +6582,7 @@
         stTool.combat.values[el.dataset.stTarget] = C.num(el.value);
         saveSTTool();
         refreshSTCombatOutputs();
-        stSyncTargetDialogTotals();
+        stSyncInspectorTotal();
         return;
       }
       if (el.matches('[data-st-attack]')) {
