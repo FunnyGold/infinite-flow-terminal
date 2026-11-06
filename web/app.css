@@ -2378,3 +2378,7 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-compare-table th { text-align:left; font-size:8px; color:#6b665d; font-weight:400; padding:0 8px 7px; border-bottom:1px solid rgba(255,255,255,.08); }
 .st-compare-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.045); font:10px var(--mono); color:#c9c0b0; }
 .st-compare-table td.st-cmp-attack { color:#d9bd85; font-family:var(--sans); }
+.st-jump { position:sticky; top:0; z-index:25; display:flex; gap:6px; padding:7px 0 9px; margin:-4px 0 10px; background:linear-gradient(180deg, rgba(18,19,23,.98) 65%, rgba(18,19,23,0)); overflow-x:auto; }
+.st-jump button { border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.025); color:#a99e8b; border-radius:5px; padding:4px 9px; font:9px var(--sans); white-space:nowrap; cursor:pointer; }
+.st-jump button:hover { color:#e2c486; border-color:rgba(201,168,110,.4); }
+.st-jump button b { color:#d9bd85; font:10px var(--mono); margin-left:2px; }

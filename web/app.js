@@ -602,7 +602,7 @@
     const attacks = stTool.combat.attacks || [];
     const targets = stTargets();
     if (!attacks.length || targets.length < 2) return '';
-    return `<div class="panel mt18 st-compare-panel">
+    return `<div class="panel mt18 st-compare-panel" id="st-section-compare">
       <div class="panel-head"><div class="panel-title">目标对比</div><div class="panel-head-right"><span class="panel-sub">同一条攻击对所有目标的有效防御 / 最终 DP / 期望伤害</span></div></div>
       <div class="panel-body"><div class="st-compare-wrap"><table class="st-compare-table">
         <thead><tr><th>攻击</th><th>目标</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th></tr></thead>
@@ -659,7 +659,7 @@
       </td></tr>`;
     }).join('');
     return `
-      <div class="panel mt18 collapsible">
+      <div class="panel mt18 collapsible" id="st-section-targets">
         <div class="panel-head">
           <div class="panel-title">战斗 · 目标</div>
           <div class="panel-head-right">
@@ -687,14 +687,14 @@
             <span class="st-combat-hint">${selected ? '当前来源：' + esc((entries.find(e => e.id === selected) || {}).name || '') : '当前为手动防御'}</span>
           </div>
           <div class="defense-target st-target-grid">${targetFields}</div>
-          <div class="matrix-wrap-note">左侧选择目标卡片；「读取自」只作用于当前目标。下方每条攻击可以选择不同目标，措手不及 / 接触仍由攻击行决定。</div>
+          <div class="matrix-wrap-note">上方选择目标卡片；「读取自」只作用于当前目标。下方每条攻击可以选择不同目标，措手不及 / 接触仍由攻击行决定。</div>
         </div>
       </div>
-      <div class="panel mt18 collapsible">
+      <div class="panel mt18 collapsible" id="st-section-attacks">
         <div class="panel-head">
           <div class="panel-title">战斗 · 攻击预设</div>
           <div class="panel-head-right">
-            <span class="panel-sub">总 DP / 伤害上限 / 附加 / 次数 / 来源全部由 ST 填写</span>
+            <span class="panel-sub">可直接填写，也可从角色攻击预设一次读取全部字段</span>
             <button class="btn small gold" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
             <button class="collapse-btn ${atkCollapsed ? 'collapsed' : ''}" data-action="toggle-section" data-section="st-combat-attacks" aria-expanded="${atkCollapsed ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
           </div>
@@ -704,7 +704,7 @@
             <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>措手不及</th><th>接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
             <tbody>${attacks}</tbody>
           </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
-          <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。所有加值来源由 ST 自行填写，不读取玩家攻击预设。</div>
+          <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
         </div>
       </div>
       ${stTargetComparisonHTML()}`;
@@ -855,9 +855,18 @@
 
   function stHTML() {
     const entries = stTool.entries || [];
+    const targetCount = stTargets().length;
+    const attackCount = (stTool.combat.attacks || []).length;
     return `
-      ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。下方可直接读取玩家防御并进行 ST 攻击结算。', '')}
-      <div class="panel">
+      ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。', '')}
+      <div class="st-jump">
+        <button data-action="st-jump" data-target="st-section-characters">调查员 <b>${entries.length}</b></button>
+        <button data-action="st-jump" data-target="st-section-targets">目标 <b>${targetCount}</b></button>
+        <button data-action="st-jump" data-target="st-section-attacks">攻击 <b>${attackCount}</b></button>
+        ${targetCount >= 2 && attackCount ? `<button data-action="st-jump" data-target="st-section-compare">对比</button>` : ''}
+        <button data-action="st-jump" data-target="st-section-notes">笔记</button>
+      </div>
+      <div class="panel" id="st-section-characters">
         <div class="panel-head"><div class="panel-title">调查员状态</div><div class="panel-head-right st-toolbar">
           <button class="btn small gold" data-action="st-picker">${ic('users')} 选择角色卡</button>
           <button class="btn small" data-action="st-import">${ic('upload')} 导入 JSON</button>
@@ -866,11 +875,11 @@
         </div></div>
         <div class="panel-body">${entries.length ? `<div class="st-grid">${entries.map(stCardHTML).join('')}</div>` : `<div class="empty st-empty"><b>还没有载入调查员</b>从本地角色卡中选择，或导入其他调查员的角色卡 JSON。调整只保存在 ST 工具中，不影响原卡。</div>`}</div>
       </div>
-      <div class="panel mt18 st-notes-panel">
+      ${stCombatHTML()}
+      <div class="panel mt18 st-notes-panel" id="st-section-notes">
         <div class="panel-head"><div class="panel-title">ST 笔记</div><div class="panel-head-right"><span class="panel-sub">双击文本框放大，浮窗可拖动 / 调整大小</span><button class="btn small" data-action="st-note-expand">放大</button></div></div>
         <div class="panel-body"><textarea class="st-notes-input" id="st-notes" rows="4" placeholder="记录战斗、剧情、NPC、临时裁定…">${esc(stTool.notes || '')}</textarea></div>
-      </div>
-      ${stCombatHTML()}`;
+      </div>`;
   }
 
   function stAddProfile(profileId) {
@@ -1163,10 +1172,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.106';
+  const APP_VERSION = 'V1.107';
   const UPDATES = [
     {
-      version: 'V1.106', date: '2026-11-06', title: 'ST 目标对比', current: true,
+      version: 'V1.107', date: '2026-11-06', title: 'ST 页面导航与底部笔记', current: true,
+      notes: [
+        'ST 笔记移动到底部',
+        'ST 页面增加吸顶快捷导航：调查员 / 目标 / 攻击 / 对比 / 笔记',
+        '导航显示目标与攻击数量',
+        '修正 ST 攻击区“不读取角色预设”的旧说明'
+      ]
+    },
+    {
+      version: 'V1.106', date: '2026-11-06', title: 'ST 目标对比',
       notes: [
         'ST 新增目标对比表：同一条攻击对所有目标的有效防御、最终DP、期望伤害',
         '对比表随攻击和目标数值实时刷新',
@@ -5650,6 +5668,11 @@
         if (stTool.combat.sourceId === el.dataset.id) stTool.combat.sourceId = '';
         saveSTTool();
         stRerenderPreserve();
+        break;
+      }
+      case 'st-jump': {
+        const el = document.getElementById(action.dataset.target);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
         break;
       }
       case 'st-note-expand': openSTNotesFloat(); break;
