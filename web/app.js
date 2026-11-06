@@ -1291,10 +1291,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.133';
+  const APP_VERSION = 'V1.134';
   const UPDATES = [
     {
-      version: 'V1.133', date: '2026-11-06', title: '人物卡页配色收敛', current: true,
+      version: 'V1.134', date: '2026-11-06', title: '战斗页配色收敛', current: true,
+      notes: [
+        '战斗页文字色收到 8 种，全部是语义变量',
+        '能量充足 / 附加成功合并成同一个成功色，不再三种绿',
+        '能量池字段标签、空状态、账本表脚统一到四级文字色',
+        '侧栏「更新目录」副标题缩短，放大字体后不再被省略号截断'
+      ]
+    },
+    {
+      version: 'V1.133', date: '2026-11-06', title: '人物卡页配色收敛',
       notes: [
         '人物卡页的 25 种文字色收敛到 17 种，其中 12 种是语义变量',
         '一串差一两度的近重复灰统一到四级文字色',
