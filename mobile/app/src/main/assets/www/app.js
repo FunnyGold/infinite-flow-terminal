@@ -1261,10 +1261,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.121';
+  const APP_VERSION = 'V1.122';
   const UPDATES = [
     {
-      version: 'V1.121', date: '2026-11-06', title: 'ST 目标/攻击分栏', current: true,
+      version: 'V1.122', date: '2026-11-06', title: 'ST 分栏宽度与删除按钮', current: true,
+      notes: ['1450px 以下自动堆叠', '攻击操作列固定', '详情内可删除攻击']
+    },
+    {
+      version: 'V1.121', date: '2026-11-06', title: 'ST 目标/攻击分栏',
       notes: ['目标/攻击左右分栏', '攻击目标显示防御值', '攻击详情显示公式']
     },
     {

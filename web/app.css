@@ -2434,4 +2434,10 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-battle-targets .st-combat-toolbar { align-items:stretch; }
 .st-battle-targets .st-combat-hint { margin-left:0; width:100%; }
 .st-attack-calc-line { font:9px var(--mono); color:#a9987c; padding:5px 0 7px; border-bottom:1px dashed rgba(255,255,255,.06); margin-bottom:7px; }
-@media (max-width:1100px) { .st-battle-layout { grid-template-columns:1fr; } .st-battle-targets .st-target-cards { flex-direction:row; overflow-x:auto; } .st-battle-targets .st-target-card { width:auto; } .st-battle-targets .st-target-grid { grid-template-columns:repeat(7,minmax(0,1fr)); } }
+@media (max-width:1450px) { .st-battle-layout { grid-template-columns:1fr; } .st-battle-targets .st-target-cards { flex-direction:row; overflow-x:auto; } .st-battle-targets .st-target-card { width:auto; } .st-battle-targets .st-target-grid { grid-template-columns:repeat(7,minmax(0,1fr)); } }
+.st-battle-layout { grid-template-columns:310px minmax(0,1fr); }
+.st-attack-table th:last-child { min-width:62px; }
+.st-attack-actions { position:sticky; right:0; z-index:2; background:#171a1f; }
+.st-attack-table th:last-child { position:sticky; right:0; z-index:3; background:#171a1f; }
+.st-attack-detail-delete { align-self:flex-end; margin-top:4px; }
+html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack-table th:last-child { background:#fbf7ef; }

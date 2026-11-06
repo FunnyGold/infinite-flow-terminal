@@ -720,6 +720,7 @@
           <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
           <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
           <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
+          <button class="btn small danger st-attack-detail-delete" data-action="st-remove-attack" data-id="${id}">${ic('trash')} 删除这条攻击</button>
         </div>
       </td></tr>`;
     }).join('');
@@ -1248,10 +1249,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.121';
+  const APP_VERSION = 'V1.122';
   const UPDATES = [
     {
-      version: 'V1.121', date: '2026-11-06', title: 'ST 目标/攻击分栏', current: true,
+      version: 'V1.122', date: '2026-11-06', title: 'ST 分栏宽度与删除按钮', current: true,
+      notes: [
+        '1450px 以下自动上下堆叠，攻击表恢复全宽',
+        '攻击操作列固定在右侧，滚动时仍能看到删除',
+        '攻击详情内新增“删除这条攻击”按钮'
+      ]
+    },
+    {
+      version: 'V1.121', date: '2026-11-06', title: 'ST 目标/攻击分栏',
       notes: [
         '战斗目标与攻击预设改为左右分栏（窄屏自动上下堆叠）',
         '攻击目标下拉显示目标名和防御值',
