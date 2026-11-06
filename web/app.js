@@ -1315,10 +1315,17 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.149';
+  const APP_VERSION = 'V1.150';
   const UPDATES = [
     {
-      version: 'V1.149', date: '2026-11-07', title: '攻击按目标隔离、折叠图标与重绘', current: true,
+      version: 'V1.150', date: '2026-11-07', title: '规则书三处折叠统一', current: true,
+      notes: [
+        '目录/ CONTENTS 的「展开」「折叠」两个按钮改为一个切换按钮',
+        '收藏夹、规则书、目录三处的折叠按钮现在完全一致'
+      ]
+    },
+    {
+      version: 'V1.149', date: '2026-11-07', title: '攻击按目标隔离、折叠图标与重绘',
       notes: [
         '攻击列表按目标隔离：在目标 1 下新增的攻击只属于目标 1',
         '切换目标时攻击列表跟着切换，行里的「目标」下拉可把攻击改到别的目标',
@@ -4781,6 +4788,16 @@
     else ui.collapsedSections.delete(key);
   }
 
+function toggleAllToc() {
+    ui.rules.tocExpanded = ui.rules.tocExpanded === false;
+    if (ui.rules.tocExpanded) expandAllToc(); else collapseAllToc();
+    const btn = document.querySelector('[data-action="toc-toggle-all"]');
+    if (btn) {
+      btn.textContent = ui.rules.tocExpanded ? '折叠' : '展开';
+      btn.title = ui.rules.tocExpanded ? '折叠全部目录' : '展开全部目录';
+    }
+  }
+
   function expandAllToc() {
     const walk = node => {
       if (node._children && node._children.length) {
@@ -4835,8 +4852,7 @@
     }
     panel.innerHTML = `<div class="toc-head"><span class="toc-head-title">目录 / CONTENTS</span>
         <div class="toc-head-actions">
-          <button class="toc-mini" data-action="toc-expand-all">展开</button>
-          <button class="toc-mini" data-action="toc-collapse-all">折叠</button>
+          <button class="toc-mini" data-action="toc-toggle-all" title="${ui.rules.tocExpanded === false ? '展开全部目录' : '折叠全部目录'}">${ui.rules.tocExpanded === false ? '展开' : '折叠'}</button>
           <span class="toc-head-count">${active && active.status === 'ready' ? (active.pageCount || '') + ' 页' : ''}</span>
         </div></div>
       <div class="toc-scroll" id="toc-scroll">${body}</div>`;
@@ -6552,8 +6568,7 @@
         break;
       }
       case 'chm-folder-info': showFolderInfo(); break;
-      case 'toc-expand-all': expandAllToc(); break;
-      case 'toc-collapse-all': collapseAllToc(); break;
+      case 'toc-toggle-all': toggleAllToc(); break;
       case 'copy-folder-path':
         post({ type: 'clipboard.copy', text: ui.rules.folderPath || ui.appDir });
         if (window.__modalClose) window.__modalClose();
