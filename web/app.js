@@ -710,7 +710,7 @@
         <td class="st-attack-result" data-st-out="defense:${id}">${fmt(c.defense)}</td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(c.finalDP)}</td>
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(c.total))}</td>
-        <td class="st-attack-actions"><button class="icon-btn ${expanded ? '' : 'collapsed'}" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${ic('chevron')}</button><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
+        <td class="st-attack-actions"><button class="st-attack-row-btn expand" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${expanded ? '−' : '+'}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除攻击">删除</button></td>
       </tr>
       <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="13">
         <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
@@ -1249,10 +1249,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.122';
+  const APP_VERSION = 'V1.123';
   const UPDATES = [
     {
-      version: 'V1.122', date: '2026-11-06', title: 'ST 分栏宽度与删除按钮', current: true,
+      version: 'V1.123', date: '2026-11-06', title: 'ST 攻击行加号/删除', current: true,
+      notes: [
+        '攻击行右侧改为加号/减号展开按钮',
+        '加号右侧新增红色删除按钮',
+        '详情里的删除按钮改为红色'
+      ]
+    },
+    {
+      version: 'V1.122', date: '2026-11-06', title: 'ST 分栏宽度与删除按钮',
       notes: [
         '1450px 以下自动上下堆叠，攻击表恢复全宽',
         '攻击操作列固定在右侧，滚动时仍能看到删除',
@@ -6027,6 +6035,7 @@
         const detail = row ? row.nextElementSibling : null;
         if (detail) detail.classList.toggle('st-attack-detail-collapsed', !collapsed);
         el.classList.toggle('collapsed', !collapsed);
+        el.textContent = collapsed ? '+' : '−';
         break;
       }
       case 'st-remove-attack': stRemoveAttack(el.dataset.id); break;

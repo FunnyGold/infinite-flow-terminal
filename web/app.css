@@ -2441,3 +2441,12 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-attack-table th:last-child { position:sticky; right:0; z-index:3; background:#171a1f; }
 .st-attack-detail-delete { align-self:flex-end; margin-top:4px; }
 html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack-table th:last-child { background:#fbf7ef; }
+.st-attack-actions { display:flex; align-items:center; gap:4px; white-space:nowrap; }
+.st-attack-row-btn { height:22px; border-radius:4px; font:9px var(--sans); cursor:pointer; padding:0 6px; }
+.st-attack-row-btn.expand { border:1px solid rgba(201,168,110,.42); background:rgba(201,168,110,.10); color:#e0c07c; min-width:24px; font-size:14px; line-height:18px; }
+.st-attack-row-btn.expand:hover { background:rgba(201,168,110,.20); color:#f3d99d; }
+.st-attack-row-btn.delete { border:1px solid rgba(208,94,94,.42); background:rgba(208,94,94,.09); color:#e38b86; }
+.st-attack-row-btn.delete:hover { background:rgba(208,94,94,.18); color:#ffb0aa; }
+.st-attack-detail-delete { color:#e38b86 !important; border-color:rgba(208,94,94,.45) !important; background:rgba(208,94,94,.09) !important; }
+.st-attack-detail-delete:hover { background:rgba(208,94,94,.18) !important; }
+.st-attack-table th:last-child { min-width:92px; }
