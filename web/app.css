@@ -2602,3 +2602,7 @@ html[data-theme="light"] .st-insp-name { background: #fff; border-color: rgba(86
 /* ---- 攻击行删除按钮改为图标（V1.148） ---- */
 .st-attack-row-btn.delete { padding: 0; display: grid; place-items: center; }
 .st-attack-row-btn.delete svg { width: 12px; height: 12px; }
+/* ---- 攻击行折叠图标 + 目标隔离（V1.149） ---- */
+.st-attack-row-btn.expand { padding: 0; display: grid; place-items: center; }
+.st-attack-row-btn.expand svg { width: 13px; height: 13px; transition: transform .16s ease; }
+.st-attack-row-btn.expand.open svg { transform: rotate(90deg); }

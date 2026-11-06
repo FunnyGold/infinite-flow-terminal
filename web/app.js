@@ -346,10 +346,7 @@
     saveSTTool();
     stSyncChips();
     stRefreshInspector();
-    document.querySelectorAll('[data-st-attack][data-st-field="targetId"]').forEach(sel => {
-      const a = (stTool.combat.attacks || []).find(x => x.id === sel.dataset.stAttack);
-      if (a && !a.targetId) sel.value = id;
-    });
+    stRefreshAttacks();
   }
 
   function stUpdateTargetNames() {
@@ -664,12 +661,22 @@
     </div>`;
   }
 
-  function stCombatHTML() {
-    const combat = stTool.combat;
-    const atkCollapsed = ui.collapsedSections.has('st-combat-attacks');
+  function stAttackTargetId(a) {
+    const first = stTargets()[0];
+    return a.targetId || (first ? first.id : '');
+  }
+
+  function stActiveAttacks() {
+    const active = stActiveTarget();
+    const activeId = active ? active.id : '';
+    return (stTool.combat.attacks || []).filter(a => stAttackTargetId(a) === activeId);
+  }
+
+  function stAttacksHTML() {
     const importOptions = stAttackImportOptions();
     const fallbackTargetId = stActiveTarget().id;
-    const attacks = (combat.attacks || []).map(a => {
+    const list = stActiveAttacks();
+    const attacks = list.map(a => {
       const c = stAttackCalc(a);
       const id = esc(a.id);
       const expanded = !ui.stCollapsedAttacks.has(a.id);
@@ -681,7 +688,7 @@
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="dp" value="${esc(C.num(a.dp))}" title="由 ST 直接填写总攻击 DP"></td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(c.finalDP)}</td>
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(c.total))}</td>
-        <td class="st-attack-actions"><button class="st-attack-row-btn expand" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${expanded ? '−' : '+'}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除这条攻击">${ic('trash')}</button></td>
+        <td class="st-attack-actions"><button class="st-attack-row-btn expand${expanded ? ' open' : ''}" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${ic('chevron')}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除这条攻击">${ic('trash')}</button></td>
       </tr>
       <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="6">
         <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
@@ -704,10 +711,38 @@
         </div>
       </td></tr>`;
     }).join('');
+    return `<div class="st-atk-head">
+        <span class="st-atk-title">攻击</span>
+        <span class="st-count">${list.length} 条</span>
+        <button class="btn small gold st-atk-add" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
+      </div>
+      <div class="st-atk-body">
+        ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
+          <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
+          <tbody>${attacks}</tbody>
+        </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点攻击区右上角「新增攻击」，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
+        <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
+      </div>`;
+  }
+
+  function stRefreshAttacks() {
+    const box = document.getElementById('st-section-attacks');
+    if (!box) { stRerenderPreserve(); return; }
+    const main = $('#main');
+    const top = main ? main.scrollTop : 0;
+    box.innerHTML = stAttacksHTML();
+    const cnt = document.querySelector('#st-section-targets .panel-title .st-count');
+    if (cnt) cnt.textContent = `${stTargets().length} 目标 · ${stActiveAttacks().length} 攻击`;
+    if (main) main.scrollTop = top;
+    refreshSTCombatOutputs();
+  }
+
+  function stCombatHTML() {
+    const combat = stTool.combat;
     return `
       <div class="panel mt18" id="st-section-targets">
         <div class="panel-head">
-          <div class="panel-title">战斗<span class="st-count">${stTargets().length} 目标 · ${(combat.attacks || []).length} 攻击</span></div>
+          <div class="panel-title">战斗<span class="st-count">${stTargets().length} 目标 · ${stActiveAttacks().length} 攻击</span></div>
           <div class="panel-head-right">
             <span class="panel-sub">点目标卡切换检视对象</span>
           </div>
@@ -715,20 +750,7 @@
         <div class="panel-body">
           <div class="st-chips">${stChipsHTML()}<button class="st-chip add" data-action="st-add-target">${ic('plus')} 新目标</button></div>
           <div class="st-battle">
-            <div class="st-atk" id="st-section-attacks">
-              <div class="st-atk-head">
-                <span class="st-atk-title">攻击</span>
-                <span class="st-count">${(combat.attacks || []).length} 条</span>
-                <button class="btn small gold st-atk-add" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
-              </div>
-              <div class="st-atk-body">
-                ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
-                  <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
-                  <tbody>${attacks}</tbody>
-                </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点攻击区右上角「新增攻击」，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
-                <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
-              </div>
-            </div>
+            <div class="st-atk" id="st-section-attacks">${stAttacksHTML()}</div>
             ${stInspectorHTML()}
           </div>
         </div>
@@ -880,18 +902,20 @@
 
   function stAddAttack() {
     const a = blankSTAttack();
-    a.name = `攻击 ${stTool.combat.attacks.length + 1}`;
+    const t = stActiveTarget();
+    a.targetId = t ? t.id : '';
+    a.name = `攻击 ${stActiveAttacks().length + 1}`;
     stTool.combat.attacks.push(a);
     ui.stCollapsedAttacks.delete(a.id);
     saveSTTool();
-    stRerenderPreserve();
+    stRefreshAttacks();
   }
 
   function stRemoveAttack(id) {
     ui.stCollapsedAttacks.delete(id);
     stTool.combat.attacks = stTool.combat.attacks.filter(a => a.id !== id);
     saveSTTool();
-    stRerenderPreserve();
+    stRefreshAttacks();
   }
 
   function stUpdateAttack(id, field, value) {
@@ -903,6 +927,7 @@
       a[field] = value;
     }
     saveSTTool();
+    if (field === 'targetId') { stRefreshAttacks(); toast('已移到该目标'); return; }
     refreshSTCombatOutputs();
   }
 
@@ -1290,10 +1315,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.148';
+  const APP_VERSION = 'V1.149';
   const UPDATES = [
     {
-      version: 'V1.148', date: '2026-11-07', title: '去掉重复的删除攻击按钮', current: true,
+      version: 'V1.149', date: '2026-11-07', title: '攻击按目标隔离、折叠图标与重绘', current: true,
+      notes: [
+        '攻击列表按目标隔离：在目标 1 下新增的攻击只属于目标 1',
+        '切换目标时攻击列表跟着切换，行里的「目标」下拉可把攻击改到别的目标',
+        '折叠按钮的 + / − 改成箭头图标，展开时旋转 90 度',
+        '新增 / 删除攻击不再整页重绘，界面不再闪一下'
+      ]
+    },
+    {
+      version: 'V1.148', date: '2026-11-07', title: '去掉重复的删除攻击按钮',
       notes: [
         '攻击行右侧的「删除」与详情底部的「删除这条攻击」是同一个动作，去掉后者',
         '行内删除改为垃圾桶图标，与目标卡上的删除保持一致'
@@ -6258,6 +6292,7 @@
         if (stTargets().length <= 1) { toast('至少保留一个目标'); break; }
         const removeId = el.dataset.id || stTool.combat.activeTargetId;
         stTool.combat.targets = stTargets().filter(t => t.id !== removeId);
+        stTool.combat.attacks = (stTool.combat.attacks || []).filter(a => stAttackTargetId(a) !== removeId);
         if (stTool.combat.activeTargetId === removeId) stTool.combat.activeTargetId = stTool.combat.targets[0].id;
         saveSTTool();
         renderView('st');
@@ -6292,7 +6327,7 @@
         const detail = row ? row.nextElementSibling : null;
         if (detail) detail.classList.toggle('st-attack-detail-collapsed', !collapsed);
         el.classList.toggle('collapsed', !collapsed);
-        el.textContent = collapsed ? '+' : '−';
+        el.classList.toggle('open', collapsed);
         break;
       }
       case 'st-remove-attack': stRemoveAttack(el.dataset.id); break;
