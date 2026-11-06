@@ -1315,10 +1315,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.150';
+  const APP_VERSION = 'V1.151';
   const UPDATES = [
     {
-      version: 'V1.150', date: '2026-11-07', title: '规则书三处折叠统一', current: true,
+      version: 'V1.151', date: '2026-11-07', title: '装备位放大与双击编辑', current: true,
+      notes: [
+        '装备位改为三列，卡片更宽；槽位名与输入框字号从 11px 提到 12px',
+        '效果框最小高度从 38px 提到 72px，能多看到几行',
+        '双击装备效果框可放大编辑，与专长、资源、技艺的效果框一致'
+      ]
+    },
+    {
+      version: 'V1.150', date: '2026-11-07', title: '规则书三处折叠统一',
       notes: [
         '目录/ CONTENTS 的「展开」「折叠」两个按钮改为一个切换按钮',
         '收藏夹、规则书、目录三处的折叠按钮现在完全一致'
@@ -3416,9 +3424,9 @@
         <div class="panel-body ${ui.collapsedSections.has('equipment') ? 'collapsed' : ''}" data-section-body="equipment"><div class="equip-grid">${state.equipment.map((e, i) => `
           <div class="equip-item"><div class="equip-slot">${esc(e.slot)}</div>
             ${tInput('equipment.' + i + '.name', e.name, '', '名称 / 来源')}
-            <textarea data-bind="equipment.${i}.effect" placeholder="效果 / 数值">${esc(e.effect || '')}</textarea>
+            <textarea data-bind="equipment.${i}.effect" data-equip-effect="${i}" placeholder="效果 / 数值" title="双击放大编辑">${esc(e.effect || '')}</textarea>
           </div>`).join('')}</div>
-          <div class="matrix-wrap-note">负重上限 = 体积 + 力量；每点可带 100 发子弹 / 20 支箭。效果写不下时，可在「收支账本」的资源说明中展开记录。</div>
+          <div class="matrix-wrap-note">负重上限 = 体积 + 力量；每点可带 100 发子弹 / 20 支箭。效果写不下时，双击效果框可放大编辑。</div>
         </div>
       </div>
 
@@ -4211,7 +4219,13 @@
         field: 'notes',
         label: '载具效果 / 备注',
         selector: '[data-vehicle-effect]'
-      }
+      },
+    equipment: {
+      item: () => (state.equipment || [])[index],
+      field: 'effect',
+      label: '装备效果 / 数值',
+      selector: `[data-equip-effect="${index}"]`
+    },
     };
     const spec = specs[kind];
     const item = spec && spec.item();
@@ -6909,17 +6923,18 @@ function toggleAllToc() {
         return;
       }
       const effect = e.target && e.target.closest
-        ? e.target.closest('[data-trait-effect], [data-resource-effect], [data-technique-effect], [data-vehicle-effect], [data-feat-effect], [data-starting-feat-effect]')
+        ? e.target.closest('[data-trait-effect], [data-resource-effect], [data-technique-effect], [data-vehicle-effect], [data-feat-effect], [data-starting-feat-effect], [data-equip-effect]')
         : null;
       if (effect) {
         e.preventDefault();
         const map = [
-          ['data-starting-feat-effect', 'starting'],
-          ['data-feat-effect', 'feat'],
-          ['data-trait-effect', 'trait'],
-          ['data-resource-effect', 'resource'],
-          ['data-technique-effect', 'technique'],
-          ['data-vehicle-effect', 'vehicle']
+        ['data-starting-feat-effect', 'starting'],
+        ['data-feat-effect', 'feat'],
+        ['data-trait-effect', 'trait'],
+        ['data-resource-effect', 'resource'],
+        ['data-technique-effect', 'technique'],
+        ['data-vehicle-effect', 'vehicle'],
+        ['data-equip-effect', 'equipment']
         ];
         const found = map.find(([attr]) => effect.hasAttribute(attr));
         if (found) {
@@ -6929,7 +6944,8 @@ function toggleAllToc() {
               : kind === 'trait' ? effect.dataset.traitEffect
                 : kind === 'resource' ? effect.dataset.resourceEffect
                   : kind === 'technique' ? effect.dataset.techniqueEffect
-                    : '0';
+                    : kind === 'equipment' ? effect.dataset.equipEffect
+          : '0';
           openFeatEffect(kind, Number(raw));
         }
       }

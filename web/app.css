@@ -2606,3 +2606,13 @@ html[data-theme="light"] .st-insp-name { background: #fff; border-color: rgba(86
 .st-attack-row-btn.expand { padding: 0; display: grid; place-items: center; }
 .st-attack-row-btn.expand svg { width: 13px; height: 13px; transition: transform .16s ease; }
 .st-attack-row-btn.expand.open svg { transform: rotate(90deg); }
+/* ---- 装备位字号与放大（V1.151） ---- */
+.equip-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.equip-item { padding: 10px 10px; }
+.equip-slot { font-size: 12px !important; }
+.equip-item input, .equip-item textarea { font-size: 12px !important; line-height: 1.6; }
+.equip-item input { padding: 6px 8px; }
+.equip-item textarea { min-height: 72px; padding: 6px 8px; }
+.equip-item textarea::placeholder, .equip-item input::placeholder { font-size: 11px; }
+@media (max-width: 1500px) { .equip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 900px) { .equip-grid { grid-template-columns: 1fr; } }
