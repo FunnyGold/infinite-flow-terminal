@@ -311,6 +311,36 @@
     return targets.find(t => t.id === stTool.combat.activeTargetId) || targets[0];
   }
 
+  function stSwitchTarget(id) {
+    stTool.combat.activeTargetId = id;
+    saveSTTool();
+    const active = stActiveTarget();
+    document.querySelectorAll('.st-target-card[data-id]').forEach(card => {
+      card.classList.toggle('active', card.dataset.id === id);
+    });
+    const nameInput = document.querySelector('[data-st-target-name]');
+    if (nameInput) nameInput.value = active.name || '';
+    document.querySelectorAll('[data-st-target-grade]').forEach(sel => {
+      sel.value = active[sel.dataset.stTargetGrade] || 'none';
+    });
+    D.DEFENSE_ITEMS.forEach(d => {
+      const input = document.querySelector(`[data-st-target="${d.key}"]`);
+      if (input) input.value = fmt(active.values[d.key] || 0);
+    });
+    const source = document.querySelector('[data-st-defense-source]');
+    if (source) source.value = active.sourceId || '';
+    const hint = document.querySelector('.st-combat-hint');
+    if (hint) {
+      const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
+      hint.textContent = entry ? `当前来源：${entry.name || '调查员'}` : '当前来源：手动填写';
+    }
+    document.querySelectorAll('[data-st-attack][data-st-field="targetId"]').forEach(sel => {
+      const a = (stTool.combat.attacks || []).find(x => x.id === sel.dataset.stAttack);
+      if (a && !a.targetId) sel.value = id;
+    });
+    refreshSTCombatOutputs();
+  }
+
   function stUpdateTargetNames() {
     const active = stActiveTarget();
     document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
@@ -1181,10 +1211,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.110';
+  const APP_VERSION = 'V1.111';
   const UPDATES = [
     {
-      version: 'V1.110', date: '2026-11-06', title: 'ST 导航与折叠按钮修复', current: true,
+      version: 'V1.111', date: '2026-11-06', title: 'ST 点击抖动修复', current: true,
+      notes: [
+        '折叠调查员卡/攻击行改为直接切换，不再整页重绘',
+        '切换目标卡改为直接更新目标字段，不再整页重绘',
+        '顶部导航改为即时跳转并增加滚动偏移',
+        '修复点击按钮时页面闪动的问题'
+      ]
+    },
+    {
+      version: 'V1.110', date: '2026-11-06', title: 'ST 导航与折叠按钮修复',
       notes: [
         '修复 ST 顶部导航点击无反应',
         '修复 ST 目标卡片点击无反应',
@@ -5706,11 +5745,11 @@
       }
       case 'st-jump': {
         const target = document.getElementById(el.dataset.target);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (target) target.scrollIntoView({ behavior: 'auto', block: 'start' });
         break;
       }
       case 'st-note-expand': openSTNotesFloat(); break;
-      case 'st-select-target': stTool.combat.activeTargetId = el.dataset.id; saveSTTool(); stRerenderPreserve(); break;
+      case 'st-select-target': stSwitchTarget(el.dataset.id); break;
       case 'st-add-target': {
         const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, stActiveTarget().values) };
         stTool.combat.targets.push(target);
@@ -5733,16 +5772,29 @@
       }
       case 'st-clear-defense': stClearDefense(); break;
       case 'st-add-attack': stAddAttack(); break;
-      case 'st-toggle-card':
-        if (ui.stCollapsedEntries.has(el.dataset.id)) ui.stCollapsedEntries.delete(el.dataset.id);
-        else ui.stCollapsedEntries.add(el.dataset.id);
-        stRerenderPreserve();
+      case 'st-toggle-card': {
+        const id = el.dataset.id;
+        const card = el.closest('.st-card');
+        const collapsed = ui.stCollapsedEntries.has(id);
+        if (collapsed) ui.stCollapsedEntries.delete(id); else ui.stCollapsedEntries.add(id);
+        if (card) {
+          const body = card.querySelector('.st-card-body');
+          if (body) body.classList.toggle('collapsed', !collapsed);
+          card.classList.toggle('st-card-collapsed', !collapsed);
+          el.textContent = !collapsed ? '展开' : '收起';
+        }
         break;
-      case 'st-toggle-attack':
-        if (ui.stCollapsedAttacks.has(el.dataset.id)) ui.stCollapsedAttacks.delete(el.dataset.id);
-        else ui.stCollapsedAttacks.add(el.dataset.id);
-        stRerenderPreserve();
+      }
+      case 'st-toggle-attack': {
+        const id = el.dataset.id;
+        const collapsed = ui.stCollapsedAttacks.has(id);
+        if (collapsed) ui.stCollapsedAttacks.delete(id); else ui.stCollapsedAttacks.add(id);
+        const row = document.querySelector(`[data-st-attack-row="${id}"]`);
+        const detail = row ? row.nextElementSibling : null;
+        if (detail) detail.classList.toggle('st-attack-detail-collapsed', !collapsed);
+        el.classList.toggle('collapsed', !collapsed);
         break;
+      }
       case 'st-remove-attack': stRemoveAttack(el.dataset.id); break;
       case 'st-hp-delta': stHpDelta(el.dataset.id, Number(el.dataset.delta)); break;
       case 'st-health-mode': stSetHealthMode(el.dataset.id, el.dataset.mode); break;

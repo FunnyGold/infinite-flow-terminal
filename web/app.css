@@ -2394,3 +2394,4 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-card-btn:hover { color:#e2c486; border-color:rgba(201,168,110,.4); }
 .st-card-btn.danger { color:#b98c86; }
 .st-card-btn.danger:hover { color:#e2a19b; border-color:rgba(226,161,155,.4); }
+#st-section-characters, #st-section-targets, #st-section-attacks, #st-section-compare, #st-section-notes { scroll-margin-top: 46px; }
