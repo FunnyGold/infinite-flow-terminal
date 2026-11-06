@@ -694,10 +694,10 @@
             <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
           </div>
           <div class="st-attack-detail-row">
-            <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
             <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
             <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
             <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
+            <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
           </div>
           <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" rows="3" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
           <div class="st-attack-detail-actions"><button class="btn small danger st-attack-detail-delete" data-action="st-remove-attack" data-id="${id}">${ic('trash')} 删除这条攻击</button></div>
@@ -1291,10 +1291,17 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.138';
+  const APP_VERSION = 'V1.139';
   const UPDATES = [
     {
-      version: 'V1.138', date: '2026-11-06', title: '亮色主题并回变量体系', current: true,
+      version: 'V1.139', date: '2026-11-06', title: 'ST 攻击详情单行排列', current: true,
+      notes: [
+        '措手不及、接触、加成来源、读取攻击检定回到同一行，与设计稿一致',
+        '修掉详情区被收缩成内容宽度的问题，加成来源输入恢复整行宽度'
+      ]
+    },
+    {
+      version: 'V1.138', date: '2026-11-06', title: '亮色主题并回变量体系',
       notes: [
         '亮色主题里 250 处硬编码颜色并入语义变量，不再是一套平行配色',
         '亮色的最浅两级文字各加深一档，最浅文字对比度从 2.1:1 提到 2.7:1',
