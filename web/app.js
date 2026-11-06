@@ -1291,10 +1291,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.135';
+  const APP_VERSION = 'V1.136';
   const UPDATES = [
     {
-      version: 'V1.135', date: '2026-11-06', title: '资源与账本页配色收敛', current: true,
+      version: 'V1.136', date: '2026-11-06', title: '规则书页配色收敛', current: true,
+      notes: [
+        '规则书页文字色从 15 种收到 8 种，其中 6 种是语义变量',
+        '目录树文字、书名、展开箭头统一到四级文字色',
+        '收藏夹与书名列表的金色高亮统一到变量',
+        '阅读区保持 CHM 自带样式不动'
+      ]
+    },
+    {
+      version: 'V1.135', date: '2026-11-06', title: '资源与账本页配色收敛',
       notes: [
         '资源页 7 种、账本页 8 种文字色，全部改为语义变量',
         '账本的三种余额与战斗结果的最终 DP 统一用数值金色高亮',
