@@ -1291,10 +1291,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.139';
+  const APP_VERSION = 'V1.140';
   const UPDATES = [
     {
-      version: 'V1.139', date: '2026-11-06', title: 'ST 攻击详情单行排列', current: true,
+      version: 'V1.140', date: '2026-11-06', title: '间距统一到 4 的栅格', current: true,
+      notes: [
+        '间距、内边距、外边距统一到 4 的倍数，850 个取值里调整了 533 个',
+        'gap 从 17 种取值收敛到 7 种：2 / 4 / 8 / 12 / 16 / 20 / 24',
+        '全站重新核对，无横向溢出；总览页高度从 2095 降到 1907'
+      ]
+    },
+    {
+      version: 'V1.139', date: '2026-11-06', title: 'ST 攻击详情单行排列',
       notes: [
         '措手不及、接触、加成来源、读取攻击检定回到同一行，与设计稿一致',
         '修掉详情区被收缩成内容宽度的问题，加成来源输入恢复整行宽度'
