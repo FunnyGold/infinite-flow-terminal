@@ -692,6 +692,7 @@
       </tr>
       <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="6">
         <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
+        ${a.dp ? '' : `<div class="st-attack-hint">这条攻击还没有总DP：用右下角「导入攻击预设」选一条，或直接在上面的「总DP」里手填。</div>`}
         <div class="st-attack-detail-fields">
           <div class="st-attack-detail-grid">
             <label>伤害上限<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="伤害上限"></label>
@@ -705,7 +706,7 @@
             <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
             <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
             <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
-            <label class="st-attack-import${a.dp ? '' : ' is-empty'}"><span class="st-attack-import-label">${ic('download')}读取攻击检定</span><select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
+            <label class="st-attack-import${a.dp ? '' : ' is-empty'}"><span class="st-attack-import-label">${ic('download')}导入攻击预设</span><select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
           </div>
           <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" rows="3" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
         </div>
@@ -721,7 +722,7 @@
           <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
           <tbody>${attacks}</tbody>
         </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点攻击区右上角「新增攻击」，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
-        <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
+        <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「导入攻击预设」从角色卡一键带入。</div>
       </div>`;
   }
 
@@ -1068,7 +1069,7 @@
       const st = normalizeState(raw);
       stTool.entries.push(stCaptureEntry(st, ''));
       saveSTTool();
-      stRerenderPreserve();
+    stRerenderPreserve();
       toast('已加入 ST 面板', 'success');
     } catch (e) {
       toast('导入失败：' + e.message, 'error');
@@ -1222,7 +1223,9 @@
     if (!attack.name || /^攻击\s*\d+$/.test(attack.name)) attack.name = source.name || attack.name;
     attack.source = `${entry.name || '调查员'} · ${source.name || '攻击'} · 攻击检定`;
     saveSTTool();
-    stRerenderPreserve();
+    stRefreshAttacks();
+    const flashRow = document.querySelector(`[data-st-attack-row="${id}"]`);
+    if (flashRow) { flashRow.classList.add('st-flash'); setTimeout(function () { flashRow.classList.remove('st-flash'); }, 900); }
     refreshSTCombatOutputs();
     toast(`已读取 ${entry.name || '调查员'} 的攻击预设`);
   }
@@ -1315,10 +1318,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.153';
+  const APP_VERSION = 'V1.154';
   const UPDATES = [
     {
-      version: 'V1.153', date: '2026-11-07', title: '读取攻击检定更醒目', current: true,
+      version: 'V1.154', date: '2026-11-07', title: '导入攻击预设：改名、空状态引导与载入反馈', current: true,
+      notes: [
+        '「读取攻击检定」改名为「导入攻击预设」，说法更直白',
+        '总DP 为 0 时在详情里给一行提示，告诉你该点哪里或直接手填',
+        '导入成功后整行金色闪一下，确认数据已经带进来',
+        '导入不再整页重绘，界面不会闪'
+      ]
+    },
+    {
+      version: 'V1.153', date: '2026-11-07', title: '读取攻击检定更醒目',
       notes: [
         '「读取攻击检定」改为金色标签配下载图标，和普通输入框区分开',
         '下拉框描金边、淡金底；总DP 还是 0 时边框更亮，提示这里还没读入'

@@ -2635,3 +2635,10 @@ html[data-theme="light"] .st-insp-name { background: #fff; border-color: rgba(86
 .st-attack-import select:focus { border-color: var(--gold) !important; background: rgba(201,168,110,.2) !important; box-shadow: 0 0 0 2px rgba(201,168,110,.18); }
 .st-attack-import.is-empty select { border-color: rgba(201,168,110,.85) !important; background: rgba(201,168,110,.16) !important; }
 html[data-theme="light"] .st-attack-import select { border-color: rgba(143,106,50,.55) !important; background: rgba(201,168,110,.16) !important; color: #7d5a22 !important; }
+/* ---- 导入预设后的反馈（V1.154） ---- */
+@keyframes stFlash {
+  0% { box-shadow: inset 0 0 0 1px rgba(201,168,110,.9); background: rgba(201,168,110,.18); }
+  100% { box-shadow: inset 0 0 0 1px rgba(201,168,110,0); background: transparent; }
+}
+.st-attack-table tr.st-flash > td { animation: stFlash .9s ease-out; }
+.st-attack-hint { margin-top: 6px; color: var(--gold); font-size: 11px; letter-spacing: .02em; }
