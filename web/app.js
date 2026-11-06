@@ -598,11 +598,17 @@
   }
 
   function stAttackCalc(attack, forcedTarget) {
-    const flags = {
-      flatfooted: !!(attack.flatfootedGrade && attack.flatfootedGrade !== 'none'),
-      contact: !!(attack.contactGrade && attack.contactGrade !== 'none')
-    };
     const target = forcedTarget || stTargetForAttack(attack);
+    const flatGrade = attack.flatfootedGrade && attack.flatfootedGrade !== 'none'
+      ? attack.flatfootedGrade
+      : ((target && target.flatfootedGrade) || 'none');
+    const contactGrade = attack.contactGrade && attack.contactGrade !== 'none'
+      ? attack.contactGrade
+      : ((target && target.contactGrade) || 'none');
+    const flags = {
+      flatfooted: flatGrade !== 'none',
+      contact: contactGrade !== 'none'
+    };
     const eff = C.effectiveDefense((target && target.values) || stTool.combat.values || {}, {
       highSpeed: C.num(attack.highSpeed),
       armorPierce: C.num(attack.armorPierce),
@@ -660,8 +666,8 @@
         <div class="st-target-card-edit">
           <input class="cell-input st-target-name-input" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
           <div class="st-target-card-controls">
-            <label class="st-target-grade">措手不及<select class="cell-input" data-st-target-grade="flatfootedGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.flatfootedGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
-            <label class="st-target-grade">接触<select class="cell-input" data-st-target-grade="contactGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.contactGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
+            <label class="st-target-grade">目标·措手不及<select class="cell-input" data-st-target-grade="flatfootedGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.flatfootedGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
+            <label class="st-target-grade">目标·接触<select class="cell-input" data-st-target-grade="contactGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.contactGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
             <button class="st-target-remove" data-action="st-remove-target" data-id="${esc(t.id)}">删除</button>
           </div>
         </div>
@@ -722,7 +728,7 @@
             <span class="st-combat-hint">${selected ? '当前来源：' + esc((entries.find(e => e.id === selected) || {}).name || '') : '当前为手动防御'}</span>
           </div>
           <div class="defense-target st-target-grid">${targetFields}</div>
-          <div class="matrix-wrap-note">上方选择目标卡片；「读取自」只作用于当前目标。下方每条攻击可以选择不同目标，措手不及 / 接触仍由攻击行决定。</div>
+          <div class="matrix-wrap-note">上方选择目标卡片；目标卡的措手不及 / 接触是目标当前防御状态。攻击行未选择时会继承目标状态，选择了则覆盖。</div>
         </div>
       </div>
       <div class="panel mt18 collapsible" id="st-section-attacks">
@@ -736,7 +742,7 @@
         </div>
         <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
           ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
-            <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>措手不及</th><th>接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
+            <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>攻击·措手</th><th>攻击·接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
             <tbody>${attacks}</tbody>
           </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
@@ -1211,10 +1217,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.117';
+  const APP_VERSION = 'V1.118';
   const UPDATES = [
     {
-      version: 'V1.117', date: '2026-11-06', title: 'ST 目标卡紧凑化', current: true,
+      version: 'V1.118', date: '2026-11-06', title: '目标状态与攻击条件分离', current: true,
+      notes: [
+        '目标卡的措手不及/接触表示目标当前防御状态',
+        '攻击行的选择表示本次攻击条件',
+        '攻击行未选时继承目标状态，选了则覆盖',
+        '表头区分攻击·措手/接触'
+      ]
+    },
+    {
+      version: 'V1.117', date: '2026-11-06', title: 'ST 目标卡紧凑化',
       notes: [
         '压缩目标卡片高度和宽度',
         '新目标按钮的加号限制为正常尺寸',
@@ -6407,6 +6422,7 @@
         const target = stTargets().find(t => t.id === el.dataset.targetId) || stActiveTarget();
         target[el.dataset.stTargetGrade] = el.value;
         saveSTTool();
+        refreshSTCombatOutputs();
         return;
       }
       if (el.matches('[data-st-target-name]')) {
