@@ -311,6 +311,18 @@
     return targets.find(t => t.id === stTool.combat.activeTargetId) || targets[0];
   }
 
+  function stSyncActiveTargetBar() {
+    const active = stActiveTarget();
+    const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(active.values[d.key]), 0);
+    const gradeLabel = g => (D.EFFECT_GRADES.find(x => x.value === g) || { label: '无' }).label;
+    const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
+    const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
+    set('[data-st-active-name]', active.name || '未命名目标');
+    set('[data-st-active-source]', entry ? (entry.name || '调查员') : '手动防御');
+    set('[data-st-active-grade]', `措手 ${gradeLabel(active.flatfootedGrade)} / 接触 ${gradeLabel(active.contactGrade)}`);
+    set('[data-st-active-total]', `防御 ${fmt(total)}`);
+  }
+
   function stSwitchTarget(id) {
     stTool.combat.activeTargetId = id;
     saveSTTool();
@@ -334,6 +346,7 @@
       if (a && !a.targetId) sel.value = id;
     });
     refreshSTCombatOutputs();
+    stSyncActiveTargetBar();
   }
 
   function stUpdateTargetNames() {
@@ -657,11 +670,12 @@
     const targetFields = D.DEFENSE_ITEMS.map(d =>
       `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-st-target="${esc(d.key)}" value="${fmt(activeTarget.values[d.key] || 0)}"></div>`
     ).join('');
+    const gradeLabel = g => (D.EFFECT_GRADES.find(x => x.value === g) || { label: '无' }).label;
     const targetCards = stTargets().map(t => {
       const src = (stTool.entries || []).find(e => e.id === t.sourceId);
       const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
       return `<div class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-target-card="${esc(t.id)}">
-        <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>
+        <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span><em>措手 ${esc(gradeLabel(t.flatfootedGrade))} · 接触 ${esc(gradeLabel(t.contactGrade))}</em></button>
         <button class="st-target-rename" data-action="st-rename-target" data-id="${esc(t.id)}">改名</button>
         <div class="st-target-card-edit">
           <input class="cell-input st-target-name-input" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
@@ -716,6 +730,12 @@
         </div>
         <div class="panel-body ${defCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-defense">
           <div class="st-target-cards">${targetCards}<button class="st-target-card st-target-add" data-action="st-add-target">${ic('plus')} 新目标</button></div>
+          <div class="st-active-target-bar">
+            <span>正在编辑</span><b data-st-active-name>${esc(activeTarget.name || '未命名目标')}</b>
+            <span class="st-active-sep">·</span><span data-st-active-source>${activeTarget.sourceId ? esc((entries.find(e => e.id === activeTarget.sourceId) || {}).name || '调查员') : '手动防御'}</span>
+            <span class="st-active-sep">·</span><span data-st-active-grade>措手 ${esc(gradeLabel(activeTarget.flatfootedGrade))} / 接触 ${esc(gradeLabel(activeTarget.contactGrade))}</span>
+            <span class="st-active-total" data-st-active-total>防御 ${fmt(D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(activeTarget.values[d.key]), 0))}</span>
+          </div>
           <div class="st-combat-toolbar">
             <label class="st-source-picker">读取自
               <select class="cell-input" data-st-defense-source>
@@ -1217,10 +1237,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.118';
+  const APP_VERSION = 'V1.119';
   const UPDATES = [
     {
-      version: 'V1.118', date: '2026-11-06', title: '目标状态与攻击条件分离', current: true,
+      version: 'V1.119', date: '2026-11-06', title: 'ST 当前目标提示', current: true,
+      notes: [
+        '目标卡显示目标状态：措手/接触等级',
+        '目标卡下方新增“正在编辑”栏，显示名称、来源、状态和防御合计',
+        '切换目标、改名、改状态时提示栏同步更新'
+      ]
+    },
+    {
+      version: 'V1.118', date: '2026-11-06', title: '目标状态与攻击条件分离',
       notes: [
         '目标卡的措手不及/接触表示目标当前防御状态',
         '攻击行的选择表示本次攻击条件',
@@ -6423,6 +6451,7 @@
         target[el.dataset.stTargetGrade] = el.value;
         saveSTTool();
         refreshSTCombatOutputs();
+        stSyncActiveTargetBar();
         return;
       }
       if (el.matches('[data-st-target-name]')) {
@@ -6430,6 +6459,7 @@
         target.name = el.value;
         saveSTTool();
         stUpdateTargetNames();
+        stSyncActiveTargetBar();
         return;
       }
       if (el.matches('[data-st-target]')) {
