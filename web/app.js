@@ -675,7 +675,7 @@
       const src = (stTool.entries || []).find(e => e.id === t.sourceId);
       const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
       return `<div class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-target-card="${esc(t.id)}">
-        <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span><em>措手 ${esc(gradeLabel(t.flatfootedGrade))} · 接触 ${esc(gradeLabel(t.contactGrade))}</em></button>
+        <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>
         <button class="st-target-rename" data-action="st-rename-target" data-id="${esc(t.id)}">改名</button>
         <div class="st-target-card-edit">
           <input class="cell-input st-target-name-input" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
@@ -1237,10 +1237,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.119';
+  const APP_VERSION = 'V1.120';
   const UPDATES = [
     {
-      version: 'V1.119', date: '2026-11-06', title: 'ST 当前目标提示', current: true,
+      version: 'V1.120', date: '2026-11-06', title: '目标卡去重', current: true,
+      notes: [
+        '移除目标卡内重复的措手/接触状态文字',
+        '状态直接在卡片下拉框里选择',
+        '当前目标提示栏继续显示状态摘要'
+      ]
+    },
+    {
+      version: 'V1.119', date: '2026-11-06', title: 'ST 当前目标提示',
       notes: [
         '目标卡显示目标状态：措手/接触等级',
         '目标卡下方新增“正在编辑”栏，显示名称、来源、状态和防御合计',
