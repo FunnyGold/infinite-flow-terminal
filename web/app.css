@@ -10,7 +10,7 @@
   --text-soft: #ddd5c7;
   --muted: #b1a99b;
   --dim: #918a7e;
-  --faint: #6c675e;
+  --faint: #7c766a;
   --note: #b9af9f;
   --note-strong: #c9bfaf;
   --note-soft: #a89e8e;
@@ -411,11 +411,15 @@ select {
 select option { background: #1b1f26; color: var(--text-soft); }
 textarea { resize: vertical; min-height: 72px; line-height: 1.7; }
 .cell-input {
-  width: 100%; min-width: 48px; background: rgba(0,0,0,.16); border-color: transparent;
+  width: 100%; min-width: 48px; background: rgba(0,0,0,.34); border: 1px solid var(--line);
   padding: 4px 8px; border-radius: 5px; font-size: 11px;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.28);
+  transition: border-color .15s, background .15s;
 }
-.cell-input:hover { border-color: rgba(255,255,255,.08); }
-.cell-input:focus { border-color: rgba(201,168,110,.45); background: rgba(0,0,0,.3); }
+.cell-input:hover { border-color: var(--line-strong); background: rgba(0,0,0,.42); }
+.cell-input:focus { border-color: var(--gold); background: rgba(0,0,0,.48); box-shadow: inset 0 1px 2px rgba(0,0,0,.3), 0 0 0 2px rgba(201,168,110,.14); }
+.cell-input::placeholder { color: var(--dim); }
+
 .input-suffix { position: relative; }
 .input-suffix > span { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #5f5b53; pointer-events: none; }
 
@@ -2556,3 +2560,9 @@ html[data-theme="light"] .btn { color: var(--note); }
 html[data-theme="light"] .btn:hover { color: var(--text); background: rgba(86,66,38,.07); border-color: rgba(86,66,38,.2); }
 html[data-theme="light"] .stat-help { background: rgba(255,253,248,.9); border-color: rgba(86,66,38,.28); color: var(--num); }
 html[data-theme="light"] .stat-help:hover { color: #6b4a1c; border-color: rgba(86,66,38,.5); background: #fff; }
+
+/* ---- 可点击性：指针与悬停（V1.141） ---- */
+button, [data-action], .nav-item, .book-item, .tab-btn, .st-chip { cursor: pointer; }
+.icon-btn:hover, .mini-action:hover, .collapse-btn:hover { border-color: var(--line-strong); color: var(--text); }
+input[type="number"], input[type="text"], textarea, select { cursor: text; }
+select { cursor: pointer; }
