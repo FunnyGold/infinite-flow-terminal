@@ -739,7 +739,7 @@
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(f.c.total))}</td>
         <td class="st-attack-actions"><button class="st-attack-row-btn expand" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${expanded ? '−' : '+'}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除攻击">删除</button></td>
       </tr>
-      <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="13">
+      <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="6">
         <div class="st-attack-detail-fields">
           <label><span>高速</span>${f.highSpeed}</label>
           <label><span>破甲</span>${f.armorPierce}</label>
@@ -788,7 +788,7 @@
           </div>
         </div>
         <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
-          ${attackItems ? (COMPACT() ? `<div class="st-attack-cards">${attackItems}</div>` : `<div class="st-attack-wrap"><table class="st-attack-table"><thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>攻击·措手</th><th>攻击·接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead><tbody>${attackItems}</tbody></table></div>`) : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
+          ${attackItems ? (COMPACT() ? `<div class="st-attack-cards">${attackItems}</div>` : `<div class="st-attack-wrap"><table class="st-attack-table"><thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead><tbody>${attackItems}</tbody></table></div>`) : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
         </div>
       </div>
@@ -1261,10 +1261,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.124';
+  const APP_VERSION = 'V1.125';
   const UPDATES = [
     {
-      version: 'V1.124', date: '2026-11-06', title: 'ST 攻击列宽与按钮修复', current: true,
+      version: 'V1.125', date: '2026-11-06', title: 'ST 攻击行精简', current: true,
+      notes: ['主表精简，次要字段移入详情']
+    },
+    {
+      version: 'V1.124', date: '2026-11-06', title: 'ST 攻击列宽与按钮修复',
       notes: ['攻击表列宽调整', '删除按钮加宽']
     },
     {

@@ -2464,3 +2464,13 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
 .st-attack-table th:nth-child(13) { width:9%; min-width:84px; }
 .st-attack-actions { min-width:84px; overflow:visible; }
 .st-attack-detail-delete { flex:0 0 auto; min-width:128px; height:28px; white-space:nowrap; }
+.st-attack-table { min-width:620px; }
+.st-attack-table th:nth-child(1) { width:22%; }
+.st-attack-table th:nth-child(2) { width:26%; }
+.st-attack-table th:nth-child(3) { width:11%; }
+.st-attack-table th:nth-child(4) { width:14%; }
+.st-attack-table th:nth-child(5) { width:14%; }
+.st-attack-table th:nth-child(6) { width:13%; min-width:112px; }
+.st-attack-table th:nth-child(n+7), .st-attack-table th:nth-child(13) { width:auto; }
+.st-attack-source-field { flex:2 1 180px; }
+.st-attack-detail-fields { flex-wrap:wrap; }

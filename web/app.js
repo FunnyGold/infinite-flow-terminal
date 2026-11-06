@@ -701,20 +701,19 @@
         <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="targetId">${stTargets().map(t => { const def = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0); return `<option value="${esc(t.id)}" ${t.id === (a.targetId || stActiveTarget().id) ? 'selected' : ''}>${esc(t.name || '未命名目标')} · 防 ${fmt(def)}</option>`; }).join('')}</select></td>
         <td><input class="cell-input st-attack-name" data-st-attack="${id}" data-st-field="name" value="${esc(a.name || '')}" placeholder="攻击名"></td>
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="dp" value="${esc(C.num(a.dp))}" title="由 ST 直接填写总攻击 DP"></td>
-        <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="由 ST 直接填写伤害上限"></td>
-        <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="extra" value="${esc(C.num(a.extra))}" title="附加成功，直接加到期望伤害"></td>
-        <td><input class="cell-input st-attack-num" type="number" min="1" data-st-attack="${id}" data-st-field="count" value="${esc(C.num(a.count))}"></td>
-        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></td>
-        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></td>
-        <td><input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="ST 填写加值来源 / 备注"></td>
-        <td class="st-attack-result" data-st-out="defense:${id}">${fmt(c.defense)}</td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(c.finalDP)}</td>
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(c.total))}</td>
         <td class="st-attack-actions"><button class="st-attack-row-btn expand" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${expanded ? '−' : '+'}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除攻击">删除</button></td>
       </tr>
-      <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="13">
+      <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="6">
         <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
         <div class="st-attack-detail-fields">
+          <label>伤害上限<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="伤害上限"></label>
+          <label>附加<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="extra" value="${esc(C.num(a.extra))}" title="附加成功，直接加到期望伤害"></label>
+          <label>次数<input class="cell-input" type="number" min="1" data-st-attack="${id}" data-st-field="count" value="${esc(C.num(a.count))}"></label>
+          <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
+          <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
+          <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
           <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
           <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
           <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
@@ -771,7 +770,7 @@
         </div>
         <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
           ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
-            <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>攻击·措手</th><th>攻击·接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
+            <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
             <tbody>${attacks}</tbody>
           </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
@@ -1249,10 +1248,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.124';
+  const APP_VERSION = 'V1.125';
   const UPDATES = [
     {
-      version: 'V1.124', date: '2026-11-06', title: 'ST 攻击列宽与按钮修复', current: true,
+      version: 'V1.125', date: '2026-11-06', title: 'ST 攻击行精简', current: true,
+      notes: [
+        '主表只保留目标、攻击名、总DP、最终DP、期望伤害和操作',
+        '伤害上限、附加、次数、攻击措手/接触、加成来源移到展开详情',
+        '有效防御并入详情公式，减少横向拥挤'
+      ]
+    },
+    {
+      version: 'V1.124', date: '2026-11-06', title: 'ST 攻击列宽与按钮修复',
       notes: [
         '重新分配攻击表列宽，右侧操作列保留足够空间',
         '加号和删除按钮同时完整显示',
