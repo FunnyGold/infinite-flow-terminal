@@ -2390,3 +2390,9 @@ body.mobile-nav-frame::before {
 .st-target-card-controls select { width:60px; height:22px; }
 .st-target-remove { border:1px solid rgba(226,161,155,.22); background:transparent; color:#b98c86; border-radius:4px; padding:2px 6px; font:8px var(--sans); cursor:pointer; }
 .st-target-remove:hover { color:#e2a19b; border-color:rgba(226,161,155,.5); }
+.st-target-card { position:relative; }
+.st-target-card-pick { padding-right:40px; }
+.st-target-rename { position:absolute; top:6px; right:7px; border:1px solid rgba(201,168,110,.22); background:rgba(201,168,110,.06); color:#b99b69; border-radius:4px; padding:1px 5px; font:8px var(--sans); cursor:pointer; }
+.st-target-rename:hover { color:#e2c486; border-color:rgba(201,168,110,.5); }
+.st-target-name-input { display:none; }
+.st-target-card.renaming .st-target-name-input { display:block; }

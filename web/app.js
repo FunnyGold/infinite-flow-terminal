@@ -656,6 +656,7 @@
       const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
       return `<div class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-target-card="${esc(t.id)}">
         <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>
+        <button class="st-target-rename" data-action="st-rename-target" data-id="${esc(t.id)}">改名</button>
         <div class="st-target-card-edit">
           <input class="cell-input st-target-name-input" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
           <div class="st-target-card-controls">
@@ -1210,10 +1211,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.115';
+  const APP_VERSION = 'V1.116';
   const UPDATES = [
     {
-      version: 'V1.115', date: '2026-11-06', title: 'ST 目标卡内编辑', current: true,
+      version: 'V1.116', date: '2026-11-06', title: 'ST 目标卡改名按钮', current: true,
+      notes: [
+        '目标名称改为卡片右上角「改名」按钮',
+        '平时只显示目标名，不占一行输入框',
+        '改名后按 Enter 或失焦保存'
+      ]
+    },
+    {
+      version: 'V1.115', date: '2026-11-06', title: 'ST 目标卡内编辑',
       notes: [
         '目标名称、措手不及、接触等级直接放进目标卡片',
         '每个目标卡片自带删除按钮',
@@ -5882,6 +5891,18 @@
         saveSTTool(); renderView('st');
         break;
       }
+      case 'st-rename-target': {
+        const card = el.closest('.st-target-card');
+        if (!card) break;
+        const input = card.querySelector('[data-st-target-name]');
+        card.classList.toggle('renaming');
+        if (input) {
+          input.hidden = false;
+          input.focus();
+          input.select();
+        }
+        break;
+      }
       case 'st-remove-target': {
         if (stTargets().length <= 1) { toast('至少保留一个目标'); break; }
         const removeId = el.dataset.id || stTool.combat.activeTargetId;
@@ -6579,6 +6600,10 @@
     });
 
     document.addEventListener('keydown', e => {
+      if (e.target && e.target.matches && e.target.matches('[data-st-target-name]')) {
+        if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+        if (e.key === 'Escape') { e.target.blur(); }
+      }
       if (guideStepIndex >= 0) {
         if (e.key === 'Escape') { e.preventDefault(); endGuide(); return; }
         if (e.key === 'ArrowRight') { e.preventDefault(); nextGuideStep(); return; }
