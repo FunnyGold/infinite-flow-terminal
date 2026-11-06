@@ -1291,10 +1291,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.137';
+  const APP_VERSION = 'V1.138';
   const UPDATES = [
     {
-      version: 'V1.137', date: '2026-11-06', title: 'ST 页配色复查与全站收尾', current: true,
+      version: 'V1.138', date: '2026-11-06', title: '亮色主题并回变量体系', current: true,
+      notes: [
+        '亮色主题里 250 处硬编码颜色并入语义变量，不再是一套平行配色',
+        '亮色的最浅两级文字各加深一档，最浅文字对比度从 2.1:1 提到 2.7:1',
+        '全站对比度扫描：除装饰性水印外没有低于 2.2:1 的文字'
+      ]
+    },
+    {
+      version: 'V1.137', date: '2026-11-06', title: 'ST 页配色复查与全站收尾',
       notes: [
         'ST 页文字色从 16 种收到 11 种，全部是语义变量',
         '删除类按钮统一到危险红，状态绿、伤害数值金也归到变量',
