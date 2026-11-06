@@ -708,18 +708,22 @@
       <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="6">
         <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
         <div class="st-attack-detail-fields">
-          <label>伤害上限<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="伤害上限"></label>
-          <label>附加<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="extra" value="${esc(C.num(a.extra))}" title="附加成功，直接加到期望伤害"></label>
-          <label>次数<input class="cell-input" type="number" min="1" data-st-attack="${id}" data-st-field="count" value="${esc(C.num(a.count))}"></label>
-          <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
-          <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
-          <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
-          <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
-          <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
-          <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
-          <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
-          <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
-          <button class="btn small danger st-attack-detail-delete" data-action="st-remove-attack" data-id="${id}">${ic('trash')} 删除这条攻击</button>
+          <div class="st-attack-detail-grid">
+            <label>伤害上限<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="伤害上限"></label>
+            <label>附加<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="extra" value="${esc(C.num(a.extra))}" title="附加成功，直接加到期望伤害"></label>
+            <label>次数<input class="cell-input" type="number" min="1" data-st-attack="${id}" data-st-field="count" value="${esc(C.num(a.count))}"></label>
+            <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
+            <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
+            <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
+          </div>
+          <div class="st-attack-detail-row">
+            <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
+            <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
+            <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
+            <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
+          </div>
+          <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" rows="3" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
+          <div class="st-attack-detail-actions"><button class="btn small danger st-attack-detail-delete" data-action="st-remove-attack" data-id="${id}">${ic('trash')} 删除这条攻击</button></div>
         </div>
       </td></tr>`;
     }).join('');
@@ -933,13 +937,6 @@
     const attackCount = (stTool.combat.attacks || []).length;
     return `
       ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。', '')}
-      <div class="st-jump">
-        <button data-action="st-jump" data-target="st-section-characters">调查员 <b>${entries.length}</b></button>
-        <button data-action="st-jump" data-target="st-section-targets">目标 <b>${targetCount}</b></button>
-        <button data-action="st-jump" data-target="st-section-attacks">攻击 <b>${attackCount}</b></button>
-        ${targetCount >= 2 && attackCount ? `<button data-action="st-jump" data-target="st-section-compare">对比</button>` : ''}
-        <button data-action="st-jump" data-target="st-section-notes">笔记</button>
-      </div>
       <div class="panel" id="st-section-characters">
         <div class="panel-head"><div class="panel-title">调查员状态</div><div class="panel-head-right st-toolbar">
           <button class="btn small gold" data-action="st-picker">${ic('users')} 选择角色卡</button>
@@ -1248,10 +1245,20 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.125';
+  const APP_VERSION = 'V1.126';
   const UPDATES = [
     {
-      version: 'V1.125', date: '2026-11-06', title: 'ST 攻击行精简', current: true,
+      version: 'V1.126', date: '2026-11-06', title: 'ST 攻击详情重排', current: true,
+      notes: [
+        '移除 ST 顶部快捷导航',
+        '攻击详情分成数值、条件、备注、操作四块',
+        '攻击后效果备注改为整行宽框并加高',
+        '攻击措手/接触下拉框缩小',
+        'ST 笔记输入框加高'
+      ]
+    },
+    {
+      version: 'V1.125', date: '2026-11-06', title: 'ST 攻击行精简',
       notes: [
         '主表只保留目标、攻击名、总DP、最终DP、期望伤害和操作',
         '伤害上限、附加、次数、攻击措手/接触、加成来源移到展开详情',

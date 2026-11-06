@@ -946,13 +946,6 @@
     const attackCount = (stTool.combat.attacks || []).length;
     return `
       ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。', '')}
-      <div class="st-jump">
-        <button data-action="st-jump" data-target="st-section-characters">调查员 <b>${entries.length}</b></button>
-        <button data-action="st-jump" data-target="st-section-targets">目标 <b>${targetCount}</b></button>
-        <button data-action="st-jump" data-target="st-section-attacks">攻击 <b>${attackCount}</b></button>
-        ${targetCount >= 2 && attackCount ? `<button data-action="st-jump" data-target="st-section-compare">对比</button>` : ''}
-        <button data-action="st-jump" data-target="st-section-notes">笔记</button>
-      </div>
       <div class="panel" id="st-section-characters">
         <div class="panel-head"><div class="panel-title">调查员状态</div><div class="panel-head-right st-toolbar">
           <button class="btn small gold" data-action="st-picker">${ic('users')} 选择角色卡</button>
@@ -1261,10 +1254,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.125';
+  const APP_VERSION = 'V1.126';
   const UPDATES = [
     {
-      version: 'V1.125', date: '2026-11-06', title: 'ST 攻击行精简', current: true,
+      version: 'V1.126', date: '2026-11-06', title: 'ST 攻击详情重排', current: true,
+      notes: ['移除顶部导航', '备注加高', 'ST 笔记加高']
+    },
+    {
+      version: 'V1.125', date: '2026-11-06', title: 'ST 攻击行精简',
       notes: ['主表精简，次要字段移入详情']
     },
     {
