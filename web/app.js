@@ -1291,10 +1291,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.134';
+  const APP_VERSION = 'V1.135';
   const UPDATES = [
     {
-      version: 'V1.134', date: '2026-11-06', title: '战斗页配色收敛', current: true,
+      version: 'V1.135', date: '2026-11-06', title: '资源与账本页配色收敛', current: true,
+      notes: [
+        '资源页 7 种、账本页 8 种文字色，全部改为语义变量',
+        '账本的三种余额与战斗结果的最终 DP 统一用数值金色高亮',
+        '页标题、标签页、侧栏副标题并入四级文字色'
+      ]
+    },
+    {
+      version: 'V1.134', date: '2026-11-06', title: '战斗页配色收敛',
       notes: [
         '战斗页文字色收到 8 种，全部是语义变量',
         '能量充足 / 附加成功合并成同一个成功色，不再三种绿',
