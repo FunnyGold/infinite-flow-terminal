@@ -311,57 +311,49 @@
     return targets.find(t => t.id === stTool.combat.activeTargetId) || targets[0];
   }
 
-  function stSyncActiveTargetBar() {
-    const active = stActiveTarget();
-    const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(active.values[d.key]), 0);
-    const gradeLabel = g => (D.EFFECT_GRADES.find(x => x.value === g) || { label: '无' }).label;
-    const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
-    const set = (sel, text) => { const el = document.querySelector(sel); if (el) el.textContent = text; };
-    set('[data-st-active-name]', active.name || '未命名目标');
-    set('[data-st-active-source]', entry ? (entry.name || '调查员') : '手动防御');
-    set('[data-st-active-grade]', `措手 ${gradeLabel(active.flatfootedGrade)} / 接触 ${gradeLabel(active.contactGrade)}`);
-    set('[data-st-active-total]', `防御 ${fmt(total)}`);
+  function stTargetDefTotal(t) {
+    return D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
+  }
+
+  function stChipsHTML() {
+    return stTargets().map(t => {
+      const src = (stTool.entries || []).find(e => e.id === t.sourceId);
+      const on = t.id === stTool.combat.activeTargetId;
+      return `<button class="st-chip${on ? ' on' : ''}" data-action="st-select-target" data-id="${esc(t.id)}">
+        <b>${esc(t.name || '未命名目标')}</b>
+        <small>${src ? esc(src.name || '调查员') : '手动防御'} · 防 ${fmt(stTargetDefTotal(t))}</small>
+      </button>`;
+    }).join('');
+  }
+
+  function stSyncChips() {
+    const row = document.querySelector('.st-chips');
+    if (row) row.innerHTML = stChipsHTML() + `<button class="st-chip add" data-action="st-add-target">＋ 新目标</button>`;
+    refreshSTCombatOutputs();
+  }
+
+  function stTargetOptionsHTML(selectedId) {
+    return stTargets().map(t => `<option value="${esc(t.id)}" ${t.id === selectedId ? 'selected' : ''}>${esc(t.name || '未命名目标')} · 防 ${fmt(stTargetDefTotal(t))}</option>`).join('');
   }
 
   function stSwitchTarget(id) {
     stTool.combat.activeTargetId = id;
     saveSTTool();
-    const active = stActiveTarget();
-    document.querySelectorAll('.st-target-card[data-target-card]').forEach(card => {
-      card.classList.toggle('active', card.dataset.targetCard === id);
-    });
-    D.DEFENSE_ITEMS.forEach(d => {
-      const input = document.querySelector(`[data-st-target="${d.key}"]`);
-      if (input) input.value = fmt(active.values[d.key] || 0);
-    });
-    const source = document.querySelector('[data-st-defense-source]');
-    if (source) source.value = active.sourceId || '';
-    const hint = document.querySelector('.st-combat-hint');
-    if (hint) {
-      const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
-      hint.textContent = entry ? `当前来源：${entry.name || '调查员'}` : '当前来源：手动填写';
-    }
+    stSyncChips();
     document.querySelectorAll('[data-st-attack][data-st-field="targetId"]').forEach(sel => {
       const a = (stTool.combat.attacks || []).find(x => x.id === sel.dataset.stAttack);
       if (a && !a.targetId) sel.value = id;
     });
-    refreshSTCombatOutputs();
-    stSyncActiveTargetBar();
   }
 
   function stUpdateTargetNames() {
-    const active = stActiveTarget();
-    document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
-      if (opt.value === active.id) {
-        const def = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(active.values[d.key]), 0);
-        opt.textContent = `${active.name || '未命名目标'} · 防 ${fmt(def)}`;
-      }
-    });
-    document.querySelectorAll('.st-target-card[data-target-card]').forEach(card => {
-      if (card.dataset.targetCard === active.id) {
-        const b = card.querySelector('b');
-        if (b) b.textContent = active.name || '未命名目标';
-      }
+    stSyncChips();
+    document.querySelectorAll('[data-st-attack][data-st-field="targetId"]').forEach(sel => {
+      const a = (stTool.combat.attacks || []).find(x => x.id === sel.dataset.stAttack);
+      if (!a) return;
+      const cur = sel.value;
+      sel.innerHTML = stTargetOptionsHTML(a.targetId || cur);
+      if (cur) sel.value = cur;
     });
   }
 
@@ -546,54 +538,58 @@
       : '<option value="">没有可读取的攻击</option>';
   }
 
-  function stCardHTML(e) {
+  function stUnitHTML(e) {
     const hp = stRemainingHp(e);
-    const pct = e.hpMax > 0 ? Math.max(0, Math.min(100, hp / e.hpMax * 100)) : 0;
+    const max = C.num(e.hpMax);
+    const pct = max > 0 ? Math.max(0, Math.min(100, hp / max * 100)) : 0;
     const status = stStatus(e);
-    const cardCollapsed = ui.stCollapsedEntries.has(e.id);
-    const defenses = (e.defense || []).map(d => {
+    const open = ui.stOpenEntries.has(e.id);
+    const barCls = pct <= 25 ? ' crit' : (pct <= 60 ? ' low' : '');
+    const defs = (e.defense || []).map(d => {
       if (d.key === 'flatfooted' || d.key === 'contact') {
         const grade = e[d.key + 'Grade'] || 'none';
         const tip = EFFECT_TIPS[d.key] || '';
-        return `<span class="st-def-item st-def-effect" title="${esc(tip)}"><em title="${esc(tip)}">${esc(d.name)}</em><b class="st-effect-value" title="${esc(tip)}">${fmt(d.value)}</b><select data-st-effect="${esc(e.id)}" data-effect-key="${esc(d.key)}" title="${esc(tip)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === grade ? 'selected' : ''}>${g.label}</option>`).join('')}</select></span>`;
+        return `<label class="st-def" title="${esc(tip)}"><em>${esc(d.name)}</em><select class="cell-input" data-st-effect="${esc(e.id)}" data-effect-key="${esc(d.key)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === grade ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>`;
       }
-      return `<span class="st-def-item"><em>${esc(d.name)}</em><input type="number" data-st-def="${esc(e.id)}" data-def-key="${esc(d.key)}" value="${fmt(d.value)}"></span>`;
+      return `<label class="st-def"><em>${esc(d.name)}</em><input class="cell-input" type="number" data-st-def="${esc(e.id)}" data-def-key="${esc(d.key)}" value="${fmt(d.value)}"></label>`;
     }).join('');
-    return `<div class="st-card ${cardCollapsed ? 'st-card-collapsed' : ''}" data-st-card="${esc(e.id)}">
-      <div class="st-card-head">
+    return `<div class="st-unit${open ? ' open' : ''}" data-st-unit="${esc(e.id)}">
+      <div class="st-unit-row">
         <div class="st-avatar">${e.avatar ? `<img src="${esc(e.avatar)}" alt="">` : esc((e.name || '调').slice(0, 1))}</div>
-        <div class="st-name"><b>${esc(e.name || '未命名调查员')}</b><small>${e.sourceProfileId ? '本地角色卡' : '导入文件'}</small></div>
-        <div class="st-mode-switch">
-          <button class="${e.healthMode === 'fusion' ? 'active' : ''}" data-action="st-health-mode" data-id="${esc(e.id)}" data-mode="fusion">融合流</button>
-          <button class="${e.healthMode === 'rm' ? 'active' : ''}" data-action="st-health-mode" data-id="${esc(e.id)}" data-mode="rm">RM</button>
-        </div>
-        <span class="st-status ${stStatusClass(status)}">${status}</span>
-        <button class="st-card-btn" data-action="st-toggle-card" data-id="${esc(e.id)}">${cardCollapsed ? '展开' : '收起'}</button>
-        <button class="st-card-btn danger" data-action="st-remove" data-id="${esc(e.id)}">移除</button>
-      </div>
-      <div class="st-card-body ${cardCollapsed ? 'collapsed' : ''}">
-      <div class="st-hp-row">
-        <div class="st-hp-label">生命</div>
-        <div class="st-hp-value"><b>${fmt(hp)}</b><span>/ ${fmt(e.hpMax)}</span></div>
-        <div class="st-hp-controls">
+        <div class="st-unit-name"><b>${esc(e.name || '未命名调查员')}</b><small data-st-sub>${e.sourceProfileId ? '本地角色卡' : '导入文件'} · ${e.healthMode === 'rm' ? 'RM' : '融合流'}</small></div>
+        <div class="st-unit-hp"><b data-st-hp-out>${fmt(hp)}</b><span data-st-hp-max>/ ${fmt(max)}</span></div>
+        <div class="st-bar${barCls}"><i data-st-hp-bar style="width:${pct}%"></i></div>
+        <div class="st-unit-will">意志 <input class="cell-input" type="number" data-st-will="${esc(e.id)}" value="${fmt(e.willCurrent)}"><span>/ ${fmt(e.willMax)}</span></div>
+        <span class="st-status ${stStatusClass(status)}" data-st-status>${status}</span>
+        <div class="st-unit-quick">
           <button data-action="st-hp-delta" data-id="${esc(e.id)}" data-delta="-5">−5</button>
           <button data-action="st-hp-delta" data-id="${esc(e.id)}" data-delta="-1">−1</button>
           <button data-action="st-hp-delta" data-id="${esc(e.id)}" data-delta="1">+1</button>
           <button data-action="st-hp-delta" data-id="${esc(e.id)}" data-delta="5">+5</button>
-          <input type="number" data-st-hp="${esc(e.id)}" value="${fmt(hp)}" title="直接填写当前生命">
+          <input class="cell-input" type="number" data-st-hp="${esc(e.id)}" value="${fmt(hp)}" title="直接填写当前生命">
         </div>
+        <button class="st-unit-icon${open ? ' open' : ''}" data-action="st-toggle-card" data-id="${esc(e.id)}" title="展开防御 / 伤害 / 备注">${ic('chevron')}</button>
+        <button class="st-unit-icon danger" data-action="st-remove" data-id="${esc(e.id)}" title="移除">${ic('trash')}</button>
       </div>
-      <div class="st-hp-bar"><i style="width:${pct}%"></i></div>
-      <div class="st-will">
-        <span>意志</span><input type="number" data-st-will="${esc(e.id)}" value="${fmt(e.willCurrent)}"><span>/ ${fmt(e.willMax)}</span>
-        <span class="st-dmg-label">伤害</span>
-        <span>B</span><input type="number" data-st-dmg="${esc(e.id)}" data-dmg-key="b" value="${fmt(e.b)}">
-        <span>L</span><input type="number" data-st-dmg="${esc(e.id)}" data-dmg-key="l" value="${fmt(e.l)}">
-        <span>A</span><input type="number" data-st-dmg="${esc(e.id)}" data-dmg-key="a" value="${fmt(e.a)}">
-        <span class="st-health-formula">完好生命 = 上限 − B − L − A</span>
-      </div>
-      <div class="st-defense-grid">${defenses}</div>
-      ${e.defenseNote ? `<div class="st-defense-note">防御备注：${esc(e.defenseNote)}</div>` : ''}
+      <div class="st-unit-body${open ? '' : ' collapsed'}">
+        <div class="st-unit-sec">
+          <span class="st-sec-cap">防御（可直接改）</span>
+          <div class="st-def-grid">${defs}</div>
+        </div>
+        <div class="st-unit-sec">
+          <span class="st-sec-cap">伤害与完好生命</span>
+          <div class="st-dmg-row">
+            <label>B<input class="cell-input" type="number" data-st-dmg="${esc(e.id)}" data-dmg-key="b" value="${fmt(e.b)}"></label>
+            <label>L<input class="cell-input" type="number" data-st-dmg="${esc(e.id)}" data-dmg-key="l" value="${fmt(e.l)}"></label>
+            <label>A<input class="cell-input" type="number" data-st-dmg="${esc(e.id)}" data-dmg-key="a" value="${fmt(e.a)}"></label>
+            <span class="st-formula">完好生命 = 上限 − B − L − A</span>
+            <div class="st-mode-switch st-mode-inline">
+              <button class="${e.healthMode === 'fusion' ? 'active' : ''}" data-action="st-health-mode" data-id="${esc(e.id)}" data-mode="fusion">融合流</button>
+              <button class="${e.healthMode === 'rm' ? 'active' : ''}" data-action="st-health-mode" data-id="${esc(e.id)}" data-mode="rm">RM</button>
+            </div>
+          </div>
+        </div>
+        ${e.defenseNote ? `<div class="st-unit-note">${esc(e.defenseNote)}</div>` : ''}
       </div>
     </div>`;
   }
@@ -664,33 +660,9 @@
 
   function stCombatHTML() {
     const combat = stTool.combat;
-    const entries = stTool.entries || [];
-    const activeTarget = stActiveTarget();
-    const selected = entries.some(e => e.id === activeTarget.sourceId) ? activeTarget.sourceId : '';
-    const options = entries.map(e => `<option value="${esc(e.id)}" ${e.id === selected ? 'selected' : ''}>${esc(e.name || '未命名调查员')}</option>`).join('');
-    const defCollapsed = ui.collapsedSections.has('st-combat-defense');
     const atkCollapsed = ui.collapsedSections.has('st-combat-attacks');
-    const targetFields = D.DEFENSE_ITEMS.map(d =>
-      `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-st-target="${esc(d.key)}" value="${fmt(activeTarget.values[d.key] || 0)}"></div>`
-    ).join('');
-    const gradeLabel = g => (D.EFFECT_GRADES.find(x => x.value === g) || { label: '无' }).label;
-    const targetCards = stTargets().map(t => {
-      const src = (stTool.entries || []).find(e => e.id === t.sourceId);
-      const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
-      return `<div class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-target-card="${esc(t.id)}">
-        <button class="st-target-card-pick" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>
-        <button class="st-target-rename" data-action="st-rename-target" data-id="${esc(t.id)}">改名</button>
-        <div class="st-target-card-edit">
-          <input class="cell-input st-target-name-input" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
-          <div class="st-target-card-controls">
-            <label class="st-target-grade">目标·措手不及<select class="cell-input" data-st-target-grade="flatfootedGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.flatfootedGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
-            <label class="st-target-grade">目标·接触<select class="cell-input" data-st-target-grade="contactGrade" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (t.contactGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
-            <button class="st-target-remove" data-action="st-remove-target" data-id="${esc(t.id)}">删除</button>
-          </div>
-        </div>
-      </div>`;
-    }).join('');
     const importOptions = stAttackImportOptions();
+    const fallbackTargetId = stActiveTarget().id;
     const attacks = (combat.attacks || []).map(a => {
       const c = stAttackCalc(a);
       const id = esc(a.id);
@@ -698,7 +670,7 @@
       const grades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.flatfootedGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       const contactGrades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.contactGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       return `<tr data-st-attack-row="${id}">
-        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="targetId">${stTargets().map(t => { const def = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0); return `<option value="${esc(t.id)}" ${t.id === (a.targetId || stActiveTarget().id) ? 'selected' : ''}>${esc(t.name || '未命名目标')} · 防 ${fmt(def)}</option>`; }).join('')}</select></td>
+        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="targetId">${stTargetOptionsHTML(a.targetId || fallbackTargetId)}</select></td>
         <td><input class="cell-input st-attack-name" data-st-attack="${id}" data-st-field="name" value="${esc(a.name || '')}" placeholder="攻击名"></td>
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="dp" value="${esc(C.num(a.dp))}" title="由 ST 直接填写总攻击 DP"></td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(c.finalDP)}</td>
@@ -728,41 +700,13 @@
       </td></tr>`;
     }).join('');
     return `
-      <div class="st-battle-layout">
-      <div class="st-battle-targets">
-      <div class="panel mt18 collapsible" id="st-section-targets">
+      <div class="panel mt18" id="st-section-targets">
         <div class="panel-head">
-          <div class="panel-title">战斗 · 目标</div>
-          <div class="panel-head-right">
-            <span class="panel-sub">先选目标，再读取或编辑它的防御；攻击区每条攻击可单独选目标</span>
-            <button class="collapse-btn ${defCollapsed ? 'collapsed' : ''}" data-action="toggle-section" data-section="st-combat-defense" aria-expanded="${defCollapsed ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
-          </div>
+          <div class="panel-title">战斗 · 目标<span class="st-count">${stTargets().length}</span></div>
+          <div class="panel-head-right"><span class="panel-sub">点目标卡编辑它的防御与状态；攻击行没有单独选目标时使用当前目标</span></div>
         </div>
-        <div class="panel-body ${defCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-defense">
-          <div class="st-target-cards">${targetCards}<button class="st-target-card st-target-add" data-action="st-add-target">${ic('plus')} 新目标</button></div>
-          <div class="st-active-target-bar">
-            <span>正在编辑</span><b data-st-active-name>${esc(activeTarget.name || '未命名目标')}</b>
-            <span class="st-active-sep">·</span><span data-st-active-source>${activeTarget.sourceId ? esc((entries.find(e => e.id === activeTarget.sourceId) || {}).name || '调查员') : '手动防御'}</span>
-            <span class="st-active-sep">·</span><span data-st-active-grade>措手 ${esc(gradeLabel(activeTarget.flatfootedGrade))} / 接触 ${esc(gradeLabel(activeTarget.contactGrade))}</span>
-            <span class="st-active-total" data-st-active-total>防御 ${fmt(D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(activeTarget.values[d.key]), 0))}</span>
-          </div>
-          <div class="st-combat-toolbar">
-            <label class="st-source-picker">读取自
-              <select class="cell-input" data-st-defense-source>
-                <option value="">手动填写</option>
-                ${options}
-              </select>
-            </label>
-            <button class="btn small" data-action="st-load-defense">${ic('refresh')} 重新读取防御</button>
-            <button class="btn small" data-action="st-clear-defense">清空防御</button>
-            <span class="st-combat-hint">${selected ? '当前来源：' + esc((entries.find(e => e.id === selected) || {}).name || '') : '当前为手动防御'}</span>
-          </div>
-          <div class="defense-target st-target-grid">${targetFields}</div>
-          <div class="matrix-wrap-note">上方选择目标卡片；目标卡的措手不及 / 接触是目标当前防御状态。攻击行未选择时会继承目标状态，选择了则覆盖。</div>
-        </div>
+        <div class="panel-body"><div class="st-chips">${stChipsHTML()}<button class="st-chip add" data-action="st-add-target">${ic('plus')} 新目标</button></div></div>
       </div>
-      </div>
-      <div class="st-battle-attacks">
       <div class="panel mt18 collapsible" id="st-section-attacks">
         <div class="panel-head">
           <div class="panel-title">战斗 · 攻击预设</div>
@@ -780,8 +724,6 @@
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
         </div>
       </div>
-      </div>
-      </div>
       ${stTargetComparisonHTML()}`;
   }
 
@@ -789,29 +731,134 @@
     const active = stActiveTarget();
     D.DEFENSE_ITEMS.forEach(d => {
       const el = document.querySelector(`[data-st-target="${d.key}"]`);
-      if (el) el.value = fmt(active.values[d.key] || 0);
+      if (el && document.activeElement !== el) el.value = fmt(active.values[d.key] || 0);
     });
     const sel = document.querySelector('[data-st-defense-source]');
-    if (sel) sel.value = (stActiveTarget().sourceId || '') || '';
+    if (sel) sel.value = active.sourceId || '';
     const hint = document.querySelector('.st-combat-hint');
     if (hint) {
       const entry = (stTool.entries || []).find(e => e.id === active.sourceId);
-      hint.textContent = entry ? `当前来源：${entry.name || '调查员'}` : '当前来源：手动填写';
+      hint.textContent = entry ? `来源：${entry.name || '调查员'}` : '来源：手动填写';
     }
+    stSyncTargetDialogTotals();
     refreshSTCombatOutputs();
+  }
+
+  function stSyncTargetDialogTotals() {
+    const el = document.querySelector('[data-st-dlg-total]');
+    if (!el) return;
+    el.textContent = fmt(stTargetDefTotal(stActiveTarget()));
+    const src = document.querySelector('[data-st-dlg-src]');
+    if (src) {
+      const t = stActiveTarget();
+      const entry = (stTool.entries || []).find(e => e.id === t.sourceId);
+      src.textContent = entry ? (entry.name || '调查员') : '手动防御';
+    }
+  }
+
+  function stTargetDialogHTML() {
+    const t = stActiveTarget();
+    const entries = stTool.entries || [];
+    const selected = entries.some(e => e.id === t.sourceId) ? t.sourceId : '';
+    const entry = entries.find(e => e.id === t.sourceId);
+    const gradeSelect = (field, value) => `<select class="cell-input" data-st-target-grade="${field}" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (value || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select>`;
+    const groups = [
+      ['基础 · 可被高速削减', ['base', 'dodge', 'insight', 'parry']],
+      ['装备与天生 · 可被破甲削减', ['shield', 'armor', 'natural']],
+      ['加值 · 可被破魔削减', ['deflection', 'force', 'sacred', 'unholy', 'morale', 'other']],
+      ['抗性 · 抵消削减', ['antiHighSpeed', 'antiArmorPierce', 'antiMagicPierce']]
+    ];
+    const groupsHTML = groups.map(([cap, keys]) => `<section class="st-def-grp">
+        <h4>${cap}</h4>
+        <div class="st-def-grid">${keys.map(k => {
+          const item = D.DEFENSE_MAP[k];
+          return `<label class="st-def" title="${esc((item && item.desc) || '')}"><em>${esc(item ? item.name : k)}</em><input class="cell-input" type="number" data-st-target="${esc(k)}" value="${fmt(t.values[k] || 0)}"></label>`;
+        }).join('')}</div>
+      </section>`).join('');
+    return `<div class="st-dlg" data-st-dlg>
+      <div class="st-dlg-head">
+        <input class="st-dlg-name" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
+        <span class="st-dlg-src" data-st-dlg-src>${entry ? esc(entry.name || '调查员') : '手动防御'}</span>
+      </div>
+      <div class="st-dlg-tools">
+        <label>读取自
+          <select class="cell-input" data-st-defense-source>
+            <option value="">手动填写</option>
+            ${entries.map(e => `<option value="${esc(e.id)}" ${e.id === selected ? 'selected' : ''}>${esc(e.name || '未命名调查员')}</option>`).join('')}
+          </select>
+        </label>
+        <button class="btn small" data-action="st-load-defense">${ic('refresh')} 重新读取</button>
+        <button class="btn small" data-action="st-clear-defense">清空防御</button>
+      </div>
+      <div class="st-def-groups">${groupsHTML}</div>
+      <div class="st-dlg-foot">
+        <div class="st-dlg-grades">
+          <label>目标 · 措手不及${gradeSelect('flatfootedGrade', t.flatfootedGrade)}</label>
+          <label>目标 · 接触${gradeSelect('contactGrade', t.contactGrade)}</label>
+        </div>
+        <div class="st-dlg-total"><span>防御合计</span><b data-st-dlg-total>${fmt(stTargetDefTotal(t))}</b></div>
+      </div>
+      <div class="st-dlg-actions">
+        <button class="btn small danger" data-action="st-remove-target" data-id="${esc(t.id)}">删除目标</button>
+        <button class="btn" data-modal="close">完成</button>
+      </div>
+    </div>`;
+  }
+
+  function stCloseTargetDialog() {
+    const layer = $('#modal-layer');
+    const card = $('#modal-card');
+    if (!layer) return;
+    layer.hidden = true;
+    if (card) card.style.width = '';
+    window.__modalClose = null;
+  }
+
+  function bindSTTargetDialog() {
+    const card = $('#modal-card');
+    const layer = $('#modal-layer');
+    if (!card || !layer) return;
+    const done = card.querySelector('[data-modal="close"]');
+    if (done) done.onclick = stCloseTargetDialog;
+    layer.onclick = e => { if (e.target === layer) stCloseTargetDialog(); };
+    window.__modalClose = stCloseTargetDialog;
+  }
+
+  function stRefreshTargetDialog() {
+    const card = $('#modal-card');
+    const layer = $('#modal-layer');
+    if (!card || !layer || layer.hidden) return;
+    if (!card.querySelector('[data-st-dlg]')) return;
+    card.innerHTML = stTargetDialogHTML();
+    bindSTTargetDialog();
+  }
+
+  function stOpenTargetDialog(id) {
+    const layer = $('#modal-layer');
+    const card = $('#modal-card');
+    if (!layer || !card) return;
+    stTool.combat.activeTargetId = id;
+    saveSTTool();
+    stSyncChips();
+    card.style.width = '640px';
+    card.innerHTML = stTargetDialogHTML();
+    layer.hidden = false;
+    bindSTTargetDialog();
   }
 
   function stLoadDefense(sourceId) {
     const entry = (stTool.entries || []).find(e => e.id === sourceId);
+    const active = stActiveTarget();
     if (!entry) {
       stTool.combat.sourceId = '';
-      stActiveTarget().sourceId = '';
+      active.sourceId = '';
       saveSTTool();
+      stUpdateTargetNames();
       stSyncTargetDefenseUI();
+      stRefreshTargetDialog();
       return;
     }
     stTool.combat.sourceId = entry.id;
-    const active = stActiveTarget();
     active.sourceId = entry.id;
     active.flatfootedGrade = entry.flatfootedGrade || 'none';
     active.contactGrade = entry.contactGrade || 'none';
@@ -819,7 +866,9 @@
     stTool.combat.values = Object.assign({}, values);
     D.DEFENSE_ITEMS.forEach(d => { active.values[d.key] = values[d.key] || 0; });
     saveSTTool();
-    stRerenderPreserve();
+    stUpdateTargetNames();
+    stSyncTargetDefenseUI();
+    stRefreshTargetDialog();
     toast(`已读取 ${entry.name || '调查员'} 的防御`);
   }
 
@@ -831,7 +880,9 @@
     active.flatfootedGrade = 'none';
     active.contactGrade = 'none';
     saveSTTool();
-    stRerenderPreserve();
+    stUpdateTargetNames();
+    stSyncTargetDefenseUI();
+    stRefreshTargetDialog();
   }
 
   function stRerenderPreserve() {
@@ -938,13 +989,13 @@
     return `
       ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。', '')}
       <div class="panel" id="st-section-characters">
-        <div class="panel-head"><div class="panel-title">调查员状态</div><div class="panel-head-right st-toolbar">
+        <div class="panel-head"><div class="panel-title">调查员<span class="st-count">${entries.length}</span></div><div class="panel-head-right st-toolbar">
           <button class="btn small gold" data-action="st-picker">${ic('users')} 选择角色卡</button>
           <button class="btn small" data-action="st-import">${ic('upload')} 导入 JSON</button>
           <button class="btn small" data-action="st-refresh">${ic('refresh')} 刷新快照</button>
           <button class="btn small" data-action="st-clear">清空</button>
         </div></div>
-        <div class="panel-body">${entries.length ? `<div class="st-grid">${entries.map(stCardHTML).join('')}</div>` : `<div class="empty st-empty"><b>还没有载入调查员</b>从本地角色卡中选择，或导入其他调查员的角色卡 JSON。调整只保存在 ST 工具中，不影响原卡。</div>`}</div>
+        <div class="panel-body st-units-wrap">${entries.length ? `<div class="st-units">${entries.map(stUnitHTML).join('')}</div>` : `<div class="empty st-empty"><b>还没有载入调查员</b>从本地角色卡中选择，或导入其他调查员的角色卡 JSON。调整只保存在 ST 工具中，不影响原卡。</div>`}</div>
       </div>
       ${stCombatHTML()}
       <div class="panel mt18 st-notes-panel" id="st-section-notes">
@@ -1051,27 +1102,37 @@
 
   function stRefreshCard(id) {
     const e = stTool.entries.find(x => x.id === id);
-    const card = document.querySelector(`.st-card[data-st-card="${id}"]`);
-    if (!e || !card) return;
+    const unit = document.querySelector(`.st-unit[data-st-unit="${id}"]`);
+    if (!e || !unit) return;
     const hp = stRemainingHp(e);
-    const pct = C.num(e.hpMax) > 0 ? Math.max(0, Math.min(100, hp / C.num(e.hpMax) * 100)) : 0;
+    const max = C.num(e.hpMax);
+    const pct = max > 0 ? Math.max(0, Math.min(100, hp / max * 100)) : 0;
     const status = stStatus(e);
-    const hpValue = card.querySelector('.st-hp-value b');
-    const hpMax = card.querySelector('.st-hp-value span');
-    const bar = card.querySelector('.st-hp-bar i');
-    const pill = card.querySelector('.st-status');
-    const hpInput = card.querySelector(`[data-st-hp="${id}"]`);
-    if (hpValue) hpValue.textContent = fmt(hp);
-    if (hpMax) hpMax.textContent = `/ ${fmt(e.hpMax)}`;
-    if (bar) bar.style.width = pct + '%';
+    const num = unit.querySelector('[data-st-hp-out]');
+    const sub = unit.querySelector('[data-st-sub]');
+    if (sub) sub.textContent = (e.sourceProfileId ? '本地角色卡' : '导入文件') + ' · ' + (e.healthMode === 'rm' ? 'RM' : '融合流');
+    const mx = unit.querySelector('[data-st-hp-max]');
+    const bar = unit.querySelector('[data-st-hp-bar]');
+    const pill = unit.querySelector('[data-st-status]');
+    const hpInput = unit.querySelector(`[data-st-hp="${id}"]`);
+    if (num) num.textContent = fmt(hp);
+    if (mx) mx.textContent = `/ ${fmt(max)}`;
+    if (bar) {
+      bar.style.width = pct + '%';
+      const box = bar.parentElement;
+      if (box) {
+        box.classList.toggle('crit', pct <= 25);
+        box.classList.toggle('low', pct > 25 && pct <= 60);
+      }
+    }
     if (pill) { pill.textContent = status; pill.className = 'st-status ' + stStatusClass(status); }
     if (hpInput && document.activeElement !== hpInput) hpInput.value = fmt(hp);
-    card.querySelectorAll('[data-action="st-health-mode"]').forEach(btn => {
+    unit.querySelectorAll('[data-action="st-health-mode"]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.mode === e.healthMode);
     });
     ['b', 'l', 'a'].forEach(key => {
-      const el = card.querySelector(`[data-st-dmg="${id}"][data-dmg-key="${key}"]`);
-      if (el) el.value = fmt(e[key]);
+      const el = unit.querySelector(`[data-st-dmg="${id}"][data-dmg-key="${key}"]`);
+      if (el && document.activeElement !== el) el.value = fmt(e[key]);
     });
   }
 
@@ -1214,7 +1275,7 @@
     extraFolders: [],
     skillFilter: 'all',
     stCollapsedAttacks: new Set(),
-    stCollapsedEntries: new Set(),
+    stOpenEntries: new Set(),
     skillQuery: '',
     collapsedSections: new Set(['identity', 'attributes', 'skills', 'defense', 'equipment', 'notes']),
     resourceTab: 'traits',
@@ -1245,10 +1306,21 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.126';
+  const APP_VERSION = 'V1.127';
   const UPDATES = [
     {
-      version: 'V1.126', date: '2026-11-06', title: 'ST 攻击详情重排', current: true,
+      version: 'V1.127', date: '2026-11-06', title: 'ST 工具整页重排', current: true,
+      notes: [
+        '调查员改为一行一人：头像、生命条、意志、状态和 ±5 / ±1 同排常驻',
+        '生命口径与伤害 B / L / A 收进每行的展开区',
+        '目标改为横排卡片，点击弹出防御编辑，不再占用左侧窄列',
+        '防御 16 项按高速 / 破甲 / 破魔的削减顺序分组，并给出合计',
+        '攻击区改占满宽度，删除按钮不再溢出表格',
+        'ST 页字号整体上调，取消 8px 标签'
+      ]
+    },
+    {
+      version: 'V1.126', date: '2026-11-06', title: 'ST 攻击详情重排',
       notes: [
         '移除 ST 顶部快捷导航',
         '攻击详情分成数值、条件、备注、操作四块',
@@ -6000,24 +6072,15 @@
         break;
       }
       case 'st-note-expand': openSTNotesFloat(); break;
-      case 'st-select-target': stSwitchTarget(el.dataset.id); break;
+      case 'st-select-target': stOpenTargetDialog(el.dataset.id); break;
       case 'st-add-target': {
-        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, stActiveTarget().values) };
+        const base = stActiveTarget();
+        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, base ? base.values : {}) };
         stTool.combat.targets.push(target);
         stTool.combat.activeTargetId = target.id;
-        saveSTTool(); renderView('st');
-        break;
-      }
-      case 'st-rename-target': {
-        const card = el.closest('.st-target-card');
-        if (!card) break;
-        const input = card.querySelector('[data-st-target-name]');
-        card.classList.toggle('renaming');
-        if (input) {
-          input.hidden = false;
-          input.focus();
-          input.select();
-        }
+        saveSTTool();
+        renderView('st');
+        stOpenTargetDialog(target.id);
         break;
       }
       case 'st-remove-target': {
@@ -6025,7 +6088,9 @@
         const removeId = el.dataset.id || stTool.combat.activeTargetId;
         stTool.combat.targets = stTargets().filter(t => t.id !== removeId);
         if (stTool.combat.activeTargetId === removeId) stTool.combat.activeTargetId = stTool.combat.targets[0].id;
-        saveSTTool(); renderView('st');
+        saveSTTool();
+        stCloseTargetDialog();
+        renderView('st');
         break;
       }
       case 'st-active-target': break;
@@ -6038,15 +6103,15 @@
       case 'st-add-attack': stAddAttack(); break;
       case 'st-toggle-card': {
         const id = el.dataset.id;
-        const card = el.closest('.st-card');
-        const collapsed = ui.stCollapsedEntries.has(id);
-        if (collapsed) ui.stCollapsedEntries.delete(id); else ui.stCollapsedEntries.add(id);
-        if (card) {
-          const body = card.querySelector('.st-card-body');
-          if (body) body.classList.toggle('collapsed', !collapsed);
-          card.classList.toggle('st-card-collapsed', !collapsed);
-          el.textContent = !collapsed ? '展开' : '收起';
+        const unit = el.closest('.st-unit');
+        const open = !ui.stOpenEntries.has(id);
+        if (open) ui.stOpenEntries.add(id); else ui.stOpenEntries.delete(id);
+        if (unit) {
+          const body = unit.querySelector('.st-unit-body');
+          if (body) body.classList.toggle('collapsed', !open);
+          unit.classList.toggle('open', open);
         }
+        el.classList.toggle('open', open);
         break;
       }
       case 'st-toggle-attack': {
@@ -6518,7 +6583,7 @@
         target[el.dataset.stTargetGrade] = el.value;
         saveSTTool();
         refreshSTCombatOutputs();
-        stSyncActiveTargetBar();
+        stSyncTargetDialogTotals();
         return;
       }
       if (el.matches('[data-st-target-name]')) {
@@ -6526,7 +6591,7 @@
         target.name = el.value;
         saveSTTool();
         stUpdateTargetNames();
-        stSyncActiveTargetBar();
+        stSyncTargetDefenseUI();
         return;
       }
       if (el.matches('[data-st-target]')) {
@@ -6535,6 +6600,7 @@
         stTool.combat.values[el.dataset.stTarget] = C.num(el.value);
         saveSTTool();
         refreshSTCombatOutputs();
+        stSyncTargetDialogTotals();
         return;
       }
       if (el.matches('[data-st-attack]')) {
