@@ -694,10 +694,10 @@
             <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
           </div>
           <div class="st-attack-detail-row">
+            <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
             <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
             <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
             <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
-            <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
           </div>
           <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" rows="3" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
           <div class="st-attack-detail-actions"><button class="btn small danger st-attack-detail-delete" data-action="st-remove-attack" data-id="${id}">${ic('trash')} 删除这条攻击</button></div>
@@ -1291,10 +1291,20 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.130';
+  const APP_VERSION = 'V1.131';
   const UPDATES = [
     {
-      version: 'V1.130', date: '2026-11-06', title: 'ST 页面版式对齐设计稿', current: true,
+      version: 'V1.131', date: '2026-11-06', title: '全站字号统一，取消 10px 以下小字', current: true,
+      notes: [
+        '32 种字号收敛为 7 档：10 / 11 / 12 / 13 / 15 / 20 与标题级大号',
+        '全站取消 10px 以下的字号，最小的标签也保证可读',
+        'ST 攻击详情里的「读取攻击检定」移到措手 / 接触同一行最左侧',
+        '侧栏「先攻 / 速度」拆成两行，放大字体后不再折行',
+        '「当前意志」标签不再被挤成两行'
+      ]
+    },
+    {
+      version: 'V1.130', date: '2026-11-06', title: 'ST 页面版式对齐设计稿',
       notes: [
         '角色卡选择、导入、刷新、清空移到页头右上，与其它页面一致',
         '调查员面板标题显示「N / 存活 M」，右侧提示点击行设为攻击来源',
@@ -2512,7 +2522,8 @@
     }
     const hp = $('#side-hp'); if (hp) hp.textContent = fmt(c.hp);
     const will = $('#side-will'); if (will) will.textContent = fmt(c.health.willCurrent) + ' / ' + fmt(c.will);
-    const init = $('#side-init'); if (init) init.textContent = (c.initiative >= 0 ? '+' : '') + fmt(c.initiative) + ' · ' + fmt(c.speed);
+    const init = $('#side-init'); if (init) init.textContent = (c.initiative >= 0 ? '+' : '') + fmt(c.initiative);
+    const spd = $('#side-speed'); if (spd) spd.textContent = fmt(c.speed);
     const def = $('#side-def'); if (def) def.textContent = fmt(c.baseDefense);
     updateCharacterSwitcher();
   }
