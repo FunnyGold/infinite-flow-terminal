@@ -527,8 +527,8 @@
           <button class="${e.healthMode === 'rm' ? 'active' : ''}" data-action="st-health-mode" data-id="${esc(e.id)}" data-mode="rm">RM</button>
         </div>
         <span class="st-status ${stStatusClass(status)}">${status}</span>
-        <button class="icon-btn ${cardCollapsed ? 'collapsed' : ''}" data-action="st-toggle-card" data-id="${esc(e.id)}" title="展开 / 折叠调查员">${ic('chevron')}</button>
-        <button class="icon-btn" data-action="st-remove" data-id="${esc(e.id)}" title="从 ST 面板移除">${ic('trash')}</button>
+        <button class="st-card-btn" data-action="st-toggle-card" data-id="${esc(e.id)}">${cardCollapsed ? '展开' : '收起'}</button>
+        <button class="st-card-btn danger" data-action="st-remove" data-id="${esc(e.id)}">移除</button>
       </div>
       <div class="st-card-body ${cardCollapsed ? 'collapsed' : ''}">
       <div class="st-hp-row">
@@ -1181,10 +1181,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.109';
+  const APP_VERSION = 'V1.110';
   const UPDATES = [
     {
-      version: 'V1.109', date: '2026-11-06', title: 'ST 调查员卡折叠', current: true,
+      version: 'V1.110', date: '2026-11-06', title: 'ST 导航与折叠按钮修复', current: true,
+      notes: [
+        '修复 ST 顶部导航点击无反应',
+        '修复 ST 目标卡片点击无反应',
+        '调查员卡折叠/移除改为带文字的按钮',
+        'ST 卡片头部允许换行，避免按钮挤压'
+      ]
+    },
+    {
+      version: 'V1.109', date: '2026-11-06', title: 'ST 调查员卡折叠',
       notes: [
         '每张 ST 调查员卡可单独折叠',
         '折叠后只保留名字、头像、状态和模式切换',
@@ -5696,12 +5705,12 @@
         break;
       }
       case 'st-jump': {
-        const el = document.getElementById(action.dataset.target);
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const target = document.getElementById(el.dataset.target);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
         break;
       }
       case 'st-note-expand': openSTNotesFloat(); break;
-      case 'st-select-target': stTool.combat.activeTargetId = action.dataset.id; saveSTTool(); stRerenderPreserve(); break;
+      case 'st-select-target': stTool.combat.activeTargetId = el.dataset.id; saveSTTool(); stRerenderPreserve(); break;
       case 'st-add-target': {
         const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, stActiveTarget().values) };
         stTool.combat.targets.push(target);
