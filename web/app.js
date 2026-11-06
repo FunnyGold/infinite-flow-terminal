@@ -1291,10 +1291,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.131';
+  const APP_VERSION = 'V1.132';
   const UPDATES = [
     {
-      version: 'V1.131', date: '2026-11-06', title: '全站字号统一，取消 10px 以下小字', current: true,
+      version: 'V1.132', date: '2026-11-06', title: '数值与按钮的语义配色', current: true,
+      notes: [
+        '总览的派生数值改为高亮暖金，一眼能看出是自动结算的',
+        '删除类按钮改为常驻红色，不再只在悬停时变红',
+        '按钮增加按下反馈；亮色主题补齐按钮与帮助角标的配色'
+      ]
+    },
+    {
+      version: 'V1.131', date: '2026-11-06', title: '全站字号统一，取消 10px 以下小字',
       notes: [
         '32 种字号收敛为 7 档：10 / 11 / 12 / 13 / 15 / 20 与标题级大号',
         '全站取消 10px 以下的字号，最小的标签也保证可读',

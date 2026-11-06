@@ -325,6 +325,9 @@ html[data-theme="light"] .display-row output { color: #4d4131; }
 }
 .btn svg { width: 13px; height: 13px; }
 .btn:hover { color: var(--text); background: rgba(255,255,255,.065); border-color: rgba(255,255,255,.15); }
+.btn:active { transform: translateY(1px); }
+.btn.danger { color: #d98b86; border-color: rgba(208,94,94,.34); background: rgba(208,94,94,.09); }
+.btn.danger:hover { color: #ffb3ac; border-color: rgba(208,94,94,.6); background: rgba(208,94,94,.18); }
 .btn.primary { border-color: rgba(184,73,78,.4); background: linear-gradient(180deg, rgba(184,73,78,.24), rgba(184,73,78,.13)); color: #e6b6af; }
 .btn.primary:hover { background: rgba(184,73,78,.3); border-color: rgba(215,106,98,.5); }
 .btn.gold { color: var(--gold); border-color: rgba(201,168,110,.25); background: var(--gold-soft); }
@@ -495,7 +498,7 @@ html[data-theme="light"] .hero-identity-compact { color: #87622b; border-color: 
 }
 .stat-card::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: 0; height: 1px; background: var(--accent, rgba(201,168,110,.4)); opacity: .5; }
 .stat-label { font-size: 10px; color: #777268; letter-spacing: .08em; }
-.stat-value { font: 23px/1.1 var(--mono); color: #e3d9c8; margin-top: 7px; font-weight: 400; }
+.stat-value { font: 23px/1.1 var(--mono); color: #edd08a; margin-top: 7px; font-weight: 400; }
 .stat-value small { font-size: 10px; color: #6f6a61; margin-left: 3px; }
 .stat-foot { margin-top: 5px; font-size: 10px; color: #5d5951; }
 
@@ -2534,3 +2537,12 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
   .st-unit-row { grid-template-columns: 24px minmax(56px,.6fr) 56px 84px 44px auto 24px 24px; }
   .st-unit-row .st-bar { display: none; }
 }
+
+/* ---- 语义配色：数值与按钮层级（V1.132） ---- */
+html[data-theme="light"] .stat-value { color: #8a6228; }
+html[data-theme="light"] .btn.danger { color: #a8332f; border-color: rgba(168,51,47,.34); background: rgba(168,51,47,.07); }
+html[data-theme="light"] .btn.danger:hover { color: #8c2320; border-color: rgba(168,51,47,.55); background: rgba(168,51,47,.13); }
+html[data-theme="light"] .btn { color: #6a5f4d; }
+html[data-theme="light"] .btn:hover { color: #2f281f; background: rgba(86,66,38,.07); border-color: rgba(86,66,38,.2); }
+html[data-theme="light"] .stat-help { background: rgba(255,253,248,.9); border-color: rgba(86,66,38,.28); color: #8a6228; }
+html[data-theme="light"] .stat-help:hover { color: #6b4a1c; border-color: rgba(86,66,38,.5); background: #fff; }
