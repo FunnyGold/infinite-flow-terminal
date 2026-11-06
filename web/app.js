@@ -288,7 +288,7 @@
     const targetId = 'stt_' + uid();
     return {
       sourceId: '', values,
-      targets: [{ id: targetId, name: '目标 1', sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, values) }],
+      targets: [{ id: targetId, name: '目标 1', sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, values), note: '' }],
       activeTargetId: targetId,
       attacks: [], defenseNote: ''
     };
@@ -756,8 +756,9 @@
           return `<label class="st-def" title="${esc((item && item.desc) || '')}"><em>${esc(item ? item.name : k)}</em><input class="cell-input" type="number" data-st-target="${esc(k)}" value="${fmt(t.values[k] || 0)}"></label>`;
         }).join('')}</div>
       </section>`).join('');
-    const note = entry && entry.defenseNote
-      ? `<div class="st-insp-note" title="${esc(entry.defenseNote)}">${esc(entry.defenseNote)}</div>` : '';
+    const note = `<label class="st-insp-note-field">防御备注
+        <textarea class="cell-input" rows="2" data-st-target-note placeholder="记录这次的附加成功、掩体、条件加值等…">${esc(t.note || '')}</textarea>
+      </label>`;
     return `<div class="panel st-insp" id="st-section-inspector">
       <div class="st-insp-head">
         <input class="st-insp-name" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称" title="点击可直接改名">
@@ -847,6 +848,7 @@
     const values = stEntryDefenseValues(entry);
     stTool.combat.values = Object.assign({}, values);
     D.DEFENSE_ITEMS.forEach(d => { active.values[d.key] = values[d.key] || 0; });
+    active.note = entry.defenseNote || '';
     saveSTTool();
     stUpdateTargetNames();
     stRefreshInspector();
@@ -1289,10 +1291,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.145';
+  const APP_VERSION = 'V1.146';
   const UPDATES = [
     {
-      version: 'V1.145', date: '2026-11-06', title: '攻击行控件等高与垃圾桶常显', current: true,
+      version: 'V1.146', date: '2026-11-06', title: '检视栏可编辑防御备注', current: true,
+      notes: [
+        '右侧检视栏底部新增「防御备注」输入框，可直接记录这次的附加成功、掩体、条件加值',
+        '从角色卡读取目标时自动带入卡上的防御备注',
+        'ST 改的备注只存在当前目标上，不会改写原角色卡',
+        '调查员行下方的防御备注从最浅灰提到正文色，不再看不见'
+      ]
+    },
+    {
+      version: 'V1.145', date: '2026-11-06', title: '攻击行控件等高与垃圾桶常显',
       notes: [
         '攻击行里所有输入框、下拉与按钮统一 28px 高，原先总DP 输入框 36px 把整行撑歪',
         '行高从 45 收到 38，各列文字与控件基线对齐',
@@ -6213,7 +6224,7 @@
       case 'st-select-target': stSwitchTarget(el.dataset.id); break;
       case 'st-add-target': {
         const base = stActiveTarget();
-        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, base ? base.values : {}) };
+        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, base ? base.values : {}), note: '' };
         stTool.combat.targets.push(target);
         stTool.combat.activeTargetId = target.id;
         saveSTTool();
@@ -6728,6 +6739,12 @@
         saveSTTool();
         stUpdateTargetNames();
         stSyncTargetDefenseUI();
+        return;
+      }
+      if (el.matches('[data-st-target-note]')) {
+        const active = stActiveTarget();
+        active.note = el.value;
+        saveSTTool();
         return;
       }
       if (el.matches('[data-st-target]')) {
