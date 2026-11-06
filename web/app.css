@@ -2586,3 +2586,12 @@ select { cursor: pointer; }
 html[data-theme="light"] .st-insp-name { background: #fff; border-color: rgba(86,66,38,.2); }
 /* ---- 新增攻击归攻击面板头部（V1.144） ---- */
 .st-atk-head .st-atk-add { margin-left: auto; }
+/* ---- 攻击行控件等高对齐（V1.145） ---- */
+.st-attack-table tbody tr:not(.st-attack-detail) .cell-input,
+.st-attack-table tbody tr:not(.st-attack-detail) .st-attack-select { height: 28px; box-sizing: border-box; }
+.st-attack-table tbody tr:not(.st-attack-detail) .st-attack-num { height: 28px; padding-top: 0; padding-bottom: 0; line-height: 26px; box-sizing: border-box; }
+.st-attack-row-btn { height: 28px; min-height: 28px; min-width: 28px; padding: 0 8px; box-sizing: border-box; }
+.st-attack-table tbody td { vertical-align: middle; }
+/* 目标卡垃圾桶：常显红色，不必悬停 */
+.st-chip-del { opacity: 1; color: var(--red); }
+.st-chip-del:hover { color: #ffb0aa; border-color: rgba(208,94,94,.6); background: rgba(208,94,94,.16); }

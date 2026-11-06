@@ -1289,10 +1289,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.144';
+  const APP_VERSION = 'V1.145';
   const UPDATES = [
     {
-      version: 'V1.144', date: '2026-11-06', title: '按钮归位：新增攻击与清空防御', current: true,
+      version: 'V1.145', date: '2026-11-06', title: '攻击行控件等高与垃圾桶常显', current: true,
+      notes: [
+        '攻击行里所有输入框、下拉与按钮统一 28px 高，原先总DP 输入框 36px 把整行撑歪',
+        '行高从 45 收到 38，各列文字与控件基线对齐',
+        '目标卡的垃圾桶常显红色，不必悬停才变色'
+      ]
+    },
+    {
+      version: 'V1.144', date: '2026-11-06', title: '按钮归位：新增攻击与清空防御',
       notes: [
         '新增攻击移入攻击区标题栏右侧，由攻击区自己管理',
         '清空防御移入右侧检视栏，只清当前目标的防御',
