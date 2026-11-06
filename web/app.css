@@ -2495,8 +2495,15 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
 
 /* ---- 战斗分栏：攻击 + 目标检视 ---- */
 .st-battle { display: grid; grid-template-columns: minmax(0, 1fr) 336px; gap: 12px; align-items: start; margin-top: 12px; }
-.st-battle > .panel { margin-top: 0; }
+.st-atk, .st-insp { border: 1px solid var(--line); border-radius: 10px; background: var(--panel-2); overflow: hidden; }
+.st-atk-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.st-atk-title { color: var(--text-soft); font-size: 11px; letter-spacing: .5px; }
+.st-atk-body { padding: 10px 12px 12px; }
+.st-atk-body .st-attack-table th { padding-bottom: 7px; }
 .st-insp { display: flex; flex-direction: column; }
+.st-insp-pill { padding: 1px 7px; border-radius: 10px; background: var(--gold-soft); color: var(--gold); font-size: 9px; white-space: nowrap; }
+.st-insp-rows { display: flex; gap: 12px; margin-left: auto; margin-right: 12px; color: var(--dim); font-size: 9.5px; }
+.st-insp-rows b { color: var(--text-soft); font-weight: 400; margin-left: 2px; }
 .st-insp-head { display: flex; align-items: center; gap: 8px; padding: 9px 12px 8px; border-bottom: 1px solid var(--line); }
 .st-insp-name { flex: 1; min-width: 0; height: auto; border: 1px solid transparent; border-radius: 5px; background: transparent; padding: 2px 6px; font-size: 13px; color: var(--text); }
 .st-insp-name:hover { border-color: var(--line); }

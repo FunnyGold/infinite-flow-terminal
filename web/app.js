@@ -315,6 +315,10 @@
     return D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
   }
 
+  function stGradeLabel(g) {
+    return (D.EFFECT_GRADES.find(x => x.value === g) || { label: '无' }).label;
+  }
+
   function stChipsHTML() {
     return stTargets().map(t => {
       const src = (stTool.entries || []).find(e => e.id === t.sourceId);
@@ -703,29 +707,31 @@
     return `
       <div class="panel mt18" id="st-section-targets">
         <div class="panel-head">
-          <div class="panel-title">战斗 · 目标<span class="st-count">${stTargets().length}</span></div>
-          <div class="panel-head-right"><span class="panel-sub">点目标卡切换，右侧直接改它的防御；攻击行没单独选目标时用当前目标</span></div>
+          <div class="panel-title">战斗<span class="st-count">${stTargets().length} 目标 · ${(combat.attacks || []).length} 攻击</span></div>
+          <div class="panel-head-right">
+            <button class="btn small gold" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
+            <button class="btn small" data-action="st-clear-defense">清空防御</button>
+          </div>
         </div>
-        <div class="panel-body"><div class="st-chips">${stChipsHTML()}<button class="st-chip add" data-action="st-add-target">${ic('plus')} 新目标</button></div></div>
-      </div>
-      <div class="st-battle">
-        <div class="panel collapsible" id="st-section-attacks">
-          <div class="panel-head">
-            <div class="panel-title">攻击预设<span class="st-count">${(combat.attacks || []).length}</span></div>
-            <div class="panel-head-right">
-              <button class="btn small gold" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
-              <button class="collapse-btn ${atkCollapsed ? 'collapsed' : ''}" data-action="toggle-section" data-section="st-combat-attacks" aria-expanded="${atkCollapsed ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
+        <div class="panel-body">
+          <div class="st-chips">${stChipsHTML()}<button class="st-chip add" data-action="st-add-target">${ic('plus')} 新目标</button></div>
+          <div class="st-battle">
+            <div class="st-atk" id="st-section-attacks">
+              <div class="st-atk-head">
+                <span class="st-atk-title">攻击</span>
+                <span class="st-count">${(combat.attacks || []).length} 条</span>
+              </div>
+              <div class="st-atk-body">
+                ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
+                  <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
+                  <tbody>${attacks}</tbody>
+                </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
+                <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
+              </div>
             </div>
-          </div>
-          <div class="panel-body ${atkCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-attacks">
-            ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
-              <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
-              <tbody>${attacks}</tbody>
-            </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
-            <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
+            ${stInspectorHTML()}
           </div>
         </div>
-        ${stInspectorHTML()}
       </div>
       ${stTargetComparisonHTML()}`;
   }
@@ -754,6 +760,7 @@
     return `<div class="panel st-insp" id="st-section-inspector">
       <div class="st-insp-head">
         <input class="st-insp-name" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称" title="点击可直接改名">
+        <span class="st-insp-pill">正在编辑</span>
         <span class="st-insp-src" data-st-insp-src>${entry ? esc(entry.name || '调查员') : '手动防御'}</span>
       </div>
       <div class="st-insp-tools">
@@ -768,7 +775,14 @@
       </div>
       <div class="st-insp-body">
         ${groupsHTML}
-        <div class="st-insp-total"><span>防御合计</span><b data-st-insp-total>${fmt(stTargetDefTotal(t))}</b></div>
+        <div class="st-insp-total">
+          <span>防御合计</span>
+          <div class="st-insp-rows">
+            <div>措手 <b data-st-insp-flat>${stGradeLabel(t.flatfootedGrade)}</b></div>
+            <div>接触 <b data-st-insp-contact>${stGradeLabel(t.contactGrade)}</b></div>
+          </div>
+          <b data-st-insp-total>${fmt(stTargetDefTotal(t))}</b>
+        </div>
         <div class="st-insp-grades">
           <label>措手不及${gradeSelect('flatfootedGrade', t.flatfootedGrade)}</label>
           <label>接触${gradeSelect('contactGrade', t.contactGrade)}</label>
@@ -790,11 +804,15 @@
   }
 
   function stSyncInspectorTotal() {
+    const t = stActiveTarget();
     const el = document.querySelector('[data-st-insp-total]');
-    if (el) el.textContent = fmt(stTargetDefTotal(stActiveTarget()));
+    if (el) el.textContent = fmt(stTargetDefTotal(t));
+    const flat = document.querySelector('[data-st-insp-flat]');
+    if (flat) flat.textContent = stGradeLabel(t.flatfootedGrade);
+    const contact = document.querySelector('[data-st-insp-contact]');
+    if (contact) contact.textContent = stGradeLabel(t.contactGrade);
     const src = document.querySelector('[data-st-insp-src]');
     if (src) {
-      const t = stActiveTarget();
       const entry = (stTool.entries || []).find(e => e.id === t.sourceId);
       src.textContent = entry ? (entry.name || '调查员') : '手动防御';
     }
@@ -953,14 +971,15 @@
     const targetCount = stTargets().length;
     const attackCount = (stTool.combat.attacks || []).length;
     return `
-      ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。', '')}
-      <div class="panel" id="st-section-characters">
-        <div class="panel-head"><div class="panel-title">调查员<span class="st-count">${entries.length}</span></div><div class="panel-head-right st-toolbar">
+      ${pageHeader('ST TOOL / 主持人工具', 'ST 工具', '同时读取多名调查员的状态；这里调整生命值只作用于 ST 面板，不会修改原角色卡。',
+        `<div class="st-toolbar">
           <button class="btn small gold" data-action="st-picker">${ic('users')} 选择角色卡</button>
           <button class="btn small" data-action="st-import">${ic('upload')} 导入 JSON</button>
           <button class="btn small" data-action="st-refresh">${ic('refresh')} 刷新快照</button>
           <button class="btn small" data-action="st-clear">清空</button>
-        </div></div>
+        </div>`)}
+      <div class="panel" id="st-section-characters">
+        <div class="panel-head"><div class="panel-title">调查员<span class="st-count">${entries.length} / 存活 ${entries.filter(e => stStatus(e) !== '死亡').length}</span></div><div class="panel-head-right"><span class="panel-sub">点击一行设为攻击来源</span></div></div>
         <div class="panel-body st-units-wrap">${entries.length ? `<div class="st-units">${entries.map(stUnitHTML).join('')}</div>` : `<div class="empty st-empty"><b>还没有载入调查员</b>从本地角色卡中选择，或导入其他调查员的角色卡 JSON。调整只保存在 ST 工具中，不影响原卡。</div>`}</div>
       </div>
       ${stCombatHTML()}
@@ -1272,10 +1291,20 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.129';
+  const APP_VERSION = 'V1.130';
   const UPDATES = [
     {
-      version: 'V1.129', date: '2026-11-06', title: 'ST 战斗区改为双栏检视', current: true,
+      version: 'V1.130', date: '2026-11-06', title: 'ST 页面版式对齐设计稿', current: true,
+      notes: [
+        '角色卡选择、导入、刷新、清空移到页头右上，与其它页面一致',
+        '调查员面板标题显示「N / 存活 M」，右侧提示点击行设为攻击来源',
+        '战斗区收进一个面板：目标卡片在上、攻击与检视在下',
+        '攻击区标题改为「攻击 N 条」，新增攻击与清空防御提到战斗面板头部',
+        '目标检视栏加「正在编辑」标识，合计行内直接显示措手 / 接触等级'
+      ]
+    },
+    {
+      version: 'V1.129', date: '2026-11-06', title: 'ST 战斗区改为双栏检视',
       notes: [
         '目标防御改为右侧常驻检视栏，点目标卡只是切换',
         '检视栏内直接改 16 项防御、读取来源、措手不及与接触、删除目标',
