@@ -631,6 +631,7 @@
     const attacks = (combat.attacks || []).map(a => {
       const c = stAttackCalc(a);
       const id = esc(a.id);
+      const expanded = !ui.stCollapsedAttacks.has(a.id);
       const grades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.flatfootedGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       const contactGrades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.contactGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       return `<tr data-st-attack-row="${id}">
@@ -646,9 +647,9 @@
         <td class="st-attack-result" data-st-out="defense:${id}">${fmt(c.defense)}</td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(c.finalDP)}</td>
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(c.total))}</td>
-        <td><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
+        <td class="st-attack-actions"><button class="icon-btn ${expanded ? '' : 'collapsed'}" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${ic('chevron')}</button><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
       </tr>
-      <tr class="st-attack-detail"><td colspan="13">
+      <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="13">
         <div class="st-attack-detail-fields">
           <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
           <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
@@ -773,11 +774,13 @@
     const a = blankSTAttack();
     a.name = `攻击 ${stTool.combat.attacks.length + 1}`;
     stTool.combat.attacks.push(a);
+    ui.stCollapsedAttacks.delete(a.id);
     saveSTTool();
     stRerenderPreserve();
   }
 
   function stRemoveAttack(id) {
+    ui.stCollapsedAttacks.delete(id);
     stTool.combat.attacks = stTool.combat.attacks.filter(a => a.id !== id);
     saveSTTool();
     stRerenderPreserve();
@@ -1142,6 +1145,7 @@
     dataRoot: '',
     extraFolders: [],
     skillFilter: 'all',
+    stCollapsedAttacks: new Set(),
     skillQuery: '',
     collapsedSections: new Set(['identity', 'attributes', 'skills', 'defense', 'equipment', 'notes']),
     resourceTab: 'traits',
@@ -1172,10 +1176,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.107';
+  const APP_VERSION = 'V1.108';
   const UPDATES = [
     {
-      version: 'V1.107', date: '2026-11-06', title: 'ST 页面导航与底部笔记', current: true,
+      version: 'V1.108', date: '2026-11-06', title: 'ST 攻击行折叠', current: true,
+      notes: [
+        '每条 ST 攻击行可单独展开 / 折叠详情',
+        '折叠后只保留目标、攻击名、DP、上限、结果等摘要',
+        '新增攻击默认展开，删除攻击同步清理折叠状态'
+      ]
+    },
+    {
+      version: 'V1.107', date: '2026-11-06', title: 'ST 页面导航与底部笔记',
       notes: [
         'ST 笔记移动到底部',
         'ST 页面增加吸顶快捷导航：调查员 / 目标 / 攻击 / 对比 / 笔记',
@@ -5699,6 +5711,11 @@
       }
       case 'st-clear-defense': stClearDefense(); break;
       case 'st-add-attack': stAddAttack(); break;
+      case 'st-toggle-attack':
+        if (ui.stCollapsedAttacks.has(el.dataset.id)) ui.stCollapsedAttacks.delete(el.dataset.id);
+        else ui.stCollapsedAttacks.add(el.dataset.id);
+        stRerenderPreserve();
+        break;
       case 'st-remove-attack': stRemoveAttack(el.dataset.id); break;
       case 'st-hp-delta': stHpDelta(el.dataset.id, Number(el.dataset.delta)); break;
       case 'st-health-mode': stSetHealthMode(el.dataset.id, el.dataset.mode); break;

@@ -2368,3 +2368,7 @@ body.mobile-nav-frame::before {
 .st-jump button { border:1px solid rgba(255,255,255,.09); background:rgba(255,255,255,.025); color:#a99e8b; border-radius:5px; padding:4px 9px; font:9px var(--sans); white-space:nowrap; cursor:pointer; }
 .st-jump button:hover { color:#e2c486; border-color:rgba(201,168,110,.4); }
 .st-jump button b { color:#d9bd85; font:10px var(--mono); margin-left:2px; }
+.st-attack-detail-collapsed { display:none; }
+.st-attack-actions { white-space:nowrap; }
+.st-attack-actions .icon-btn.collapsed svg { transform:rotate(-90deg); }
+.st-attack-actions .icon-btn svg { transition:transform .15s ease; }

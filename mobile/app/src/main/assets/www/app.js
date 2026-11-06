@@ -674,9 +674,9 @@
         <td class="st-attack-result" data-st-out="defense:${id}">${fmt(f.c.defense)}</td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(f.c.finalDP)}</td>
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(f.c.total))}</td>
-        <td><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
+        <td class="st-attack-actions"><button class="icon-btn ${expanded ? '' : 'collapsed'}" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${ic('chevron')}</button><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
       </tr>
-      <tr class="st-attack-detail"><td colspan="13">
+      <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="13">
         <div class="st-attack-detail-fields">
           <label><span>高速</span>${f.highSpeed}</label>
           <label><span>破甲</span>${f.armorPierce}</label>
@@ -791,11 +791,13 @@
     const a = blankSTAttack();
     a.name = `攻击 ${stTool.combat.attacks.length + 1}`;
     stTool.combat.attacks.push(a);
+    ui.stCollapsedAttacks.delete(a.id);
     saveSTTool();
     stRerenderPreserve();
   }
 
   function stRemoveAttack(id) {
+    ui.stCollapsedAttacks.delete(id);
     stTool.combat.attacks = stTool.combat.attacks.filter(a => a.id !== id);
     saveSTTool();
     stRerenderPreserve();
@@ -1157,6 +1159,7 @@
     dataRoot: '',
     extraFolders: [],
     skillFilter: 'all',
+    stCollapsedAttacks: new Set(),
     skillQuery: '',
     collapsedSections: new Set(['identity', 'attributes', 'skills', 'defense', 'equipment', 'notes']),
     resourceTab: 'traits',
@@ -1187,10 +1190,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.107';
+  const APP_VERSION = 'V1.108';
   const UPDATES = [
     {
-      version: 'V1.107', date: '2026-11-06', title: 'ST 页面导航与底部笔记', current: true,
+      version: 'V1.108', date: '2026-11-06', title: 'ST 攻击行折叠', current: true,
+      notes: ['每条攻击可展开/折叠详情']
+    },
+    {
+      version: 'V1.107', date: '2026-11-06', title: 'ST 页面导航与底部笔记',
       notes: ['笔记移到底部', '新增吸顶快捷导航', '修正攻击区旧说明']
     },
     {
@@ -5549,6 +5556,11 @@
       }
       case 'st-clear-defense': stClearDefense(); break;
       case 'st-add-attack': stAddAttack(); break;
+      case 'st-toggle-attack':
+        if (ui.stCollapsedAttacks.has(el.dataset.id)) ui.stCollapsedAttacks.delete(el.dataset.id);
+        else ui.stCollapsedAttacks.add(el.dataset.id);
+        stRerenderPreserve();
+        break;
       case 'st-remove-attack': stRemoveAttack(el.dataset.id); break;
       case 'st-hp-delta': stHpDelta(el.dataset.id, Number(el.dataset.delta)); break;
       case 'st-health-mode': stSetHealthMode(el.dataset.id, el.dataset.mode); break;
