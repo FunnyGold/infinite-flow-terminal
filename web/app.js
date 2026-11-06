@@ -509,6 +509,7 @@
     const hp = stRemainingHp(e);
     const pct = e.hpMax > 0 ? Math.max(0, Math.min(100, hp / e.hpMax * 100)) : 0;
     const status = stStatus(e);
+    const cardCollapsed = ui.stCollapsedEntries.has(e.id);
     const defenses = (e.defense || []).map(d => {
       if (d.key === 'flatfooted' || d.key === 'contact') {
         const grade = e[d.key + 'Grade'] || 'none';
@@ -517,7 +518,7 @@
       }
       return `<span class="st-def-item"><em>${esc(d.name)}</em><input type="number" data-st-def="${esc(e.id)}" data-def-key="${esc(d.key)}" value="${fmt(d.value)}"></span>`;
     }).join('');
-    return `<div class="st-card" data-st-card="${esc(e.id)}">
+    return `<div class="st-card ${cardCollapsed ? 'st-card-collapsed' : ''}" data-st-card="${esc(e.id)}">
       <div class="st-card-head">
         <div class="st-avatar">${e.avatar ? `<img src="${esc(e.avatar)}" alt="">` : esc((e.name || '调').slice(0, 1))}</div>
         <div class="st-name"><b>${esc(e.name || '未命名调查员')}</b><small>${e.sourceProfileId ? '本地角色卡' : '导入文件'}</small></div>
@@ -526,8 +527,10 @@
           <button class="${e.healthMode === 'rm' ? 'active' : ''}" data-action="st-health-mode" data-id="${esc(e.id)}" data-mode="rm">RM</button>
         </div>
         <span class="st-status ${stStatusClass(status)}">${status}</span>
+        <button class="icon-btn ${cardCollapsed ? 'collapsed' : ''}" data-action="st-toggle-card" data-id="${esc(e.id)}" title="展开 / 折叠调查员">${ic('chevron')}</button>
         <button class="icon-btn" data-action="st-remove" data-id="${esc(e.id)}" title="从 ST 面板移除">${ic('trash')}</button>
       </div>
+      <div class="st-card-body ${cardCollapsed ? 'collapsed' : ''}">
       <div class="st-hp-row">
         <div class="st-hp-label">生命</div>
         <div class="st-hp-value"><b>${fmt(hp)}</b><span>/ ${fmt(e.hpMax)}</span></div>
@@ -550,6 +553,7 @@
       </div>
       <div class="st-defense-grid">${defenses}</div>
       ${e.defenseNote ? `<div class="st-defense-note">防御备注：${esc(e.defenseNote)}</div>` : ''}
+      </div>
     </div>`;
   }
 
@@ -1146,6 +1150,7 @@
     extraFolders: [],
     skillFilter: 'all',
     stCollapsedAttacks: new Set(),
+    stCollapsedEntries: new Set(),
     skillQuery: '',
     collapsedSections: new Set(['identity', 'attributes', 'skills', 'defense', 'equipment', 'notes']),
     resourceTab: 'traits',
@@ -1176,10 +1181,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.108';
+  const APP_VERSION = 'V1.109';
   const UPDATES = [
     {
-      version: 'V1.108', date: '2026-11-06', title: 'ST 攻击行折叠', current: true,
+      version: 'V1.109', date: '2026-11-06', title: 'ST 调查员卡折叠', current: true,
+      notes: [
+        '每张 ST 调查员卡可单独折叠',
+        '折叠后只保留名字、头像、状态和模式切换',
+        '生命 / 意志 / 防御内容点开后再显示'
+      ]
+    },
+    {
+      version: 'V1.108', date: '2026-11-06', title: 'ST 攻击行折叠',
       notes: [
         '每条 ST 攻击行可单独展开 / 折叠详情',
         '折叠后只保留目标、攻击名、DP、上限、结果等摘要',
@@ -5711,6 +5724,11 @@
       }
       case 'st-clear-defense': stClearDefense(); break;
       case 'st-add-attack': stAddAttack(); break;
+      case 'st-toggle-card':
+        if (ui.stCollapsedEntries.has(el.dataset.id)) ui.stCollapsedEntries.delete(el.dataset.id);
+        else ui.stCollapsedEntries.add(el.dataset.id);
+        stRerenderPreserve();
+        break;
       case 'st-toggle-attack':
         if (ui.stCollapsedAttacks.has(el.dataset.id)) ui.stCollapsedAttacks.delete(el.dataset.id);
         else ui.stCollapsedAttacks.add(el.dataset.id);

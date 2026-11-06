@@ -2372,3 +2372,7 @@ body.mobile-nav-frame::before {
 .st-attack-actions { white-space:nowrap; }
 .st-attack-actions .icon-btn.collapsed svg { transform:rotate(-90deg); }
 .st-attack-actions .icon-btn svg { transition:transform .15s ease; }
+.st-card-body.collapsed { display:none; }
+.st-card.st-card-collapsed { align-self:start; }
+.st-card-head .icon-btn.collapsed svg { transform:rotate(-90deg); }
+.st-card-head .icon-btn svg { transition:transform .15s ease; }
