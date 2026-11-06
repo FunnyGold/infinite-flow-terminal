@@ -2436,3 +2436,17 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
 .st-attack-detail-delete { color:#e38b86 !important; border-color:rgba(208,94,94,.45) !important; background:rgba(208,94,94,.09) !important; }
 .st-attack-detail-delete:hover { background:rgba(208,94,94,.18) !important; }
 .st-attack-table th:last-child { min-width:92px; }
+.st-attack-table th:nth-child(1) { width:15%; }
+.st-attack-table th:nth-child(2) { width:5%; }
+.st-attack-table th:nth-child(3) { width:7%; }
+.st-attack-table th:nth-child(4) { width:6%; }
+.st-attack-table th:nth-child(5) { width:5%; }
+.st-attack-table th:nth-child(6) { width:8%; }
+.st-attack-table th:nth-child(7), .st-attack-table th:nth-child(8) { width:7%; }
+.st-attack-table th:nth-child(9) { width:10%; }
+.st-attack-table th:nth-child(10) { width:8%; }
+.st-attack-table th:nth-child(11) { width:8%; }
+.st-attack-table th:nth-child(12) { width:5%; }
+.st-attack-table th:nth-child(13) { width:9%; min-width:84px; }
+.st-attack-actions { min-width:84px; overflow:visible; }
+.st-attack-detail-delete { flex:0 0 auto; min-width:128px; height:28px; white-space:nowrap; }

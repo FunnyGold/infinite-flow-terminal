@@ -1249,10 +1249,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.123';
+  const APP_VERSION = 'V1.124';
   const UPDATES = [
     {
-      version: 'V1.123', date: '2026-11-06', title: 'ST 攻击行加号/删除', current: true,
+      version: 'V1.124', date: '2026-11-06', title: 'ST 攻击列宽与按钮修复', current: true,
+      notes: [
+        '重新分配攻击表列宽，右侧操作列保留足够空间',
+        '加号和删除按钮同时完整显示',
+        '详情里的删除按钮加宽，文字不再溢出'
+      ]
+    },
+    {
+      version: 'V1.123', date: '2026-11-06', title: 'ST 攻击行加号/删除',
       notes: [
         '攻击行右侧改为加号/减号展开按钮',
         '加号右侧新增红色删除按钮',

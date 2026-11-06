@@ -1261,10 +1261,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.123';
+  const APP_VERSION = 'V1.124';
   const UPDATES = [
     {
-      version: 'V1.123', date: '2026-11-06', title: 'ST 攻击行加号/删除', current: true,
+      version: 'V1.124', date: '2026-11-06', title: 'ST 攻击列宽与按钮修复', current: true,
+      notes: ['攻击表列宽调整', '删除按钮加宽']
+    },
+    {
+      version: 'V1.123', date: '2026-11-06', title: 'ST 攻击行加号/删除',
       notes: ['攻击行加号展开、红色删除']
     },
     {
