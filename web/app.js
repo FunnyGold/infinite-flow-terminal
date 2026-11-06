@@ -681,7 +681,7 @@
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="dp" value="${esc(C.num(a.dp))}" title="由 ST 直接填写总攻击 DP"></td>
         <td class="st-attack-result st-attack-final" data-st-out="final:${id}">${fmt(c.finalDP)}</td>
         <td class="st-attack-result st-attack-damage" data-st-out="damage:${id}">${fmt(C.round1(c.total))}</td>
-        <td class="st-attack-actions"><button class="st-attack-row-btn expand" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${expanded ? '−' : '+'}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除攻击">删除</button></td>
+        <td class="st-attack-actions"><button class="st-attack-row-btn expand" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${expanded ? '−' : '+'}</button><button class="st-attack-row-btn delete" data-action="st-remove-attack" data-id="${id}" title="删除这条攻击">${ic('trash')}</button></td>
       </tr>
       <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="6">
         <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
@@ -701,7 +701,6 @@
             <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
           </div>
           <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" rows="3" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
-          <div class="st-attack-detail-actions"><button class="btn small danger st-attack-detail-delete" data-action="st-remove-attack" data-id="${id}">${ic('trash')} 删除这条攻击</button></div>
         </div>
       </td></tr>`;
     }).join('');
@@ -1291,10 +1290,17 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.147';
+  const APP_VERSION = 'V1.148';
   const UPDATES = [
     {
-      version: 'V1.147', date: '2026-11-07', title: '默认缩放调整与放大窗口统一', current: true,
+      version: 'V1.148', date: '2026-11-07', title: '去掉重复的删除攻击按钮', current: true,
+      notes: [
+        '攻击行右侧的「删除」与详情底部的「删除这条攻击」是同一个动作，去掉后者',
+        '行内删除改为垃圾桶图标，与目标卡上的删除保持一致'
+      ]
+    },
+    {
+      version: 'V1.147', date: '2026-11-07', title: '默认缩放调整与放大窗口统一',
       notes: [
         '默认界面缩放改为 90%，字体缩放改为 125%，旧安装首次启动自动迁移',
         'ST 笔记浮窗与其它双击放大窗口统一：同底色、同圆角、同关闭按钮与标题栏'
