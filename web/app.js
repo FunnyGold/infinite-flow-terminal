@@ -930,7 +930,7 @@
     const box = document.createElement('div');
     box.id = 'st-note-float';
     box.className = 'st-note-float';
-    box.innerHTML = `<div class="st-note-float-head"><span>ST 笔记</span><button type="button" class="st-note-float-close" title="关闭">×</button></div><textarea class="st-note-float-text" placeholder="记录战斗、剧情、NPC、临时裁定…"></textarea>`;
+    box.innerHTML = `<div class="st-note-float-head"><span>ST 笔记</span><button type="button" class="icon-btn st-note-float-close" title="关闭">${ic('close')}</button></div><textarea class="st-note-float-text" placeholder="记录战斗、剧情、NPC、临时裁定…"></textarea>`;
     document.body.appendChild(box);
     const text = box.querySelector('.st-note-float-text');
     const base = document.getElementById('st-notes');
@@ -1291,10 +1291,17 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.146';
+  const APP_VERSION = 'V1.147';
   const UPDATES = [
     {
-      version: 'V1.146', date: '2026-11-06', title: '检视栏可编辑防御备注', current: true,
+      version: 'V1.147', date: '2026-11-07', title: '默认缩放调整与放大窗口统一', current: true,
+      notes: [
+        '默认界面缩放改为 90%，字体缩放改为 125%，旧安装首次启动自动迁移',
+        'ST 笔记浮窗与其它双击放大窗口统一：同底色、同圆角、同关闭按钮与标题栏'
+      ]
+    },
+    {
+      version: 'V1.146', date: '2026-11-06', title: '检视栏可编辑防御备注',
       notes: [
         '右侧检视栏底部新增「防御备注」输入框，可直接记录这次的附加成功、掩体、条件加值',
         '从角色卡读取目标时自动带入卡上的防御备注',
@@ -5191,9 +5198,19 @@
     } catch (e) { return fallback; }
   }
 
-  let uiZoom = Math.max(85, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 115)));
+  // V1.147：默认缩放改为 90% / 125%，旧安装一次性迁移
+  (function migrateZoomDefaults() {
+    const FLAG = 'infinite-terminal/zoom-defaults/v2';
+    try {
+      if (localStorage.getItem(FLAG)) return;
+      localStorage.setItem(UI_ZOOM_KEY, '90');
+      localStorage.setItem(FONT_ZOOM_KEY, '125');
+      localStorage.setItem(FLAG, '1');
+    } catch (e) { }
+  })();
+  let uiZoom = Math.max(85, Math.min(150, loadZoomValue(UI_ZOOM_KEY, 90)));
   let readerZoom = Math.max(80, Math.min(180, loadZoomValue(READER_ZOOM_KEY, 100)));
-  let fontZoom = Math.max(80, Math.min(150, loadZoomValue(FONT_ZOOM_KEY, 100)));
+  let fontZoom = Math.max(80, Math.min(150, loadZoomValue(FONT_ZOOM_KEY, 125)));
   let uiZoomTimer = null;
 
   function applyUiZoom(send) {
@@ -5269,10 +5286,10 @@
   }
 
   function resetUiZoom() {
-    uiZoom = 115;
-    try { localStorage.setItem(UI_ZOOM_KEY, '115'); } catch (e) { }
+    uiZoom = 90;
+    try { localStorage.setItem(UI_ZOOM_KEY, '90'); } catch (e) { }
     applyUiZoom(true);
-    toast('界面缩放已恢复为 115%');
+    toast('界面缩放已恢复为 90%');
   }
 
   function applyDisplayFilter() {
