@@ -352,7 +352,10 @@
   function stUpdateTargetNames() {
     const active = stActiveTarget();
     document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
-      if (opt.value === active.id) opt.textContent = active.name || '未命名目标';
+      if (opt.value === active.id) {
+        const def = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(active.values[d.key]), 0);
+        opt.textContent = `${active.name || '未命名目标'} · 防 ${fmt(def)}`;
+      }
     });
     document.querySelectorAll('.st-target-card[data-target-card]').forEach(card => {
       if (card.dataset.targetCard === active.id) {
@@ -695,7 +698,7 @@
       const grades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.flatfootedGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       const contactGrades = D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === a.contactGrade ? 'selected' : ''}>${g.label}</option>`).join('');
       return `<tr data-st-attack-row="${id}">
-        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="targetId">${stTargets().map(t => `<option value="${esc(t.id)}" ${t.id === (a.targetId || stActiveTarget().id) ? 'selected' : ''}>${esc(t.name || '未命名目标')}</option>`).join('')}</select></td>
+        <td><select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="targetId">${stTargets().map(t => { const def = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0); return `<option value="${esc(t.id)}" ${t.id === (a.targetId || stActiveTarget().id) ? 'selected' : ''}>${esc(t.name || '未命名目标')} · 防 ${fmt(def)}</option>`; }).join('')}</select></td>
         <td><input class="cell-input st-attack-name" data-st-attack="${id}" data-st-field="name" value="${esc(a.name || '')}" placeholder="攻击名"></td>
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="dp" value="${esc(C.num(a.dp))}" title="由 ST 直接填写总攻击 DP"></td>
         <td><input class="cell-input st-attack-num" type="number" data-st-attack="${id}" data-st-field="cap" value="${esc(C.num(a.cap))}" title="由 ST 直接填写伤害上限"></td>
@@ -710,6 +713,7 @@
         <td class="st-attack-actions"><button class="icon-btn ${expanded ? '' : 'collapsed'}" data-action="st-toggle-attack" data-id="${id}" title="展开 / 折叠详情">${ic('chevron')}</button><button class="icon-btn" data-action="st-remove-attack" data-id="${id}" title="删除攻击">${ic('trash')}</button></td>
       </tr>
       <tr class="st-attack-detail ${expanded ? '' : 'st-attack-detail-collapsed'}" data-st-detail="${id}"><td colspan="13">
+        <div class="st-attack-calc-line" data-st-out="formula:${id}">总DP ${fmt(c.dp)} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}</div>
         <div class="st-attack-detail-fields">
           <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
           <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
@@ -720,6 +724,8 @@
       </td></tr>`;
     }).join('');
     return `
+      <div class="st-battle-layout">
+      <div class="st-battle-targets">
       <div class="panel mt18 collapsible" id="st-section-targets">
         <div class="panel-head">
           <div class="panel-title">战斗 · 目标</div>
@@ -751,6 +757,8 @@
           <div class="matrix-wrap-note">上方选择目标卡片；目标卡的措手不及 / 接触是目标当前防御状态。攻击行未选择时会继承目标状态，选择了则覆盖。</div>
         </div>
       </div>
+      </div>
+      <div class="st-battle-attacks">
       <div class="panel mt18 collapsible" id="st-section-attacks">
         <div class="panel-head">
           <div class="panel-title">战斗 · 攻击预设</div>
@@ -767,6 +775,8 @@
           </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
         </div>
+      </div>
+      </div>
       </div>
       ${stTargetComparisonHTML()}`;
   }
@@ -870,6 +880,7 @@
       set('defense', fmt(c.defense));
       set('final', fmt(c.finalDP));
       set('damage', fmt(C.round1(c.total)));
+      set('formula', `总DP ${fmt(C.num(a.dp))} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}`);
     });
     const cmp = document.getElementById('st-compare-body');
     if (cmp) cmp.innerHTML = stComparisonRowsHTML();
@@ -1237,10 +1248,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.120';
+  const APP_VERSION = 'V1.121';
   const UPDATES = [
     {
-      version: 'V1.120', date: '2026-11-06', title: '目标卡去重', current: true,
+      version: 'V1.121', date: '2026-11-06', title: 'ST 目标/攻击分栏', current: true,
+      notes: [
+        '战斗目标与攻击预设改为左右分栏（窄屏自动上下堆叠）',
+        '攻击目标下拉显示目标名和防御值',
+        '攻击详情新增“总DP − 有效防御 = 最终DP”公式行'
+      ]
+    },
+    {
+      version: 'V1.120', date: '2026-11-06', title: '目标卡去重',
       notes: [
         '移除目标卡内重复的措手/接触状态文字',
         '状态直接在卡片下拉框里选择',

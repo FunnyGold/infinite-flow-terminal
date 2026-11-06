@@ -342,7 +342,10 @@
   function stUpdateTargetNames() {
     const active = stActiveTarget();
     document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
-      if (opt.value === active.id) opt.textContent = active.name || '未命名目标';
+      if (opt.value === active.id) {
+        const def = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(active.values[d.key]), 0);
+        opt.textContent = `${active.name || '未命名目标'} · 防 ${fmt(def)}`;
+      }
     });
     document.querySelectorAll('.st-target-card[data-target-card]').forEach(card => {
       if (card.dataset.targetCard === active.id) {
@@ -747,6 +750,8 @@
       </td></tr>`;
     }).join('');
     return `
+      <div class="st-battle-layout">
+      <div class="st-battle-targets">
       <div class="panel mt18 collapsible" id="st-section-targets">
         <div class="panel-head">
           <div class="panel-title">战斗 · 目标</div>
@@ -772,6 +777,8 @@
           <div class="matrix-wrap-note">选择玩家后自动读取其防御；读取后仍可直接修改。措手不及 / 接触在下方每条攻击里单独选择。</div>
         </div>
       </div>
+      </div>
+      <div class="st-battle-attacks">
       <div class="panel mt18 collapsible" id="st-section-attacks">
         <div class="panel-head">
           <div class="panel-title">战斗 · 攻击预设</div>
@@ -784,6 +791,8 @@
           ${attackItems ? (COMPACT() ? `<div class="st-attack-cards">${attackItems}</div>` : `<div class="st-attack-wrap"><table class="st-attack-table"><thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>攻击·措手</th><th>攻击·接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead><tbody>${attackItems}</tbody></table></div>`) : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
         </div>
+      </div>
+      </div>
       </div>
       ${stTargetComparisonHTML()}`;
   }
@@ -884,6 +893,7 @@
       set('defense', fmt(c.defense));
       set('final', fmt(c.finalDP));
       set('damage', fmt(C.round1(c.total)));
+      set('formula', `总DP ${fmt(C.num(a.dp))} − 有效防御 ${fmt(c.defense)} = 最终DP ${fmt(c.finalDP)}`);
     });
     const cmp = document.getElementById('st-compare-body');
     if (cmp) cmp.innerHTML = stComparisonRowsHTML();
@@ -1251,10 +1261,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.120';
+  const APP_VERSION = 'V1.121';
   const UPDATES = [
     {
-      version: 'V1.120', date: '2026-11-06', title: '目标卡去重', current: true,
+      version: 'V1.121', date: '2026-11-06', title: 'ST 目标/攻击分栏', current: true,
+      notes: ['目标/攻击左右分栏', '攻击目标显示防御值', '攻击详情显示公式']
+    },
+    {
+      version: 'V1.120', date: '2026-11-06', title: '目标卡去重',
       notes: ['移除目标卡重复状态文字']
     },
     {
