@@ -2362,3 +2362,14 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-note-float-head { display:flex; align-items:center; justify-content:space-between; padding:7px 10px; background:rgba(201,168,110,.08); color:#d9bd85; font-size:10px; cursor:move; user-select:none; }
 .st-note-float-close { border:0; background:transparent; color:#a99a80; font-size:16px; line-height:1; cursor:pointer; }
 .st-note-float-text { flex:1; width:100%; resize:none; border:0; outline:none; background:transparent; color:#d4cbbb; font:12px/1.7 var(--sans); padding:10px 12px; }
+.st-target-cards { display:flex; gap:7px; overflow-x:auto; padding-bottom:8px; margin-bottom:8px; }
+.st-target-card { min-width:150px; text-align:left; border:1px solid rgba(255,255,255,.09); border-radius:7px; background:rgba(255,255,255,.025); color:#bdb3a2; padding:7px 9px; cursor:pointer; display:flex; flex-direction:column; gap:2px; }
+.st-target-card.active { border-color:rgba(201,168,110,.55); background:rgba(201,168,110,.09); }
+.st-target-card b { font-size:11px; font-weight:500; color:#d8c9ad; }
+.st-target-card small { font-size:8px; color:#7c7468; }
+.st-target-card span { font:9px var(--mono); color:#b79a68; }
+.st-target-add { min-width:90px; justify-content:center; align-items:center; color:#c9a35f; border-style:dashed; }
+.st-target-editor-head { display:flex; align-items:center; gap:7px; margin-bottom:7px; }
+.st-target-editor-head input { width:180px; }
+.st-target-grade { display:flex; align-items:center; gap:4px; color:#9d8d70; font-size:8px; white-space:nowrap; }
+.st-target-grade select { width:66px; }

@@ -278,7 +278,7 @@
     const targetId = 'stt_' + uid();
     return {
       sourceId: '', values,
-      targets: [{ id: targetId, name: '目标 1', values: Object.assign({}, values) }],
+      targets: [{ id: targetId, name: '目标 1', sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, values) }],
       activeTargetId: targetId,
       attacks: [], defenseNote: ''
     };
@@ -289,7 +289,7 @@
     if (!Array.isArray(c.targets) || !c.targets.length) {
       const values = Object.assign({}, c.values || {});
       const targetId = 'stt_' + uid();
-      c.targets = [{ id: targetId, name: '目标 1', values }];
+      c.targets = [{ id: targetId, name: '目标 1', sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values }];
       c.activeTargetId = targetId;
     }
     if (!c.targets.some(t => t.id === c.activeTargetId)) c.activeTargetId = c.targets[0].id;
@@ -305,6 +305,12 @@
     const active = stActiveTarget();
     document.querySelectorAll('[data-st-active-target] option, [data-st-attack][data-st-field="targetId"] option').forEach(opt => {
       if (opt.value === active.id) opt.textContent = active.name || '未命名目标';
+    });
+    document.querySelectorAll('.st-target-card[data-id]').forEach(card => {
+      if (card.dataset.id === active.id) {
+        const b = card.querySelector('b');
+        if (b) b.textContent = active.name || '未命名目标';
+      }
     });
   }
 
@@ -344,7 +350,7 @@
       combat.targets = targetRaw.map((t, i) => {
         const values = {};
         D.DEFENSE_ITEMS.forEach(d => { values[d.key] = C.num((t && t.values || {})[d.key]); });
-        return { id: (t && t.id) || ('stt_' + uid()), name: (t && t.name) || ('目标 ' + (i + 1)), sourceId: (t && t.sourceId) || '', values };
+        return { id: (t && t.id) || ('stt_' + uid()), name: (t && t.name) || ('目标 ' + (i + 1)), sourceId: (t && t.sourceId) || '', flatfootedGrade: (t && t.flatfootedGrade) || 'none', contactGrade: (t && t.contactGrade) || 'none', values };
       });
       combat.activeTargetId = combat.targets.some(t => t.id === raw.activeTargetId) ? raw.activeTargetId : combat.targets[0].id;
       const active = combat.targets.find(t => t.id === combat.activeTargetId);
@@ -410,7 +416,10 @@
       defenseNote: (st.defense && st.defense.note) || '',
       attacks: (c.attacks || []).map(a => ({
         id: a.id, name: a.name, dp: a.dp, cap: a.cap,
-        extraSuccess: a.extraSuccess, attackCount: a.attackCount
+        extraSuccess: a.extraSuccess, attackCount: a.attackCount,
+        flatfootedGrade: a.flatfootedGrade, contactGrade: a.contactGrade,
+        highSpeed: a.highSpeed, armorPierce: a.armorPierce, magicPierce: a.magicPierce,
+        note: a.note || ''
       })),
       updatedAt: Date.now()
     };
@@ -604,8 +613,11 @@
     const targetFields = D.DEFENSE_ITEMS.map(d =>
       `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-st-target="${esc(d.key)}" value="${fmt(activeTarget.values[d.key] || 0)}"></div>`
     ).join('');
-    const targetTabs = stTargets().map(t => `<option value="${esc(t.id)}" ${t.id === activeTarget.id ? 'selected' : ''}>${esc(t.name || '未命名目标')}</option>`).join('');
-    const attackTargetOptions = stTargets().map(t => `<option value="${esc(t.id)}">${esc(t.name || '未命名目标')}</option>`).join('');
+    const targetCards = stTargets().map(t => {
+      const src = (stTool.entries || []).find(e => e.id === t.sourceId);
+      const total = D.DEFENSE_ITEMS.filter(d => !d.counter).reduce((sum, d) => sum + C.num(t.values[d.key]), 0);
+      return `<button class="st-target-card ${t.id === activeTarget.id ? 'active' : ''}" data-action="st-select-target" data-id="${esc(t.id)}"><b>${esc(t.name || '未命名目标')}</b><small>${src ? esc(src.name || '调查员') : '手动防御'}</small><span>防御 ${fmt(total)}</span></button>`;
+    }).join('');
     const attackItems = (combat.attacks || []).map(a => {
       const id = esc(a.id);
       const f = stAttackFields(a, id);
@@ -655,17 +667,18 @@
     return `
       <div class="panel mt18 collapsible">
         <div class="panel-head">
-          <div class="panel-title">战斗 · 目标防御</div>
+          <div class="panel-title">战斗 · 目标</div>
           <div class="panel-head-right"><span class="panel-sub">读取调查员快照，或直接修改 13 项防御</span>
             <button class="collapse-btn ${defCollapsed ? 'collapsed' : ''}" data-action="toggle-section" data-section="st-combat-defense" aria-expanded="${defCollapsed ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
           </div>
         </div>
         <div class="panel-body ${defCollapsed ? 'collapsed' : ''}" data-section-body="st-combat-defense">
-          <div class="st-target-picker">
-            <label>目标<select class="cell-input" data-st-active-target>${targetTabs}</select></label>
+          <div class="st-target-cards">${targetCards}<button class="st-target-card st-target-add" data-action="st-add-target">${ic('plus')} 新目标</button></div>
+          <div class="st-target-editor-head">
             <input class="cell-input" data-st-target-name value="${esc(activeTarget.name || '')}" placeholder="目标名称">
-            <button class="btn small" data-action="st-add-target">${ic('plus')} 新增目标</button>
-            <button class="btn small" data-action="st-remove-target">删除目标</button>
+            <label class="st-target-grade">措手不及<select class="cell-input" data-st-target-grade="flatfootedGrade">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (activeTarget.flatfootedGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
+            <label class="st-target-grade">接触<select class="cell-input" data-st-target-grade="contactGrade">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (activeTarget.contactGrade || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select></label>
+            <button class="btn small" data-action="st-remove-target">删除当前目标</button>
           </div>
           <div class="st-combat-toolbar">
             <label class="st-source-picker">读取自<select class="cell-input" data-st-defense-source><option value="">手动填写</option>${options}</select></label>
@@ -720,11 +733,13 @@
     stTool.combat.sourceId = entry.id;
     const active = stActiveTarget();
     active.sourceId = entry.id;
+    active.flatfootedGrade = entry.flatfootedGrade || 'none';
+    active.contactGrade = entry.contactGrade || 'none';
     const values = stEntryDefenseValues(entry);
     stTool.combat.values = Object.assign({}, values);
     D.DEFENSE_ITEMS.forEach(d => { active.values[d.key] = values[d.key] || 0; });
     saveSTTool();
-    stSyncTargetDefenseUI();
+    stRerenderPreserve();
     toast(`已读取 ${entry.name || '调查员'} 的防御`);
   }
 
@@ -733,8 +748,10 @@
     const active = stActiveTarget();
     active.sourceId = '';
     D.DEFENSE_ITEMS.forEach(d => { stTool.combat.values[d.key] = 0; active.values[d.key] = 0; });
+    active.flatfootedGrade = 'none';
+    active.contactGrade = 'none';
     saveSTTool();
-    stSyncTargetDefenseUI();
+    stRerenderPreserve();
   }
 
   function stRerenderPreserve() {
@@ -1136,10 +1153,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.104';
+  const APP_VERSION = 'V1.105';
   const UPDATES = [
     {
-      version: 'V1.104', date: '2026-11-06', title: '防御反制与 ST 攻击导入', current: true,
+      version: 'V1.105', date: '2026-11-06', title: 'ST 目标卡片与布局整理', current: true,
+      notes: ['ST 目标改为目标卡片', 'ST 攻击完整读取', 'ST 笔记浮窗']
+    },
+    {
+      version: 'V1.104', date: '2026-11-06', title: '防御反制与 ST 攻击导入',
       notes: ['新增抵高速/抵破甲/抵破魔', 'ST 完整读取攻击预设', 'ST 新增可拖动笔记']
     },
     {
@@ -5458,8 +5479,9 @@
         break;
       }
       case 'st-note-expand': openSTNotesFloat(); break;
+      case 'st-select-target': stTool.combat.activeTargetId = action.dataset.id; saveSTTool(); stRerenderPreserve(); break;
       case 'st-add-target': {
-        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', values: Object.assign({}, stActiveTarget().values) };
+        const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', flatfootedGrade: 'none', contactGrade: 'none', values: Object.assign({}, stActiveTarget().values) };
         stTool.combat.targets.push(target);
         stTool.combat.activeTargetId = target.id;
         saveSTTool(); renderView('st');
@@ -5916,6 +5938,11 @@
       if (el.matches('[data-st-active-target]')) {
         stTool.combat.activeTargetId = el.value;
         stSyncTargetDefenseUI();
+        saveSTTool();
+        return;
+      }
+      if (el.matches('[data-st-target-grade]')) {
+        stActiveTarget()[el.dataset.stTargetGrade] = el.value;
         saveSTTool();
         return;
       }
