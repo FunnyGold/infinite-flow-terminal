@@ -2642,3 +2642,8 @@ html[data-theme="light"] .st-attack-import select { border-color: rgba(143,106,5
 }
 .st-attack-table tr.st-flash > td { animation: stFlash .9s ease-out; }
 .st-attack-hint { margin-top: 6px; color: var(--gold); font-size: 11px; letter-spacing: .02em; }
+/* ---- 效果框随内容撑高 + 双击放大（V1.155） ---- */
+textarea.trait-effect, textarea.feat-effect,
+.res-main textarea, .tech-row textarea,
+textarea[data-auto-grow] { resize: none; overflow: hidden; }
+textarea[data-expand] { cursor: text; }

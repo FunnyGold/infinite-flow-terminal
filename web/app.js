@@ -1318,10 +1318,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.154';
+  const APP_VERSION = 'V1.155';
   const UPDATES = [
     {
-      version: 'V1.154', date: '2026-11-07', title: '导入攻击预设：改名、空状态引导与载入反馈', current: true,
+      version: 'V1.155', date: '2026-11-07', title: '效果框随内容撑高，长文本框双击放大', current: true,
+      notes: [
+        '资源页的被动特性、主干资源、专长、开技效果框按内容撑高，被裁的 6 处归零',
+        '角色备注、防御备注、能量池恢复与用法新增双击放大',
+        '撑高改为分几次测量，面板展开后宽度变化也能跟上'
+      ]
+    },
+    {
+      version: 'V1.154', date: '2026-11-07', title: '导入攻击预设：改名、空状态引导与载入反馈',
       notes: [
         '「读取攻击检定」改名为「导入攻击预设」，说法更直白',
         '总DP 为 0 时在详情里给一行提示，告诉你该点哪里或直接手填',
@@ -2893,12 +2901,14 @@
     catch (e) { return {}; }
   }
 
+  const AUTO_GROW_SELECTOR = '.equip-item textarea, textarea[data-trait-effect], textarea[data-resource-effect], textarea[data-technique-effect], textarea[data-feat-effect], textarea[data-starting-feat-effect], textarea[data-auto-grow]';
+
   function applyTextareaSizes() {
     const sizes = textareaSizeMap();
     const view = $('#view-' + activeView) || document;
     $$('textarea', view).forEach((el, i) => {
       if (!el.dataset.resizeKey) el.dataset.resizeKey = el.dataset.bind || ('ta_' + i);
-      if (el.closest('.equip-item')) { autoGrowTextarea(el); return; }
+      if (el.matches(AUTO_GROW_SELECTOR)) { autoGrowTextarea(el); return; }
       const h = Number(sizes[el.dataset.resizeKey]);
       if (Number.isFinite(h) && h >= 24) { el.style.height = h + 'px'; return; }
     });
@@ -2907,8 +2917,15 @@
   function autoGrowTextarea(el) {
     if (!el || !el.offsetParent) return;
     if (Number(el.dataset.manualHeight)) return;
+    const min = el.closest('.equip-item') ? 72 : 40;
     el.style.height = 'auto';
-    el.style.height = Math.max(72, el.scrollHeight + 2) + 'px';
+    el.style.height = Math.max(min, el.scrollHeight + 2) + 'px';
+  }
+
+  function scheduleTextareaSizing() {
+    requestAnimationFrame(() => applyTextareaSizes());
+    setTimeout(() => applyTextareaSizes(), 120);
+    setTimeout(() => applyTextareaSizes(), 420);
   }
 
   function saveTextareaSize(el) {
@@ -2948,9 +2965,9 @@
     else if (name === 'ledger') mount.innerHTML = ledgerHTML();
     else if (name === 'st') mount.innerHTML = stHTML();
     if (name === 'overview') refreshOverview();
-    if (name === 'character') { applySkillFilter(); refreshCharacter(); requestAnimationFrame(() => applyTextareaSizes()); setTimeout(() => applyTextareaSizes(), 120); }
+    if (name === 'character') { applySkillFilter(); refreshCharacter(); scheduleTextareaSizing(); }
     if (name === 'combat') refreshCombat();
-    if (name === 'resources') refreshResources();
+    if (name === 'resources') { refreshResources(); scheduleTextareaSizing(); }
     if (name === 'ledger') refreshLedger();
     applyTextareaSizes();
     if (hadContent && main) {
@@ -3425,7 +3442,7 @@
             <div class="defense-formula" id="defense-formula">${defenseFormulaHTML(computed)}</div>
           </div>
           <div class="defense-note-row">
-            <label>防御备注 / 附加成功<textarea data-bind="defense.note" rows="2" placeholder="记录防御附加成功、特殊防御、条件加值或需要提醒 ST 的效果…">${esc(state.defense.note || '')}</textarea></label>
+            <label>防御备注 / 附加成功<textarea data-expand data-expand-label="防御备注 / 附加成功" data-bind="defense.note" rows="2" placeholder="记录防御附加成功、特殊防御、条件加值或需要提醒 ST 的效果…">${esc(state.defense.note || '')}</textarea></label>
           </div>
           <div class="dr-block">
             <div class="dr-head">
@@ -3472,7 +3489,7 @@
             <button class="collapse-btn ${ui.collapsedSections.has('notes') ? 'collapsed' : ''}" data-action="toggle-section" data-section="notes" aria-expanded="${ui.collapsedSections.has('notes') ? 'false' : 'true'}" title="折叠 / 展开">${ic('chevron')}</button>
           </div>
         </div>
-        <div class="panel-body ${ui.collapsedSections.has('notes') ? 'collapsed' : ''}" data-section-body="notes"><textarea class="notes-area" data-bind="notes" placeholder="记录剧情线索、约定、队伍关系与需要长期跟踪的事项…">${esc(state.notes || '')}</textarea></div>
+        <div class="panel-body ${ui.collapsedSections.has('notes') ? 'collapsed' : ''}" data-section-body="notes"><textarea class="notes-area" data-expand data-expand-label="角色备注" data-bind="notes" placeholder="记录剧情线索、约定、队伍关系与需要长期跟踪的事项…">${esc(state.notes || '')}</textarea></div>
       </div>`;
   }
 
@@ -3748,8 +3765,8 @@
               <button class="icon-btn pool-remove" data-action="remove-energy-pool" data-index="${i}" title="移除">${ic('trash')}</button>
             </div>
             <div class="pool-bar"><i data-pool-bar="${i}" style="width:${cp.pct}%"></i></div>
-            <label class="pool-field pool-recovery-field"><span>恢复方式</span><textarea rows="2" data-bind="energyPools.${i}.recovery" placeholder="${isGauge ? '例如：每轮 +1 / 清空触发' : '例如：短休回满 / 每轮 +1'}">${esc(p.recovery || '')}</textarea></label>
-            <label class="pool-field pool-usage-field"><span>基础使用方式</span><textarea rows="2" data-bind="energyPools.${i}.usage" placeholder="${isGauge ? '例如：满值消耗 / 触发效果' : '例如：强化攻击 / 支付技艺'}">${esc(p.usage || '')}</textarea></label>
+            <label class="pool-field pool-recovery-field"><span>恢复方式</span><textarea rows="2" data-expand data-expand-label="能量池恢复方式" data-bind="energyPools.${i}.recovery" placeholder="${isGauge ? '例如：每轮 +1 / 清空触发' : '例如：短休回满 / 每轮 +1'}">${esc(p.recovery || '')}</textarea></label>
+            <label class="pool-field pool-usage-field"><span>基础使用方式</span><textarea rows="2" data-expand data-expand-label="能量池使用方式" data-bind="energyPools.${i}.usage" placeholder="${isGauge ? '例如：满值消耗 / 触发效果' : '例如：强化攻击 / 支付技艺'}">${esc(p.usage || '')}</textarea></label>
           </div>`;
         }).join('') || '<div class="empty" style="padding:14px 10px;font-size:9px;">没有能量池或刻度。添加后可在攻击预设中选择。</div>'}</div></div>
       </div>
@@ -4215,6 +4232,47 @@
     card.querySelector('[data-modal="technique-save"]').onclick = save;
     window.__modalClose = cancel;
     setTimeout(() => { const el = $('#feat-effect-editor'); if (el) el.focus(); }, 20);
+  }
+
+  function openBoundTextareaEditor(el) {
+    if (!el) return;
+    const label = el.dataset.expandLabel || '放大编辑';
+    const layer = $('#modal-layer');
+    const card = $('#modal-card');
+    layer.classList.add('attack-float');
+    card.classList.add('attack-float-card');
+    card.style.width = '640px';
+    card.innerHTML = `
+      <div class="modal-title attack-float-title">
+        <span>${esc(label)}</span>
+        <button class="icon-btn" data-modal="expand-close" title="关闭">${ic('close')}</button>
+      </div>
+      <div class="modal-text" style="margin-bottom:10px;">双击文本框可再次打开；这里可以放开写。</div>
+      <textarea class="feat-effect-editor" id="expand-editor">${esc(el.value)}</textarea>
+      <div class="modal-actions">
+        <button class="btn" data-modal="expand-cancel">取消</button>
+        <button class="btn gold" data-modal="expand-save">保存</button>
+      </div>`;
+    layer.hidden = false;
+    setupAttackWindowDrag(card, 'expandEditorPos', '.attack-float-title');
+    const area = card.querySelector('#expand-editor');
+    const close = () => {
+      layer.hidden = true;
+      layer.classList.remove('attack-float');
+      card.classList.remove('attack-float-card');
+      card.style.width = '';
+    };
+    const save = () => {
+      el.value = area.value;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+      close();
+      toast('已保存');
+    };
+    card.querySelector('[data-modal="expand-close"]').onclick = close;
+    card.querySelector('[data-modal="expand-cancel"]').onclick = close;
+    card.querySelector('[data-modal="expand-save"]').onclick = save;
+    window.__modalClose = close;
+    area.focus();
   }
 
   function openFeatEffect(kind, index) {
@@ -4835,7 +4893,7 @@
     }
     if (collapsed) ui.collapsedSections.add(key);
     else ui.collapsedSections.delete(key);
-    if (!collapsed) { requestAnimationFrame(() => applyTextareaSizes()); setTimeout(() => applyTextareaSizes(), 120); }
+    if (!collapsed) scheduleTextareaSizing();
   }
 
 function toggleAllToc() {
@@ -6884,7 +6942,7 @@ function toggleAllToc() {
         return;
       }
       if (!el.matches('[data-bind]')) return;
-        if (el.tagName === 'TEXTAREA' && el.closest('.equip-item')) autoGrowTextarea(el);
+        if (el.tagName === 'TEXTAREA' && el.matches(AUTO_GROW_SELECTOR)) autoGrowTextarea(el);
       const bind = el.dataset.bind;
       let val;
       if (el.type === 'number') val = el.value === '' ? 0 : Number(el.value);
@@ -6941,6 +6999,8 @@ function toggleAllToc() {
     });
 
     document.addEventListener('dblclick', e => {
+    const expandEl = e.target && e.target.closest ? e.target.closest('textarea[data-expand]') : null;
+    if (expandEl) { e.preventDefault(); openBoundTextareaEditor(expandEl); return; }
       const aeNote = e.target && e.target.closest ? e.target.closest('#ae-note') : null;
       if (aeNote) {
         e.preventDefault();
