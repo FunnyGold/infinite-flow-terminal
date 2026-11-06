@@ -1225,10 +1225,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.112';
+  const APP_VERSION = 'V1.113';
   const UPDATES = [
     {
-      version: 'V1.112', date: '2026-11-06', title: '全站重绘降抖动', current: true,
+      version: 'V1.113', date: '2026-11-06', title: '基础防御局部刷新', current: true,
+      notes: ['基础防御取高/低与属性切换局部刷新']
+    },
+    {
+      version: 'V1.112', date: '2026-11-06', title: '全站重绘降抖动',
       notes: ['重绘保留滚动位置', '重绘恢复输入焦点']
     },
     {
@@ -2824,6 +2828,29 @@
       return computed.customSkills[idx] || { dp: 0, success: 0, over: false };
     }
     return computed.skills[id] || { dp: 0, success: 0, over: false };
+  }
+
+  function syncBaseDefenseUI() {
+    const mode = state.defense.baseMode === 'high' ? 'high' : 'low';
+    const modeText = mode === 'high' ? '高' : '低';
+    document.querySelectorAll('[data-action="toggle-base-defense"]').forEach(btn => {
+      if (btn.classList.contains('flag-toggle')) {
+        btn.classList.toggle('on', mode === 'high');
+        btn.textContent = '取' + modeText;
+      } else {
+        btn.classList.toggle('on', mode === 'high');
+        btn.setAttribute('aria-pressed', mode === 'high' ? 'true' : 'false');
+        btn.innerHTML = `${ic('shield')} 基础取${modeText}`;
+      }
+    });
+    const hint = document.querySelector('.base-defense-hint');
+    if (hint) {
+      const an = (D.ATTR_MAP[state.defense.baseA] || { name: state.defense.baseA }).name;
+      const bn = (D.ATTR_MAP[state.defense.baseB] || { name: state.defense.baseB }).name;
+      hint.textContent = `当前 = ${an} / ${bn} 取${modeText}；选同一属性即单属性防御。`;
+      const baseLabel = document.querySelector('[data-bind="defense.labels.base"]');
+      if (baseLabel) baseLabel.placeholder = `${an} / ${bn} 取${modeText}`;
+    }
   }
 
   function refreshCharacter() {
@@ -5697,7 +5724,9 @@
       case 'defense-syntax-help': showDefenseSyntaxHelp(); break;
       case 'toggle-base-defense':
         state.defense.baseMode = state.defense.baseMode === 'high' ? 'low' : 'high';
-        stateChanged({ rerender: true });
+        stateChanged();
+        syncBaseDefenseUI();
+        refreshDefenseOutputs();
         toast(state.defense.baseMode === 'high' ? '基础防御已改为取高' : '基础防御已改为取低');
         break;
       case 'refill-will':
@@ -6141,7 +6170,9 @@
         return;
       }
       if (bind === 'defense.baseA' || bind === 'defense.baseB') {
-        stateChanged({ rerender: true });
+        stateChanged();
+        syncBaseDefenseUI();
+        refreshDefenseOutputs();
       } else if (bind === 'targetDefense.flatfootedGrade' || bind === 'targetDefense.contactGrade') {
         state.targetDefense.flatfooted = state.targetDefense.flatfootedGrade !== 'none';
         state.targetDefense.contact = state.targetDefense.contactGrade !== 'none';
