@@ -558,12 +558,12 @@
     return values;
   }
 
-  function stAttackCalc(attack) {
+  function stAttackCalc(attack, forcedTarget) {
     const flags = {
       flatfooted: !!(attack.flatfootedGrade && attack.flatfootedGrade !== 'none'),
       contact: !!(attack.contactGrade && attack.contactGrade !== 'none')
     };
-    const target = stTargetForAttack(attack);
+    const target = forcedTarget || stTargetForAttack(attack);
     const eff = C.effectiveDefense((target && target.values) || stTool.combat.values || {}, {
       highSpeed: C.num(attack.highSpeed),
       armorPierce: C.num(attack.armorPierce),
@@ -600,6 +600,28 @@
       flat: `<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select>`,
       contact: `<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select>`
     };
+  }
+
+  function stComparisonRowsHTML() {
+    const attacks = stTool.combat.attacks || [];
+    const targets = stTargets();
+    return attacks.flatMap(a => targets.map(t => {
+      const c = stAttackCalc(a, t);
+      return `<tr><td class="st-cmp-attack">${esc(a.name || '未命名攻击')}</td><td>${esc(t.name || '未命名目标')}</td><td>${fmt(c.defense)}</td><td>${fmt(c.finalDP)}</td><td>${fmt(C.round1(c.total))}</td></tr>`;
+    })).join('');
+  }
+
+  function stTargetComparisonHTML() {
+    const attacks = stTool.combat.attacks || [];
+    const targets = stTargets();
+    if (!attacks.length || targets.length < 2) return '';
+    return `<div class="panel mt18 st-compare-panel">
+      <div class="panel-head"><div class="panel-title">目标对比</div><div class="panel-head-right"><span class="panel-sub">同一条攻击对所有目标的有效防御 / 最终 DP / 期望伤害</span></div></div>
+      <div class="panel-body"><div class="st-compare-wrap"><table class="st-compare-table">
+        <thead><tr><th>攻击</th><th>目标</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th></tr></thead>
+        <tbody id="st-compare-body">${stComparisonRowsHTML()}</tbody>
+      </table></div><div class="matrix-wrap-note">这里只做对比，不会修改上方攻击行选中的目标。</div></div>
+    </div>`;
   }
 
   function stCombatHTML() {
@@ -702,7 +724,8 @@
           ${attackItems ? (COMPACT() ? `<div class="st-attack-cards">${attackItems}</div>` : `<div class="st-attack-wrap"><table class="st-attack-table"><thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>伤害上限</th><th>附加</th><th>次数</th><th>措手不及</th><th>接触</th><th>加成来源</th><th>有效防御</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead><tbody>${attackItems}</tbody></table></div>`) : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
           <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。所有加值来源由 ST 自行填写，不读取玩家攻击预设。</div>
         </div>
-      </div>`;
+      </div>
+      ${stTargetComparisonHTML()}`;
   }
 
   function stSyncTargetDefenseUI() {
@@ -800,6 +823,8 @@
       set('final', fmt(c.finalDP));
       set('damage', fmt(C.round1(c.total)));
     });
+    const cmp = document.getElementById('st-compare-body');
+    if (cmp) cmp.innerHTML = stComparisonRowsHTML();
   }
 
   function openSTNotesFloat() {
@@ -1153,10 +1178,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.105';
+  const APP_VERSION = 'V1.106';
   const UPDATES = [
     {
-      version: 'V1.105', date: '2026-11-06', title: 'ST 目标卡片与布局整理', current: true,
+      version: 'V1.106', date: '2026-11-06', title: 'ST 目标对比', current: true,
+      notes: ['新增目标对比表', '对比随数值实时刷新']
+    },
+    {
+      version: 'V1.105', date: '2026-11-06', title: 'ST 目标卡片与布局整理',
       notes: ['ST 目标改为目标卡片', 'ST 攻击完整读取', 'ST 笔记浮窗']
     },
     {

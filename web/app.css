@@ -2373,3 +2373,8 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-target-editor-head input { width:180px; }
 .st-target-grade { display:flex; align-items:center; gap:4px; color:#9d8d70; font-size:8px; white-space:nowrap; }
 .st-target-grade select { width:66px; }
+.st-compare-wrap { overflow-x:auto; }
+.st-compare-table { width:100%; border-collapse:collapse; min-width:560px; }
+.st-compare-table th { text-align:left; font-size:8px; color:#6b665d; font-weight:400; padding:0 8px 7px; border-bottom:1px solid rgba(255,255,255,.08); }
+.st-compare-table td { padding:6px 8px; border-bottom:1px solid rgba(255,255,255,.045); font:10px var(--mono); color:#c9c0b0; }
+.st-compare-table td.st-cmp-attack { color:#d9bd85; font-family:var(--sans); }
