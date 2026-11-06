@@ -1225,10 +1225,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.113';
+  const APP_VERSION = 'V1.114';
   const UPDATES = [
     {
-      version: 'V1.113', date: '2026-11-06', title: '基础防御局部刷新', current: true,
+      version: 'V1.114', date: '2026-11-06', title: '更多局部刷新', current: true,
+      notes: ['生命口径/意志/头像局部刷新', '目标防御局部刷新']
+    },
+    {
+      version: 'V1.113', date: '2026-11-06', title: '基础防御局部刷新',
       notes: ['基础防御取高/低与属性切换局部刷新']
     },
     {
@@ -2564,7 +2568,8 @@
         const h = img.height * scale;
         ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
         state.meta.avatar = canvas.toDataURL('image/jpeg', 0.86);
-        stateChanged({ rerender: true });
+        stateChanged();
+        syncAvatarUI();
         toast('头像已更新');
       };
       img.onerror = () => toast('无法读取这张图片');
@@ -2853,6 +2858,39 @@
     }
   }
 
+  function syncHealthModeUI() {
+    $$('[data-action="health-mode"]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.mode === state.healthMode);
+    });
+    const note = $('#ov-health-note');
+    if (note) note.textContent = state.healthMode === 'fusion'
+      ? '融合流：伤害值 = B + 2L + 4A；达到生命上限的 70% 时昏迷，填满生命即死亡。'
+      : '海马 / RM：无完好生命即昏迷，恶性 A 达到生命上限即死亡；2B → 1L，2L → 1A。';
+    const status = $('.health-panel .status-pill');
+    if (status && computed.health) {
+      status.className = 'status-pill ' + statusTone(computed.health.statusTone);
+      status.textContent = computed.health.status;
+    }
+  }
+
+  function syncWillInputs() {
+    document.querySelectorAll('[data-bind="defense.willCurrent"]').forEach(input => {
+      input.value = fmt(computed.health.willCurrent);
+    });
+  }
+
+  function syncAvatarUI() {
+    const box = document.querySelector('.hero-avatar');
+    if (!box) return;
+    const hasAvatar = !!state.meta.avatar;
+    box.classList.toggle('has-avatar', hasAvatar);
+    const name = state.meta.name || '∞';
+    const letter = name.trim().slice(0, 1) || '∞';
+    box.innerHTML = hasAvatar
+      ? `<img src="${esc(state.meta.avatar)}" alt="角色头像"><span class="avatar-badge" aria-hidden="true">${ic('upload')}</span><button class="avatar-remove" data-action="remove-avatar" title="移除头像">${ic('close')}</button>`
+      : `<span class="avatar-letter">${esc(letter)}</span><span class="avatar-badge" aria-hidden="true">${ic('upload')}</span>`;
+  }
+
   function refreshCharacter() {
     $$('[data-attr-total]').forEach(el => { const a = computed.attrs[el.dataset.attrTotal]; if (a) el.textContent = fmt(a.total); });
     $$('[data-attr-legend]').forEach(el => { const a = computed.attrs[el.dataset.attrLegend]; if (a) el.textContent = a.legend; });
@@ -3084,6 +3122,15 @@
           <div><b class="gold">融合流</b><br>每点生命 4 格，伤害值 B=1 / L=2 / A=4；达到 70% 生命昏迷，填满生命死亡。生命上限建议 ×4。</div>
         </div>
       </div>`;
+  }
+
+  function syncCombatTargetUI() {
+    D.DEFENSE_ITEMS.forEach(d => {
+      const input = document.querySelector(`[data-bind="targetDefense.values.${d.key}"]`);
+      if (input) input.value = fmt(state.targetDefense.values[d.key] || 0);
+    });
+    document.querySelectorAll('[data-bind="targetDefense.flatfootedGrade"]').forEach(el => { el.value = state.targetDefense.flatfootedGrade || 'none'; });
+    document.querySelectorAll('[data-bind="targetDefense.contactGrade"]').forEach(el => { el.value = state.targetDefense.contactGrade || 'none'; });
   }
 
   function refreshCombat() {
@@ -5701,7 +5748,8 @@
       }
       case 'remove-avatar':
         state.meta.avatar = '';
-        stateChanged({ rerender: true });
+        stateChanged();
+        syncAvatarUI();
         toast('已移除头像');
         break;
       case 'open-combat-demo':
@@ -5719,7 +5767,8 @@
       case 'reset': doReset(); break;
       case 'health-mode':
         state.healthMode = el.dataset.mode === 'rm' ? 'rm' : 'fusion';
-        stateChanged({ rerender: true });
+        stateChanged();
+        syncHealthModeUI();
         break;
       case 'defense-syntax-help': showDefenseSyntaxHelp(); break;
       case 'toggle-base-defense':
@@ -5731,7 +5780,8 @@
         break;
       case 'refill-will':
         state.defense.willCurrent = computed.will;
-        stateChanged({ rerender: true });
+        stateChanged();
+        syncWillInputs();
         toast('意志已回满');
         break;
       case 'add-custom-skill': addCustomSkill(); break;
@@ -5743,16 +5793,21 @@
       }
       case 'apply-my-defense':
         D.DEFENSE_ITEMS.forEach(d => { state.targetDefense.values[d.key] = computed.defense.byKey[d.key] || 0; });
-        stateChanged({ rerender: true });
+        syncCombatTargetUI();
+        stateChanged();
         toast('已套用本方防御构成');
         break;
       case 'toggle-flatfooted':
         state.targetDefense.flatfooted = !state.targetDefense.flatfooted;
-        stateChanged({ rerender: true });
+        state.targetDefense.flatfootedGrade = state.targetDefense.flatfooted ? 'D' : 'none';
+        syncCombatTargetUI();
+        stateChanged();
         break;
       case 'toggle-contact':
         state.targetDefense.contact = !state.targetDefense.contact;
-        stateChanged({ rerender: true });
+        state.targetDefense.contactGrade = state.targetDefense.contact ? 'D' : 'none';
+        syncCombatTargetUI();
+        stateChanged();
         break;
       case 'settle-attack': settleAttack(Number(el.dataset.index)); break;
       case 'add-attack': openAttackEditor(-1); break;
@@ -6176,7 +6231,8 @@
       } else if (bind === 'targetDefense.flatfootedGrade' || bind === 'targetDefense.contactGrade') {
         state.targetDefense.flatfooted = state.targetDefense.flatfootedGrade !== 'none';
         state.targetDefense.contact = state.targetDefense.contactGrade !== 'none';
-        stateChanged({ rerender: true });
+        syncCombatTargetUI();
+        stateChanged();
       } else if (el.type === 'number' || el.tagName === 'SELECT') {
         stateChanged();
       } else {
