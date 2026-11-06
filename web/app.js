@@ -726,6 +726,14 @@
       </div>`;
   }
 
+  function stRefreshTargetArea() {
+    stSyncChips();
+    stRefreshInspector();
+    stRefreshAttacks();
+    const slot = document.getElementById('st-section-compare-slot');
+    if (slot) slot.innerHTML = stTargetComparisonHTML();
+  }
+
   function stRefreshAttacks() {
     const box = document.getElementById('st-section-attacks');
     if (!box) { stRerenderPreserve(); return; }
@@ -756,7 +764,7 @@
           </div>
         </div>
       </div>
-      ${stTargetComparisonHTML()}`;
+      <div id="st-section-compare-slot">${stTargetComparisonHTML()}</div>`;
   }
 
   function stInspectorHTML() {
@@ -1318,10 +1326,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.155';
+  const APP_VERSION = 'V1.156';
   const UPDATES = [
     {
-      version: 'V1.155', date: '2026-11-07', title: '效果框随内容撑高，长文本框双击放大', current: true,
+      version: 'V1.156', date: '2026-11-07', title: '目标增删与账本排序改为局部刷新', current: true,
+      notes: [
+        '新增 / 删除目标只刷新目标卡、检视栏与攻击列表，不再整页重绘',
+        '账本拖动排序只重建两张表，余额与页面结构原地不动',
+        '两处操作都不再跳动滚动位置'
+      ]
+    },
+    {
+      version: 'V1.155', date: '2026-11-07', title: '效果框随内容撑高，长文本框双击放大',
       notes: [
         '资源页的被动特性、主干资源、专长、开技效果框按内容撑高，被裁的 6 处归零',
         '角色备注、防御备注、能量池恢复与用法新增双击放大',
@@ -4403,7 +4419,68 @@
     const [item] = arr.splice(from, 1);
     arr.splice(to, 0, item);
     scheduleSave();
-    renderView('ledger');
+    refreshLedgerTables();
+  }
+
+  function ledgerTablesHTML() {
+    const c = computed;
+    const ledgerCollapsed = ledgerCollapsedState();
+    return `
+        <div class="ledger-tables">
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">收入记录</div>
+              <div class="panel-head-right">
+                <button class="btn small gold" data-action="add-income">${ic('plus')} 添加</button>
+                <button class="collapse-btn ${ledgerCollapsed.income ? 'collapsed' : ''}" data-action="toggle-ledger" data-ledger-toggle="income" aria-expanded="${String(!ledgerCollapsed.income)}" title="折叠 / 展开">${ic('chevron')}</button>
+              </div>
+            </div>
+            <div class="panel-body flush ${ledgerCollapsed.income ? 'collapsed' : ''}" data-ledger-body="income" style="overflow-x:auto;">
+              ${state.incomes.length ? `<table class="ledger-table" id="income-table"><colgroup><col style="width:20px"><col style="width:17%"><col style="width:88px"><col style="width:104px"><col style="width:88px"><col><col style="width:30px"></colgroup><thead><tr><th class="drag-col"></th><th>团名 / 来源</th><th>支线</th><th>分数</th><th>经验</th><th>备注</th><th></th></tr></thead><tbody>
+                ${state.incomes.map((r, i) => `<tr data-ledger-row="income" data-index="${i}">
+                  <td class="drag-col"><span class="ledger-drag" draggable="true" data-ledger-drag="income" data-index="${i}" title="拖动排序">≡</span></td>
+                  <td>${tInput('incomes.' + i + '.name', r.name, 'cell-input', '团名 / 来源')}</td>
+                  <td class="num-cell">${nInput('incomes.' + i + '.level', r.level, 'cell-input')}</td>
+                  <td class="num-cell">${nInput('incomes.' + i + '.points', r.points, 'cell-input')}</td>
+                  <td class="num-cell">${nInput('incomes.' + i + '.xp', r.xp, 'cell-input')}</td>
+                  <td><input type="text" class="cell-input ledger-note-input" data-bind="incomes.${i}.note" data-ledger-note="${i}" value="${esc(r.note || '')}" placeholder="双击放大" title="双击放大"></td>
+                  <td><button class="icon-btn" data-action="remove-income" data-index="${i}">${ic('trash')}</button></td>
+                </tr>`).join('')}</tbody>
+                <tfoot><tr><td></td><td>合计</td><td><b id="income-total-level">${fmt(c.ledger.income.level)}</b></td><td><b id="income-total-points">${fmt(c.ledger.income.points)}</b></td><td><b id="income-total-xp">${fmt(c.ledger.income.xp)}</b></td><td></td><td></td></tr></tfoot>
+              </table>` : `<div class="empty" style="margin:16px;"><b>还没有收入记录</b>每次团务结束后在这里记一笔。</div>`}
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div class="panel-title">购买清单</div>
+              <div class="panel-head-right">
+                <button class="btn small gold" data-action="add-purchase">${ic('plus')} 添加</button>
+                <button class="collapse-btn ${ledgerCollapsed.purchase ? 'collapsed' : ''}" data-action="toggle-ledger" data-ledger-toggle="purchase" aria-expanded="${String(!ledgerCollapsed.purchase)}" title="折叠 / 展开">${ic('chevron')}</button>
+              </div>
+            </div>
+            <div class="panel-body flush ${ledgerCollapsed.purchase ? 'collapsed' : ''}" data-ledger-body="purchase" style="overflow-x:auto;">
+              ${state.purchases.length ? `<table class="ledger-table" id="purchase-table"><colgroup><col style="width:20px"><col style="width:17%"><col style="width:88px"><col style="width:104px"><col style="width:88px"><col><col style="width:30px"></colgroup><thead><tr><th class="drag-col"></th><th>资源</th><th>支线</th><th>分数</th><th>经验</th><th>资源介绍</th><th></th></tr></thead><tbody>
+                ${state.purchases.map((r, i) => `<tr data-ledger-row="purchase" data-index="${i}">
+                  <td class="drag-col"><span class="ledger-drag" draggable="true" data-ledger-drag="purchase" data-index="${i}" title="拖动排序">≡</span></td>
+                  <td>${tInput('purchases.' + i + '.name', r.name, 'cell-input', '资源名称')}</td>
+                  <td class="num-cell">${nInput('purchases.' + i + '.level', r.level, 'cell-input')}</td>
+                  <td class="num-cell">${nInput('purchases.' + i + '.points', r.points, 'cell-input')}</td>
+                  <td class="num-cell">${nInput('purchases.' + i + '.xp', r.xp, 'cell-input')}</td>
+                  <td><input type="text" class="cell-input ledger-desc-input" data-bind="purchases.${i}.desc" data-ledger-desc="${i}" value="${esc(r.desc || '')}" placeholder="双击放大" title="双击放大"></td>
+                  <td><button class="icon-btn" data-action="remove-purchase" data-index="${i}">${ic('trash')}</button></td>
+                </tr>`).join('')}</tbody>
+                <tfoot><tr><td></td><td>合计</td><td><b id="spent-total-level">${fmt(c.ledger.spent.level)}</b></td><td><b id="spent-total-points">${fmt(c.ledger.spent.points)}</b></td><td><b id="spent-total-xp">${fmt(c.ledger.spent.xp)}</b></td><td></td><td></td></tr></tfoot>
+              </table>` : `<div class="empty" style="margin:16px;"><b>还没有购买记录</b>把支线、分数、经验与资源说明一并填在这里。</div>`}
+            </div>
+          </div>
+        </div>
+`;
+  }
+
+  function refreshLedgerTables() {
+    const box = document.querySelector('#view-ledger .ledger-tables');
+    if (!box) { renderView('ledger'); return; }
+    box.outerHTML = ledgerTablesHTML();
   }
 
   function ledgerHTML() {
@@ -4417,54 +4494,7 @@
         <div class="ledger-card" style="--accent:rgba(98,169,163,.7)"><div class="ledger-label">分数余额</div><div class="ledger-value ${c.ledger.balance.points < 0 ? 'negative' : ''}" id="ledger-points">${fmt(c.ledger.balance.points)}</div><div class="ledger-sub">收入 ${fmt(c.ledger.income.points)} · 已用 ${fmt(c.ledger.spent.points)}</div></div>
         <div class="ledger-card" style="--accent:rgba(184,73,78,.75)"><div class="ledger-label">经验余额</div><div class="ledger-value ${c.ledger.balance.xp < 0 ? 'negative' : ''}" id="ledger-xp">${fmt(c.ledger.balance.xp)}</div><div class="ledger-sub">收入 ${fmt(c.ledger.income.xp)} · 已用 ${fmt(c.ledger.spent.xp)}</div></div>
       </div>
-      <div class="ledger-tables">
-        <div class="panel">
-          <div class="panel-head">
-            <div class="panel-title">收入记录</div>
-            <div class="panel-head-right">
-              <button class="btn small gold" data-action="add-income">${ic('plus')} 添加</button>
-              <button class="collapse-btn ${ledgerCollapsed.income ? 'collapsed' : ''}" data-action="toggle-ledger" data-ledger-toggle="income" aria-expanded="${String(!ledgerCollapsed.income)}" title="折叠 / 展开">${ic('chevron')}</button>
-            </div>
-          </div>
-          <div class="panel-body flush ${ledgerCollapsed.income ? 'collapsed' : ''}" data-ledger-body="income" style="overflow-x:auto;">
-            ${state.incomes.length ? `<table class="ledger-table" id="income-table"><colgroup><col style="width:20px"><col style="width:17%"><col style="width:88px"><col style="width:104px"><col style="width:88px"><col><col style="width:30px"></colgroup><thead><tr><th class="drag-col"></th><th>团名 / 来源</th><th>支线</th><th>分数</th><th>经验</th><th>备注</th><th></th></tr></thead><tbody>
-              ${state.incomes.map((r, i) => `<tr data-ledger-row="income" data-index="${i}">
-                <td class="drag-col"><span class="ledger-drag" draggable="true" data-ledger-drag="income" data-index="${i}" title="拖动排序">≡</span></td>
-                <td>${tInput('incomes.' + i + '.name', r.name, 'cell-input', '团名 / 来源')}</td>
-                <td class="num-cell">${nInput('incomes.' + i + '.level', r.level, 'cell-input')}</td>
-                <td class="num-cell">${nInput('incomes.' + i + '.points', r.points, 'cell-input')}</td>
-                <td class="num-cell">${nInput('incomes.' + i + '.xp', r.xp, 'cell-input')}</td>
-                <td><input type="text" class="cell-input ledger-note-input" data-bind="incomes.${i}.note" data-ledger-note="${i}" value="${esc(r.note || '')}" placeholder="双击放大" title="双击放大"></td>
-                <td><button class="icon-btn" data-action="remove-income" data-index="${i}">${ic('trash')}</button></td>
-              </tr>`).join('')}</tbody>
-              <tfoot><tr><td></td><td>合计</td><td><b id="income-total-level">${fmt(c.ledger.income.level)}</b></td><td><b id="income-total-points">${fmt(c.ledger.income.points)}</b></td><td><b id="income-total-xp">${fmt(c.ledger.income.xp)}</b></td><td></td><td></td></tr></tfoot>
-            </table>` : `<div class="empty" style="margin:16px;"><b>还没有收入记录</b>每次团务结束后在这里记一笔。</div>`}
-          </div>
-        </div>
-        <div class="panel">
-          <div class="panel-head">
-            <div class="panel-title">购买清单</div>
-            <div class="panel-head-right">
-              <button class="btn small gold" data-action="add-purchase">${ic('plus')} 添加</button>
-              <button class="collapse-btn ${ledgerCollapsed.purchase ? 'collapsed' : ''}" data-action="toggle-ledger" data-ledger-toggle="purchase" aria-expanded="${String(!ledgerCollapsed.purchase)}" title="折叠 / 展开">${ic('chevron')}</button>
-            </div>
-          </div>
-          <div class="panel-body flush ${ledgerCollapsed.purchase ? 'collapsed' : ''}" data-ledger-body="purchase" style="overflow-x:auto;">
-            ${state.purchases.length ? `<table class="ledger-table" id="purchase-table"><colgroup><col style="width:20px"><col style="width:17%"><col style="width:88px"><col style="width:104px"><col style="width:88px"><col><col style="width:30px"></colgroup><thead><tr><th class="drag-col"></th><th>资源</th><th>支线</th><th>分数</th><th>经验</th><th>资源介绍</th><th></th></tr></thead><tbody>
-              ${state.purchases.map((r, i) => `<tr data-ledger-row="purchase" data-index="${i}">
-                <td class="drag-col"><span class="ledger-drag" draggable="true" data-ledger-drag="purchase" data-index="${i}" title="拖动排序">≡</span></td>
-                <td>${tInput('purchases.' + i + '.name', r.name, 'cell-input', '资源名称')}</td>
-                <td class="num-cell">${nInput('purchases.' + i + '.level', r.level, 'cell-input')}</td>
-                <td class="num-cell">${nInput('purchases.' + i + '.points', r.points, 'cell-input')}</td>
-                <td class="num-cell">${nInput('purchases.' + i + '.xp', r.xp, 'cell-input')}</td>
-                <td><input type="text" class="cell-input ledger-desc-input" data-bind="purchases.${i}.desc" data-ledger-desc="${i}" value="${esc(r.desc || '')}" placeholder="双击放大" title="双击放大"></td>
-                <td><button class="icon-btn" data-action="remove-purchase" data-index="${i}">${ic('trash')}</button></td>
-              </tr>`).join('')}</tbody>
-              <tfoot><tr><td></td><td>合计</td><td><b id="spent-total-level">${fmt(c.ledger.spent.level)}</b></td><td><b id="spent-total-points">${fmt(c.ledger.spent.points)}</b></td><td><b id="spent-total-xp">${fmt(c.ledger.spent.xp)}</b></td><td></td><td></td></tr></tfoot>
-            </table>` : `<div class="empty" style="margin:16px;"><b>还没有购买记录</b>把支线、分数、经验与资源说明一并填在这里。</div>`}
-          </div>
-        </div>
-      </div>
+      ${ledgerTablesHTML()}
       <div class="ledger-note">「已获得」统计收入记录，「已使用」统计购买清单；余额 = 已获得 − 已使用。负数表示超支。支线 / 分数 / 经验分别结算，不互相换算。</div>`;
   }
 
@@ -6409,7 +6439,7 @@ function toggleAllToc() {
         stTool.combat.targets.push(target);
         stTool.combat.activeTargetId = target.id;
         saveSTTool();
-        renderView('st');
+        stRefreshTargetArea();
         break;
       }
       case 'st-remove-target': {
@@ -6419,7 +6449,7 @@ function toggleAllToc() {
         stTool.combat.attacks = (stTool.combat.attacks || []).filter(a => stAttackTargetId(a) !== removeId);
         if (stTool.combat.activeTargetId === removeId) stTool.combat.activeTargetId = stTool.combat.targets[0].id;
         saveSTTool();
-        renderView('st');
+        stRefreshTargetArea();
         break;
       }
       case 'st-active-target': break;
