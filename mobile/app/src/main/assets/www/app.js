@@ -1225,10 +1225,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.116';
+  const APP_VERSION = 'V1.117';
   const UPDATES = [
     {
-      version: 'V1.116', date: '2026-11-06', title: 'ST 目标卡改名按钮', current: true,
+      version: 'V1.117', date: '2026-11-06', title: 'ST 目标卡紧凑化', current: true,
+      notes: ['压缩目标卡', '修复下拉框文字裁切']
+    },
+    {
+      version: 'V1.116', date: '2026-11-06', title: 'ST 目标卡改名按钮',
       notes: ['目标卡右上角改名，平时不显示输入框']
     },
     {

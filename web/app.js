@@ -1211,10 +1211,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.116';
+  const APP_VERSION = 'V1.117';
   const UPDATES = [
     {
-      version: 'V1.116', date: '2026-11-06', title: 'ST 目标卡改名按钮', current: true,
+      version: 'V1.117', date: '2026-11-06', title: 'ST 目标卡紧凑化', current: true,
+      notes: [
+        '压缩目标卡片高度和宽度',
+        '新目标按钮的加号限制为正常尺寸',
+        '措手不及 / 接触下拉框加高，文字不再只显示上半截'
+      ]
+    },
+    {
+      version: 'V1.116', date: '2026-11-06', title: 'ST 目标卡改名按钮',
       notes: [
         '目标名称改为卡片右上角「改名」按钮',
         '平时只显示目标名，不占一行输入框',

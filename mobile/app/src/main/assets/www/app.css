@@ -2396,3 +2396,13 @@ body.mobile-nav-frame::before {
 .st-target-rename:hover { color:#e2c486; border-color:rgba(201,168,110,.5); }
 .st-target-name-input { display:none; }
 .st-target-card.renaming .st-target-name-input { display:block; }
+.st-target-cards { align-items:flex-start; }
+.st-target-card { min-width:210px; max-width:260px; }
+.st-target-add { min-width:100px; padding:10px 14px; gap:2px; font-size:9px; }
+.st-target-add svg { width:22px; height:22px; }
+.st-target-card-pick { padding:6px 8px 4px; }
+.st-target-card-edit { padding:0 7px 7px; gap:3px; }
+.st-target-card-controls { gap:4px; }
+.st-target-card-controls .st-target-grade { font-size:7.5px; gap:3px; }
+.st-target-card-controls select { width:68px; height:28px; min-height:28px; padding:2px 17px 2px 5px; font-size:9px; line-height:1.2; }
+.st-target-remove { padding:3px 6px; }
