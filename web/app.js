@@ -323,10 +323,11 @@
     return stTargets().map(t => {
       const src = (stTool.entries || []).find(e => e.id === t.sourceId);
       const on = t.id === stTool.combat.activeTargetId;
-      return `<button class="st-chip${on ? ' on' : ''}" data-action="st-select-target" data-id="${esc(t.id)}">
+      return `<div class="st-chip${on ? ' on' : ''}" data-action="st-select-target" data-id="${esc(t.id)}" role="button" tabindex="0">
         <b>${esc(t.name || '未命名目标')}</b>
         <small>${src ? esc(src.name || '调查员') : '手动防御'} · 防 ${fmt(stTargetDefTotal(t))}</small>
-      </button>`;
+        <button class="st-chip-del" data-action="st-remove-target" data-id="${esc(t.id)}" title="删除这个目标">${ic('trash')}</button>
+      </div>`;
     }).join('');
   }
 
@@ -788,9 +789,6 @@
           <label>接触${gradeSelect('contactGrade', t.contactGrade)}</label>
         </div>
         ${note}
-      </div>
-      <div class="st-insp-actions">
-        <button class="btn small danger" data-action="st-remove-target" data-id="${esc(t.id)}">删除目标</button>
       </div>
     </div>`;
   }
@@ -1291,10 +1289,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.141';
+  const APP_VERSION = 'V1.142';
   const UPDATES = [
     {
-      version: 'V1.141', date: '2026-11-06', title: '可操作性提示：输入框与可点击元素', current: true,
+      version: 'V1.142', date: '2026-11-06', title: '目标卡垃圾桶删除与改名可见', current: true,
+      notes: [
+        '删除目标改为目标卡上的垃圾桶图标，悬停或选中时显示',
+        '检视栏的目标名变成看得出来的输入框，点进去直接改名',
+        '改名实时同步到目标卡'
+      ]
+    },
+    {
+      version: 'V1.141', date: '2026-11-06', title: '可操作性提示：输入框与可点击元素',
       notes: [
         '输入框加可见边框、更深底色与内阴影，能看出哪里可以填',
         '聚焦时光标所在框描金边并加光晕，填写位置一目了然',
