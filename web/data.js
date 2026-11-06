@@ -69,7 +69,10 @@
     { key: 'sacred', name: '神圣', auto: false, desc: '神圣 / 光明加护' },
     { key: 'unholy', name: '亵渎', auto: false, desc: '亵渎 / 黑暗加护' },
     { key: 'morale', name: '士气', auto: false, desc: '士气与精神加值' },
-    { key: 'other', name: '其他', auto: false, desc: '法术防御等' }
+    { key: 'other', name: '其他', auto: false, desc: '法术防御等' },
+    { key: 'antiHighSpeed', name: '抵高速', auto: false, counter: true, desc: '抵消攻击的高速削减' },
+    { key: 'antiArmorPierce', name: '抵破甲', auto: false, counter: true, desc: '抵消攻击的破甲削减' },
+    { key: 'antiMagicPierce', name: '抵破魔', auto: false, counter: true, desc: '抵消攻击的破魔削减' }
   ];
 
   const DEFENSE_MAP = Object.fromEntries(DEFENSE_ITEMS.map(d => [d.key, d]));
@@ -221,7 +224,7 @@
       },
       skills,
       customSkills: CUSTOM_DEFAULT.map(s => Object.assign(blankSkill(s.attr), s)),
-      defense: { manual, labels: {}, willCurrent: null, baseMode: 'low', baseA: 'agi', baseB: 'per', note: '' },
+      defense: { manual, labels: {}, willCurrent: null, baseMode: 'low', baseA: 'agi', baseB: 'per', flatfootedGrade: 'none', contactGrade: 'none', note: '' },
       damageReductions: [],
       targetDefense: { values: targetValues, flatfooted: false, contact: false, flatfootedGrade: 'none', contactGrade: 'none' },
       health: { b: 0, l: 0, a: 0 },

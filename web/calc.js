@@ -97,7 +97,7 @@
       return Object.assign({}, item, { auto, manual: m, source, total: auto + m + source });
     });
     const byKey = Object.fromEntries(items.map(i => [i.key, i.total]));
-    const sum = items.reduce((s, i) => s + i.total, 0);
+    const sum = items.filter(i => !i.counter).reduce((s, i) => s + i.total, 0);
     return {
       items, byKey, sum, baseMode, baseA: baseInfo.baseA, baseB: baseInfo.baseB,
       scenarios: [
@@ -130,18 +130,22 @@
 
     const flat = !!(flags && flags.flatfooted);
     const contact = !!(flags && flags.contact);
+    const highSpeed = Math.max(0, num(attack.highSpeed) - Math.max(0, v.antiHighSpeed));
+    const armorPierce = Math.max(0, num(attack.armorPierce) - Math.max(0, v.antiArmorPierce));
+    const magicPierce = Math.max(0, num(attack.magicPierce) - Math.max(0, v.antiMagicPierce));
     if (flat) {
       ['base', 'dodge', 'insight', 'parry'].forEach(k => { v[k] = 0; });
     } else {
-      apply(attack.highSpeed, ['base', 'dodge', 'insight', 'parry']);
+      apply(highSpeed, ['base', 'dodge', 'insight', 'parry']);
     }
     if (contact) {
       ['natural', 'armor', 'shield'].forEach(k => { v[k] = 0; });
     } else {
-      apply(attack.armorPierce, ['shield', 'armor', 'natural']);
+      apply(armorPierce, ['shield', 'armor', 'natural']);
     }
-    apply(attack.magicPierce, ['unholy', 'sacred', 'deflection', 'force', 'other']);
-    const total = Object.values(v).reduce((s, x) => s + Math.max(0, x), 0);
+    apply(magicPierce, ['unholy', 'sacred', 'deflection', 'force', 'other']);
+    const counterKeys = new Set(D.DEFENSE_ITEMS.filter(d => d.counter).map(d => d.key));
+    const total = Object.entries(v).filter(([k]) => !counterKeys.has(k)).reduce((s, [, x]) => s + Math.max(0, x), 0);
     return { total, remaining: v, spent };
   }
 

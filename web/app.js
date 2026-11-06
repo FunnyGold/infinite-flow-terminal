@@ -134,6 +134,9 @@
     s.defense = Object.assign({}, base.defense, raw.defense || {});
     s.defense.manual = Object.assign({}, base.defense.manual, (raw.defense || {}).manual || {});
     s.defense.labels = Object.assign({}, base.defense.labels, (raw.defense || {}).labels || {});
+    const dGradeOk = g => D.EFFECT_GRADES.some(x => x.value === g);
+    s.defense.flatfootedGrade = dGradeOk(s.defense.flatfootedGrade) ? s.defense.flatfootedGrade : 'none';
+    s.defense.contactGrade = dGradeOk(s.defense.contactGrade) ? s.defense.contactGrade : 'none';
     s.defense.willCurrent = (raw.defense && raw.defense.willCurrent !== undefined) ? raw.defense.willCurrent : null;
     s.targetDefense = Object.assign({}, base.targetDefense, raw.targetDefense || {});
     s.targetDefense.values = Object.assign({}, base.targetDefense.values, (raw.targetDefense || {}).values || {});
@@ -384,11 +387,12 @@
         const data = JSON.parse(raw);
         if (Array.isArray(data.entries)) return {
           entries: data.entries,
-          combat: normalizeSTCombat(data.combat)
+          combat: normalizeSTCombat(data.combat),
+          notes: typeof data.notes === 'string' ? data.notes : ''
         };
       }
     } catch (e) { }
-    return { entries: [], combat: blankSTCombat() };
+    return { entries: [], combat: blankSTCombat(), notes: '' };
   }
 
   function saveSTTool() {
@@ -409,7 +413,8 @@
       willCurrent: c.health.willCurrent,
       healthMode: mode,
       b: c.health.b, l: c.health.l, a: c.health.a,
-      flatfootedGrade: 'none', contactGrade: 'none',
+      flatfootedGrade: (st.defense && st.defense.flatfootedGrade) || 'none',
+      contactGrade: (st.defense && st.defense.contactGrade) || 'none',
       defense: c.defense.scenarios.map(s => ({ key: s.key, name: s.name, value: s.value, note: s.note })),
       defenseValues: Object.fromEntries(D.DEFENSE_ITEMS.map(d => [d.key, c.defense.byKey[d.key] || 0])),
       defenseNote: (st.defense && st.defense.note) || '',
@@ -472,7 +477,10 @@
     if (!p) return [];
     return (C.compute(p.state).attacks || []).map(a => ({
       id: a.id, name: a.name, dp: a.dp, cap: a.cap,
-      extraSuccess: a.extraSuccess, attackCount: a.attackCount
+      extraSuccess: a.extraSuccess, attackCount: a.attackCount,
+      flatfootedGrade: a.flatfootedGrade, contactGrade: a.contactGrade,
+      highSpeed: a.highSpeed, armorPierce: a.armorPierce, magicPierce: a.magicPierce,
+      note: a.note || ''
     }));
   }
 
@@ -762,6 +770,47 @@
     });
   }
 
+  function openSTNotesFloat() {
+    if (document.getElementById('st-note-float')) return;
+    const box = document.createElement('div');
+    box.id = 'st-note-float';
+    box.className = 'st-note-float';
+    box.innerHTML = `<div class="st-note-float-head"><span>ST 笔记</span><button type="button" class="st-note-float-close" title="关闭">×</button></div><textarea class="st-note-float-text" placeholder="记录战斗、剧情、NPC、临时裁定…"></textarea>`;
+    document.body.appendChild(box);
+    const text = box.querySelector('.st-note-float-text');
+    const base = document.getElementById('st-notes');
+    text.value = stTool.notes || '';
+    const sync = () => {
+      stTool.notes = text.value;
+      if (base) base.value = text.value;
+      saveSTTool();
+    };
+    text.addEventListener('input', sync);
+    box.querySelector('.st-note-float-close').onclick = () => box.remove();
+    const head = box.querySelector('.st-note-float-head');
+    let drag = null;
+    head.addEventListener('mousedown', e => {
+      if (e.target.closest('button')) return;
+      drag = { x: e.clientX, y: e.clientY, left: box.offsetLeft, top: box.offsetTop };
+      e.preventDefault();
+    });
+    const move = e => {
+      if (!drag) return;
+      box.style.left = Math.max(0, drag.left + e.clientX - drag.x) + 'px';
+      box.style.top = Math.max(0, drag.top + e.clientY - drag.y) + 'px';
+    };
+    const up = () => { drag = null; };
+    document.addEventListener('mousemove', move);
+    document.addEventListener('mouseup', up);
+    box._cleanup = () => {
+      document.removeEventListener('mousemove', move);
+      document.removeEventListener('mouseup', up);
+    };
+    const oldRemove = box.remove.bind(box);
+    box.remove = () => { if (box._cleanup) box._cleanup(); oldRemove(); };
+    text.focus();
+  }
+
   function stHTML() {
     const entries = stTool.entries || [];
     return `
@@ -774,6 +823,10 @@
           <button class="btn small" data-action="st-clear">清空</button>
         </div></div>
         <div class="panel-body">${entries.length ? `<div class="st-grid">${entries.map(stCardHTML).join('')}</div>` : `<div class="empty st-empty"><b>还没有载入调查员</b>从本地角色卡中选择，或导入其他调查员的角色卡 JSON。调整只保存在 ST 工具中，不影响原卡。</div>`}</div>
+      </div>
+      <div class="panel mt18 st-notes-panel">
+        <div class="panel-head"><div class="panel-title">ST 笔记</div><div class="panel-head-right"><span class="panel-sub">双击文本框放大，浮窗可拖动 / 调整大小</span><button class="btn small" data-action="st-note-expand">放大</button></div></div>
+        <div class="panel-body"><textarea class="st-notes-input" id="st-notes" rows="4" placeholder="记录战斗、剧情、NPC、临时裁定…">${esc(stTool.notes || '')}</textarea></div>
       </div>
       ${stCombatHTML()}`;
   }
@@ -965,17 +1018,21 @@
     const attack = (stTool.combat.attacks || []).find(x => x.id === id);
     if (!entry || !source || !attack) return;
     attack.dp = C.num(source.dp);
+    attack.cap = C.num(source.cap);
+    attack.extra = C.num(source.extraSuccess);
+    attack.count = Math.max(1, C.num(source.attackCount) || 1);
+    attack.flatfootedGrade = source.flatfootedGrade || 'none';
+    attack.contactGrade = source.contactGrade || 'none';
+    attack.highSpeed = C.num(source.highSpeed);
+    attack.armorPierce = C.num(source.armorPierce);
+    attack.magicPierce = C.num(source.magicPierce);
+    if (source.note) attack.effect = source.note;
     if (!attack.name || /^攻击\s*\d+$/.test(attack.name)) attack.name = source.name || attack.name;
     attack.source = `${entry.name || '调查员'} · ${source.name || '攻击'} · 攻击检定`;
     saveSTTool();
-    const dpInput = document.querySelector(`[data-st-attack="${id}"][data-st-field="dp"]`);
-    if (dpInput) dpInput.value = fmt(attack.dp);
-    const nameInput = document.querySelector(`[data-st-attack="${id}"][data-st-field="name"]`);
-    if (nameInput) nameInput.value = attack.name || '';
-    const srcInput = document.querySelector(`[data-st-attack="${id}"][data-st-field="source"]`);
-    if (srcInput) srcInput.value = attack.source || '';
+    stRerenderPreserve();
     refreshSTCombatOutputs();
-    toast(`已读取 ${entry.name || '调查员'} 的攻击检定`);
+    toast(`已读取 ${entry.name || '调查员'} 的攻击预设`);
   }
 
   function loadProfileState() {
@@ -1064,10 +1121,20 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.103';
+  const APP_VERSION = 'V1.104';
   const UPDATES = [
     {
-      version: 'V1.103', date: '2026-11-03', title: '技能属性配色修复', current: true,
+      version: 'V1.104', date: '2026-11-06', title: '防御反制与 ST 攻击导入', current: true,
+      notes: [
+        '防御构成新增抵高速 / 抵破甲 / 抵破魔',
+        '防御构成新增措手不及 / 接触攻击 DCBAS 选择',
+        'ST 攻击可一次读取 DP、上限、附加、次数、措手不及、接触与高速/破甲/破魔',
+        'ST 攻击备注读取人物卡攻击预设的关键词',
+        'ST 新增可双击放大、拖动和调整大小的笔记'
+      ]
+    },
+    {
+      version: 'V1.103', date: '2026-11-03', title: '技能属性配色修复',
       notes: ['用更高优先级覆盖通用技能颜色', '心智/生理/互动颜色和字号现在实际生效']
     },
     {
@@ -2684,6 +2751,8 @@
             <label class="base-defense-field">属性 A${selectInput('defense.baseA', attrOptions, state.defense.baseA || 'agi', 'cell-input base-defense-select')}</label>
             <label class="base-defense-field">属性 B${selectInput('defense.baseB', attrOptions, state.defense.baseB || 'per', 'cell-input base-defense-select')}</label>
             <button class="flag-toggle ${state.defense.baseMode === 'high' ? 'on' : ''}" data-action="toggle-base-defense">取${state.defense.baseMode === 'high' ? '高' : '低'}</button>
+            <label class="base-defense-field">措手不及${selectInput('defense.flatfootedGrade', D.EFFECT_GRADES, state.defense.flatfootedGrade || 'none', 'cell-input base-defense-select')}</label>
+            <label class="base-defense-field">接触攻击${selectInput('defense.contactGrade', D.EFFECT_GRADES, state.defense.contactGrade || 'none', 'cell-input base-defense-select')}</label>
             <span class="base-defense-hint">当前 = ${esc(baseAName)} / ${esc(baseBName)} 取${state.defense.baseMode === 'high' ? '高' : '低'}；选同一属性即单属性防御。</span>
           </div>
           <div style="overflow-x:auto;">
@@ -2819,6 +2888,7 @@
     const parts = [];
     const labels = state.defense.labels || {};
     (c.defense.items || []).forEach(item => {
+      if (item.counter) return;
       const custom = (labels[item.key] || '').trim();
       if (item.key === 'base') {
         const a = c.attrs[state.defense.baseA] || { total: 0 };
@@ -5522,6 +5592,7 @@
         stRerenderPreserve();
         break;
       }
+      case 'st-note-expand': openSTNotesFloat(); break;
       case 'st-add-target': {
         const target = { id: 'stt_' + uid(), name: '目标 ' + (stTargets().length + 1), sourceId: '', values: Object.assign({}, stActiveTarget().values) };
         stTool.combat.targets.push(target);
@@ -5928,6 +5999,13 @@
       if (action) { handleAction(action.dataset.action, action); return; }
       const sectionHead = e.target.closest('[data-section-head]');
       if (sectionHead) toggleSection(sectionHead.dataset.sectionHead);
+    });
+
+    document.addEventListener('input', e => {
+      if (e.target && e.target.id === 'st-notes') { stTool.notes = e.target.value; saveSTTool(); return; }
+    });
+    document.addEventListener('dblclick', e => {
+      if (e.target && e.target.id === 'st-notes') openSTNotesFloat();
     });
 
     document.addEventListener('change', e => {
