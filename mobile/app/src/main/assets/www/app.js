@@ -1225,10 +1225,14 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.111';
+  const APP_VERSION = 'V1.112';
   const UPDATES = [
     {
-      version: 'V1.111', date: '2026-11-06', title: 'ST 点击抖动修复', current: true,
+      version: 'V1.112', date: '2026-11-06', title: '全站重绘降抖动', current: true,
+      notes: ['重绘保留滚动位置', '重绘恢复输入焦点']
+    },
+    {
+      version: 'V1.111', date: '2026-11-06', title: 'ST 点击抖动修复',
       notes: ['折叠/切目标不再整页重绘', '导航即时跳转']
     },
     {
@@ -2240,6 +2244,18 @@
   function renderView(name) {
     const mount = $('#view-' + name);
     if (!mount) return;
+    const main = $('#main');
+    const hadContent = mount.childElementCount > 0;
+    const keepScroll = hadContent && main ? main.scrollTop : 0;
+    const focused = document.activeElement;
+    const focusBind = focused && focused.getAttribute ? focused.getAttribute('data-bind') : '';
+    const focusId = focused && focused.id ? focused.id : '';
+    let selStart = null, selEnd = null;
+    try {
+      if (focused && (focused.tagName === 'INPUT' || focused.tagName === 'TEXTAREA')) {
+        selStart = focused.selectionStart; selEnd = focused.selectionEnd;
+      }
+    } catch (e) { }
     if (name === 'overview') mount.innerHTML = overviewHTML();
     else if (name === 'character') mount.innerHTML = characterHTML();
     else if (name === 'combat') mount.innerHTML = combatHTML();
@@ -2252,6 +2268,19 @@
     if (name === 'resources') refreshResources();
     if (name === 'ledger') refreshLedger();
     applyTextareaSizes();
+    if (hadContent && main) {
+      main.scrollTop = keepScroll;
+      requestAnimationFrame(() => { if (main) main.scrollTop = keepScroll; });
+    }
+    if (focusBind || focusId) {
+      const target = focusId ? document.getElementById(focusId) : document.querySelector(`[data-bind="${CSS.escape(focusBind)}"]`);
+      if (target) {
+        target.focus({ preventScroll: true });
+        if (selStart !== null) {
+          try { target.setSelectionRange(selStart, selEnd); } catch (e) { }
+        }
+      }
+    }
   }
 
   function stateChanged(opts) {
