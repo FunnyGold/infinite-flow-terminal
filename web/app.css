@@ -2616,3 +2616,7 @@ html[data-theme="light"] .st-insp-name { background: #fff; border-color: rgba(86
 .equip-item textarea::placeholder, .equip-item input::placeholder { font-size: 11px; }
 @media (max-width: 1500px) { .equip-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 900px) { .equip-grid { grid-template-columns: 1fr; } }
+/* ---- 装备位卡片随内容撑高（V1.152） ---- */
+.equip-item { display: flex; flex-direction: column; }
+.equip-item input { flex: 0 0 auto; }
+.equip-item textarea { flex: 1 1 auto; resize: none; overflow: hidden; }

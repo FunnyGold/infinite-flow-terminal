@@ -1315,10 +1315,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.151';
+  const APP_VERSION = 'V1.152';
   const UPDATES = [
     {
-      version: 'V1.151', date: '2026-11-07', title: '装备位放大与双击编辑', current: true,
+      version: 'V1.152', date: '2026-11-07', title: '装备效果框随内容撑高', current: true,
+      notes: [
+        '装备位的效果框按内容自动撑高，长效果不再被裁掉',
+        '同一行内的卡片自动等高，版面不会高低犬牙',
+        '编辑时实时跟着长高；双击仍可放大编辑'
+      ]
+    },
+    {
+      version: 'V1.151', date: '2026-11-07', title: '装备位放大与双击编辑',
       notes: [
         '装备位改为三列，卡片更宽；槽位名与输入框字号从 11px 提到 12px',
         '效果框最小高度从 38px 提到 72px，能多看到几行',
@@ -2871,9 +2879,17 @@
     const view = $('#view-' + activeView) || document;
     $$('textarea', view).forEach((el, i) => {
       if (!el.dataset.resizeKey) el.dataset.resizeKey = el.dataset.bind || ('ta_' + i);
+      if (el.closest('.equip-item')) { autoGrowTextarea(el); return; }
       const h = Number(sizes[el.dataset.resizeKey]);
-      if (Number.isFinite(h) && h >= 24) el.style.height = h + 'px';
+      if (Number.isFinite(h) && h >= 24) { el.style.height = h + 'px'; return; }
     });
+  }
+
+  function autoGrowTextarea(el) {
+    if (!el || !el.offsetParent) return;
+    if (Number(el.dataset.manualHeight)) return;
+    el.style.height = 'auto';
+    el.style.height = Math.max(72, el.scrollHeight + 2) + 'px';
   }
 
   function saveTextareaSize(el) {
@@ -2913,7 +2929,7 @@
     else if (name === 'ledger') mount.innerHTML = ledgerHTML();
     else if (name === 'st') mount.innerHTML = stHTML();
     if (name === 'overview') refreshOverview();
-    if (name === 'character') { applySkillFilter(); refreshCharacter(); }
+    if (name === 'character') { applySkillFilter(); refreshCharacter(); requestAnimationFrame(() => applyTextareaSizes()); setTimeout(() => applyTextareaSizes(), 120); }
     if (name === 'combat') refreshCombat();
     if (name === 'resources') refreshResources();
     if (name === 'ledger') refreshLedger();
@@ -4800,6 +4816,7 @@
     }
     if (collapsed) ui.collapsedSections.add(key);
     else ui.collapsedSections.delete(key);
+    if (!collapsed) { requestAnimationFrame(() => applyTextareaSizes()); setTimeout(() => applyTextareaSizes(), 120); }
   }
 
 function toggleAllToc() {
@@ -6848,6 +6865,7 @@ function toggleAllToc() {
         return;
       }
       if (!el.matches('[data-bind]')) return;
+        if (el.tagName === 'TEXTAREA' && el.closest('.equip-item')) autoGrowTextarea(el);
       const bind = el.dataset.bind;
       let val;
       if (el.type === 'number') val = el.value === '' ? 0 : Number(el.value);
@@ -6900,7 +6918,7 @@ function toggleAllToc() {
       const hit = e.target && e.target.closest ? e.target.closest('textarea') : null;
       const ta = hit && hit.dataset.resizeKey ? hit
         : (document.activeElement && document.activeElement.matches && document.activeElement.matches('textarea[data-resize-key]') ? document.activeElement : null);
-      if (ta) window.setTimeout(() => saveTextareaSize(ta), 0);
+      if (ta && !ta.closest('.equip-item')) window.setTimeout(() => saveTextareaSize(ta), 0);
     });
 
     document.addEventListener('dblclick', e => {
