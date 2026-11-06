@@ -2647,3 +2647,6 @@ textarea.trait-effect, textarea.feat-effect,
 .res-main textarea, .tech-row textarea,
 textarea[data-auto-grow] { resize: none; overflow: hidden; }
 textarea[data-expand] { cursor: text; }
+/* ---- 清空面板按钮（V1.157） ---- */
+.btn.danger-ghost { border-color: rgba(208,94,94,.35); color: var(--red); }
+.btn.danger-ghost:hover { border-color: rgba(208,94,94,.65); background: rgba(208,94,94,.12); color: #ffb0aa; }

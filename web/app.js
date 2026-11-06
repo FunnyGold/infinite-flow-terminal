@@ -1009,7 +1009,7 @@
           <button class="btn small gold" data-action="st-picker">${ic('users')} 选择角色卡</button>
           <button class="btn small" data-action="st-import">${ic('upload')} 导入 JSON</button>
           <button class="btn small" data-action="st-refresh">${ic('refresh')} 刷新快照</button>
-          <button class="btn small" data-action="st-clear">清空</button>
+          <button class="btn small danger-ghost" data-action="st-clear" title="移除全部调查员并重置战斗面板，不影响角色卡">清空面板</button>
         </div>`)}
       <div class="panel" id="st-section-characters">
         <div class="panel-head"><div class="panel-title">调查员<span class="st-count">${entries.length} / 存活 ${entries.filter(e => stStatus(e) !== '死亡').length}</span></div><div class="panel-head-right"><span class="panel-sub">点击一行设为攻击来源</span></div></div>
@@ -1326,10 +1326,17 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.156';
+  const APP_VERSION = 'V1.157';
   const UPDATES = [
     {
-      version: 'V1.156', date: '2026-11-07', title: '目标增删与账本排序改为局部刷新', current: true,
+      version: 'V1.157', date: '2026-11-07', title: '「清空面板」改名与空状态引导', current: true,
+      notes: [
+        'ST 顶栏的「清空」改为「清空面板」并标成危险色，和检视栏的「清空防御」区分开',
+        '能量池为空时给出引导文字，而不是只有一句「尚未建立」'
+      ]
+    },
+    {
+      version: 'V1.156', date: '2026-11-07', title: '目标增删与账本排序改为局部刷新',
       notes: [
         '新增 / 删除目标只刷新目标卡、检视栏与攻击列表，不再整页重绘',
         '账本拖动排序只重建两张表，余额与页面结构原地不动',
@@ -3065,7 +3072,7 @@
       <div class="energy-item">
         <div class="energy-line"><span class="energy-name">${p.kind === 'gauge' ? '刻度 · ' : ''}${esc(p.name || '未命名')}</span><span class="energy-val">${fmt(p.current)} / ${fmt(p.max)}</span></div>
         <div class="energy-bar"><i style="width:${p.pct}%"></i></div>
-      </div>`).join('') : '<div class="empty" style="padding:14px 10px;font-size:9px;">尚未建立能量池 / 刻度</div>';
+      </div>`).join('') : '<div class="empty" style="padding:16px 12px;font-size:11px;"><b>还没有能量池 / 刻度</b>点上方「新增能量池」建立，用于记录意志、法力一类可消耗的资源。</div>';
 
     const skills = c.topSkills.length ? `<table class="skill-mini">
       <thead><tr><th>技能</th><th>类别</th><th>检定 DP</th></tr></thead>
