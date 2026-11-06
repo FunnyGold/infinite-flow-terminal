@@ -710,8 +710,7 @@
         <div class="panel-head">
           <div class="panel-title">战斗<span class="st-count">${stTargets().length} 目标 · ${(combat.attacks || []).length} 攻击</span></div>
           <div class="panel-head-right">
-            <button class="btn small gold" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
-            <button class="btn small" data-action="st-clear-defense">清空防御</button>
+            <span class="panel-sub">点目标卡切换检视对象</span>
           </div>
         </div>
         <div class="panel-body">
@@ -721,12 +720,13 @@
               <div class="st-atk-head">
                 <span class="st-atk-title">攻击</span>
                 <span class="st-count">${(combat.attacks || []).length} 条</span>
+                <button class="btn small gold st-atk-add" data-action="st-add-attack">${ic('plus')} 新增攻击</button>
               </div>
               <div class="st-atk-body">
                 ${attacks ? `<div class="st-attack-wrap"><table class="st-attack-table">
                   <thead><tr><th>目标</th><th>攻击名</th><th>总DP</th><th>最终DP</th><th>期望伤害</th><th></th></tr></thead>
                   <tbody>${attacks}</tbody>
-                </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点右上角“新增攻击”，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
+                </table></div>` : `<div class="empty"><b>还没有 ST 攻击预设</b>点攻击区右上角「新增攻击」，填入 ST 自己计算好的总 DP、伤害上限与来源。</div>`}
                 <div class="matrix-wrap-note">期望伤害 = min(max(最终DP, 0) ÷ 3 + 附加, 伤害上限) × 次数；最终DP = 总DP − 目标有效防御。展开攻击行可用「读取攻击检定」从角色卡导入完整预设。</div>
               </div>
             </div>
@@ -772,7 +772,7 @@
           </select>
         </label>
         <button class="btn small" data-action="st-load-defense" title="按来源重新读取防御">${ic('refresh')}</button>
-        <button class="btn small" data-action="st-clear-defense">清空</button>
+        <button class="btn small" data-action="st-clear-defense" title="把这个目标的防御值全部清零">清空防御</button>
       </div>
       <div class="st-insp-body">
         ${groupsHTML}
@@ -1289,10 +1289,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.143';
+  const APP_VERSION = 'V1.144';
   const UPDATES = [
     {
-      version: 'V1.143', date: '2026-11-06', title: '手机版同步与窄屏修复', current: true,
+      version: 'V1.144', date: '2026-11-06', title: '按钮归位：新增攻击与清空防御', current: true,
+      notes: [
+        '新增攻击移入攻击区标题栏右侧，由攻击区自己管理',
+        '清空防御移入右侧检视栏，只清当前目标的防御',
+        '战斗面板头部改为提示文字，不再堆按钮'
+      ]
+    },
+    {
+      version: 'V1.143', date: '2026-11-06', title: '手机版同步与窄屏修复',
       notes: [
         '手机版同步桌面版的字号、配色与间距体系',
         '修复手机版 ST 页横向溢出：原先右侧攻击面板被挤出屏幕，标题竖排',
