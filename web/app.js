@@ -705,7 +705,7 @@
             <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
             <label>攻击·接触<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="contactGrade">${contactGrades}</select></label>
             <label class="st-attack-source-field">加成来源<input class="cell-input st-attack-source" data-st-attack="${id}" data-st-field="source" value="${esc(a.source || '')}" placeholder="加值来源 / 备注"></label>
-            <label class="st-attack-import">读取攻击检定<select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
+            <label class="st-attack-import${a.dp ? '' : ' is-empty'}"><span class="st-attack-import-label">${ic('download')}读取攻击检定</span><select class="cell-input" data-st-import-attack="${id}" title="从已载入的调查员读取攻击预设的总 DP">${importOptions}</select></label>
           </div>
           <label class="st-attack-effect-field">攻击后效果 / 备注<textarea class="cell-input" rows="3" data-st-attack="${id}" data-st-field="effect" placeholder="攻击命中后的状态、持续效果、消耗、特殊说明…">${esc(a.effect || '')}</textarea></label>
         </div>
@@ -1315,10 +1315,17 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.152';
+  const APP_VERSION = 'V1.153';
   const UPDATES = [
     {
-      version: 'V1.152', date: '2026-11-07', title: '装备效果框随内容撑高', current: true,
+      version: 'V1.153', date: '2026-11-07', title: '读取攻击检定更醒目', current: true,
+      notes: [
+        '「读取攻击检定」改为金色标签配下载图标，和普通输入框区分开',
+        '下拉框描金边、淡金底；总DP 还是 0 时边框更亮，提示这里还没读入'
+      ]
+    },
+    {
+      version: 'V1.152', date: '2026-11-07', title: '装备效果框随内容撑高',
       notes: [
         '装备位的效果框按内容自动撑高，长效果不再被裁掉',
         '同一行内的卡片自动等高，版面不会高低犬牙',
