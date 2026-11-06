@@ -502,7 +502,7 @@ html[data-theme="light"] .hero-identity-compact { color: #87622b; border-color: 
   position: absolute; right: 7px; top: 7px; z-index: 2;
   width: 18px; height: 18px; border-radius: 50%;
   border: 1px solid rgba(201,168,110,.28); background: rgba(12,14,18,.55);
-  color: #b99a67; font: 10px/1 var(--mono); cursor: pointer;
+  color: #b99a67; font: 10px/1 var(--mono); font-size: 9px !important; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .stat-help:hover { color: #f0d39c; border-color: rgba(201,168,110,.6); background: rgba(201,168,110,.12); }
@@ -1061,7 +1061,7 @@ html[data-theme="light"] .skill-table .skill-major-input::placeholder { color: #
 .pool-field > span:first-child { font-size: 8.5px; color: #a79b86; letter-spacing: .04em; }
 .pool-field > span:first-child::before { content: ""; display: inline-block; width: 4px; height: 4px; margin-right: 5px; border-radius: 50%; background: rgba(201,168,110,.6); vertical-align: 1px; }
 .pool-field input, .pool-field textarea {
-  width: 100%; height: 29px; padding: 5px 7px; border-radius: 5px;
+  width: 100%; height: auto; min-height: 29px; padding: 5px 7px; border-radius: 5px;
   border: 1px solid rgba(255,255,255,.13); background: rgba(0,0,0,.28);
   color: #e0d5c2; font-size: 11px;
 }
@@ -1246,7 +1246,7 @@ html[data-theme="light"] .book-collapse-btn { color: #80653c; border-color: rgba
 .toc-node { user-select: none; }
 .toc-row { display: flex; align-items: flex-start; gap: 4px; min-height: 27px; border-radius: 5px; padding: 4px 5px; }
 .toc-row:hover { background: rgba(255,255,255,.045); }
-.toc-caret { width: 14px; height: 14px; flex: 0 0 14px; display: flex; align-items: center; justify-content: center; color: #8c8377; font: 600 11px/1 var(--mono); margin-top: 2px; transition: color .15s; }
+.toc-caret { width: 1.3em; height: 1.3em; min-width: 14px; min-height: 14px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: #8c8377; font: 600 11px/1 var(--mono); margin-top: 2px; transition: color .15s; }
 .toc-caret:hover { color: var(--gold); }
 .toc-caret.open { color: var(--gold); }
 .toc-caret.leaf { visibility: hidden; }
@@ -2365,7 +2365,7 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-attack-detail-delete { align-self:flex-end; margin-top:4px; }
 html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack-table th:last-child { background:#fbf7ef; }
 .st-attack-actions { display:flex; align-items:center; gap:4px; white-space:nowrap; }
-.st-attack-row-btn { height:22px; border-radius:4px; font:9px var(--sans); cursor:pointer; padding:0 6px; }
+.st-attack-row-btn { height:auto; min-height:26px; border-radius:4px; font:9px var(--sans); cursor:pointer; padding:0 7px; }
 .st-attack-row-btn.expand { border:1px solid rgba(201,168,110,.42); background:rgba(201,168,110,.10); color:#e0c07c; min-width:24px; font-size:14px; line-height:18px; }
 .st-attack-row-btn.expand:hover { background:rgba(201,168,110,.20); color:#f3d99d; }
 .st-attack-row-btn.delete { border:1px solid rgba(208,94,94,.42); background:rgba(208,94,94,.09); color:#e38b86; }
@@ -2486,24 +2486,27 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
 
 /* ---- 目标防御弹出层 ---- */
 .st-dlg { display: flex; flex-direction: column; gap: 12px; }
+.st-dlg-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: -8px -4px 2px; padding: 2px 4px 6px; border-bottom: 1px solid var(--line); color: var(--dim); font-size: 10px; letter-spacing: 1.4px; cursor: move; user-select: none; touch-action: none; }
+.st-dlg-x { border: 0; background: transparent; color: var(--dim); font-size: 15px; line-height: 1.35; cursor: pointer; padding: 0 2px; }
+.st-dlg-x:hover { color: var(--text); }
 .st-dlg-head { display: flex; align-items: center; gap: 10px; }
 .st-dlg-name { flex: 1; height: 32px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel-2); padding: 0 10px; font-size: 14px; color: var(--text); min-width: 0; }
 .st-dlg-name:focus { outline: none; border-color: var(--gold); }
 .st-dlg-src { color: var(--dim); font-size: 10px; white-space: nowrap; }
 .st-dlg-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .st-dlg-tools label { display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: 10px; flex: 0 0 auto; }
-.st-dlg-tools select.cell-input { width: 190px; height: 26px; flex: none; }
+.st-dlg-tools select.cell-input { width: 190px; height: auto; padding: 4px 24px 4px 9px; flex: none; }
 .st-def-groups { display: flex; flex-direction: column; gap: 11px; max-height: 52vh; overflow: auto; padding-right: 2px; }
 .st-def-grp h4 { font-size: 9.5px; font-weight: 400; color: var(--faint); letter-spacing: 1px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
 .st-def-grp h4::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .st-def-grp .st-def-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 5px 10px; }
 .st-def-grp .st-def { padding: 3px 8px; border-radius: 5px; background: var(--panel-2); }
 .st-def-grp .st-def em { font-size: 10.5px; color: var(--note-soft); }
-.st-def-grp .st-def .cell-input { width: 54px; height: 24px; font-size: 11px; }
+.st-def-grp .st-def .cell-input { width: 54px; height: 24px; padding: 0 4px; font-size: 11px; }
 .st-dlg-foot { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .st-dlg-grades { display: flex; gap: 10px; }
 .st-dlg-grades label { display: flex; align-items: center; gap: 6px; color: var(--dim); font-size: 10px; flex: 0 0 auto; }
-.st-dlg-grades select.cell-input { width: 92px; height: 26px; flex: none; }
+.st-dlg-grades select.cell-input { width: 92px; height: auto; padding: 4px 22px 4px 9px; flex: none; }
 .st-dlg-total { margin-left: auto; display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line-strong); background: var(--gold-soft); }
 .st-dlg-total span { color: var(--dim); font-size: 10px; letter-spacing: .8px; }
 .st-dlg-total b { font: 17px var(--mono); color: var(--gold); }

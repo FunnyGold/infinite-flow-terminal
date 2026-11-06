@@ -776,6 +776,7 @@
         }).join('')}</div>
       </section>`).join('');
     return `<div class="st-dlg" data-st-dlg>
+      <div class="st-dlg-bar"><span>目标防御</span><button type="button" class="st-dlg-x" data-modal="close" title="关闭">×</button></div>
       <div class="st-dlg-head">
         <input class="st-dlg-name" data-st-target-name="${esc(t.id)}" value="${esc(t.name || '')}" placeholder="目标名称">
         <span class="st-dlg-src" data-st-dlg-src>${entry ? esc(entry.name || '调查员') : '手动防御'}</span>
@@ -810,7 +811,14 @@
     const card = $('#modal-card');
     if (!layer) return;
     layer.hidden = true;
-    if (card) card.style.width = '';
+    if (card) {
+      card.style.width = '';
+      card.style.position = '';
+      card.style.left = '';
+      card.style.top = '';
+      card.style.right = '';
+      card.style.margin = '';
+    }
     window.__modalClose = null;
   }
 
@@ -818,10 +826,11 @@
     const card = $('#modal-card');
     const layer = $('#modal-layer');
     if (!card || !layer) return;
-    const done = card.querySelector('[data-modal="close"]');
-    if (done) done.onclick = stCloseTargetDialog;
-    layer.onclick = e => { if (e.target === layer) stCloseTargetDialog(); };
+    card.querySelectorAll('[data-modal="close"]').forEach(btn => { btn.onclick = stCloseTargetDialog; });
+    layer.onpointerdown = e => { layer.dataset.downOnLayer = (e.target === layer) ? '1' : '0'; };
+    layer.onclick = e => { if (e.target === layer && layer.dataset.downOnLayer === '1') stCloseTargetDialog(); };
     window.__modalClose = stCloseTargetDialog;
+    if (typeof setupAttackWindowDrag === 'function') setupAttackWindowDrag(card, 'stTargetDlgPos', '.st-dlg-bar');
   }
 
   function stRefreshTargetDialog() {
@@ -1306,10 +1315,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.127';
+  const APP_VERSION = 'V1.128';
   const UPDATES = [
     {
-      version: 'V1.127', date: '2026-11-06', title: 'ST 工具整页重排', current: true,
+      version: 'V1.128', date: '2026-11-06', title: '弹层可拖动与字体缩放裁字修复', current: true,
+      notes: [
+        'ST 目标防御弹层可以拖动，位置会记住',
+        '弹层加标题栏与关闭按钮，Esc / 点背景照旧关闭',
+        '修复字体缩放后下拉框文字只剩上半截',
+        '能量池输入、规则书目录箭头、攻击行按钮不再被截断'
+      ]
+    },
+    {
+      version: 'V1.127', date: '2026-11-06', title: 'ST 工具整页重排',
       notes: [
         '调查员改为一行一人：头像、生命条、意志、状态和 ±5 / ±1 同排常驻',
         '生命口径与伤害 B / L / A 收进每行的展开区',
