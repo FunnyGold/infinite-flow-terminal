@@ -331,7 +331,7 @@ html[data-theme="light"] .display-row output { color: #4d4131; }
 .btn svg { width: 13px; height: 13px; }
 .btn:hover { color: var(--text); background: rgba(255,255,255,.065); border-color: rgba(255,255,255,.15); }
 .btn:active { transform: translateY(1px); }
-.btn.danger { color: #d98b86; border-color: rgba(208,94,94,.34); background: rgba(208,94,94,.09); }
+.btn.danger { color: var(--red); border-color: rgba(208,94,94,.34); background: rgba(208,94,94,.09); }
 .btn.danger:hover { color: #ffb3ac; border-color: rgba(208,94,94,.6); background: rgba(208,94,94,.18); }
 .btn.primary { border-color: rgba(184,73,78,.4); background: linear-gradient(180deg, rgba(184,73,78,.24), rgba(184,73,78,.13)); color: #e6b6af; }
 .btn.primary:hover { background: rgba(184,73,78,.3); border-color: rgba(215,106,98,.5); }
@@ -339,7 +339,7 @@ html[data-theme="light"] .display-row output { color: #4d4131; }
 .btn.gold:hover { background: rgba(201,168,110,.18); }
 .btn.small { height: 27px; padding: 0 9px; font-size: 10px; border-radius: 6px; }
 .btn.icon { width: 31px; padding: 0; }
-.btn.danger:hover { color: #e38b86; border-color: rgba(208,94,94,.4); background: rgba(208,94,94,.1); }
+.btn.danger:hover { color: var(--red); border-color: rgba(208,94,94,.4); background: rgba(208,94,94,.1); }
 .btn:disabled { opacity: .38; cursor: not-allowed; }
 
 .panel {
@@ -813,7 +813,7 @@ html[data-theme="light"] .base-defense-title { color: #43382b; }
 .st-toolbar { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
 .st-avatar { width: 36px; height: 36px; flex: 0 0 36px; border-radius: 50%; overflow: hidden; display: flex; align-items: center; justify-content: center; border: 1px solid rgba(201,168,110,.3); background: rgba(201,168,110,.08); color: var(--gold); font-size: 15px; }
 .st-avatar img { width: 100%; height: 100%; object-fit: cover; }
-.st-status { padding: 3px 6px; border-radius: 4px; font-size: 10px; background: rgba(124,164,123,.12); color: #93b78f; }
+.st-status { padding: 3px 6px; border-radius: 4px; font-size: 10px; background: rgba(124,164,123,.12); color: var(--ok); }
 .st-status.down { background: rgba(173,113,52,.14); color: #c79a62; }
 .st-status.dead { background: rgba(180,64,62,.14); color: #d1827e; }
 .st-status.muted { background: rgba(255,255,255,.05); color: var(--note); }
@@ -826,7 +826,7 @@ html[data-theme="light"] .base-defense-title { color: #43382b; }
 .st-will .st-health-formula { margin-left: auto; color: #8b7c66; font-size: 10px; letter-spacing: .2px; }
 .st-mode-switch { display: flex; gap: 3px; margin-left: auto; margin-right: 4px; }
 .st-mode-switch button { padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; background: transparent; color: var(--note); font-size: 10px; cursor: pointer; }
-.st-mode-switch button.active { border-color: rgba(201,168,110,.55); background: rgba(201,168,110,.12); color: #e2c68f; }
+.st-mode-switch button.active { border-color: rgba(201,168,110,.55); background: rgba(201,168,110,.12); color: var(--gold); }
 .st-empty { line-height: 1.9; }
 .st-combat-hint { margin-left: auto; color: var(--note); font-size: 10px; }
 .st-target-grid .target-field input { width: 100%; text-align: center; }
@@ -851,7 +851,7 @@ html[data-theme="light"] .base-defense-title { color: #43382b; }
 .st-attack-source { width: 100%; min-width: 0; font-size: 10px; }
 .st-attack-result { text-align: center; font-family: var(--mono); font-size: 12px; color: var(--note-strong); white-space: nowrap; }
 .st-attack-final { color: var(--gold); font-size: 13px; }
-.st-attack-damage { color: #e8c47e; font-size: 13px; }
+.st-attack-damage { color: var(--num); font-size: 13px; }
 .st-attack-detail td { padding: 0 4px 9px; border-bottom: 1px solid rgba(255,255,255,.045); }
 .st-attack-detail-fields { display: grid; grid-template-columns: 80px 80px 80px 180px minmax(150px, 1fr); gap: 8px; align-items: end; }
 .st-attack-detail-fields > label { display: flex; flex-direction: column; gap: 3px; color: var(--note); font-size: 10px; }
@@ -2371,7 +2371,7 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 .st-target-card-controls .st-target-grade { font-size: 10px; gap:3px; }
 .st-battle-layout .panel { margin-top:0; }
 .st-battle-targets .st-combat-hint { margin-left:0; width:100%; }
-.st-attack-calc-line { font: 10px var(--mono); color:#a9987c; padding:5px 0 7px; border-bottom:1px dashed rgba(255,255,255,.06); margin-bottom:7px; }
+.st-attack-calc-line { font: 10px var(--mono); color:var(--dim); padding:5px 0 7px; border-bottom:1px dashed rgba(255,255,255,.06); margin-bottom:7px; }
 @media (max-width:1450px) { .st-battle-layout { grid-template-columns:1fr; } .st-battle-targets .st-target-cards { flex-direction:row; overflow-x:auto; } .st-battle-targets .st-target-card { width:auto; } .st-battle-targets .st-target-grid { grid-template-columns:repeat(7,minmax(0,1fr)); } }
 .st-attack-table th:last-child { min-width:62px; }
 .st-attack-actions { position:sticky; right:0; z-index:2; background:#171a1f; }
@@ -2380,11 +2380,11 @@ html[data-theme="light"] .attack-table .atk-success { color: #2f5f9e; }
 html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack-table th:last-child { background:#fbf7ef; }
 .st-attack-actions { display:flex; align-items:center; gap:4px; white-space:nowrap; }
 .st-attack-row-btn { height:auto; min-height:26px; border-radius:4px; font: 10px var(--sans); cursor:pointer; padding:0 7px; }
-.st-attack-row-btn.expand { border:1px solid rgba(201,168,110,.42); background:rgba(201,168,110,.10); color:#e0c07c; min-width:24px; font-size: 15px; line-height:18px; }
+.st-attack-row-btn.expand { border:1px solid rgba(201,168,110,.42); background:rgba(201,168,110,.10); color:var(--gold); min-width:24px; font-size: 15px; line-height:18px; }
 .st-attack-row-btn.expand:hover { background:rgba(201,168,110,.20); color:#f3d99d; }
-.st-attack-row-btn.delete { border:1px solid rgba(208,94,94,.42); background:rgba(208,94,94,.09); color:#e38b86; }
+.st-attack-row-btn.delete { border:1px solid rgba(208,94,94,.42); background:rgba(208,94,94,.09); color:var(--red); }
 .st-attack-row-btn.delete:hover { background:rgba(208,94,94,.18); color:#ffb0aa; }
-.st-attack-detail-delete { color:#e38b86 !important; border-color:rgba(208,94,94,.45) !important; background:rgba(208,94,94,.09) !important; }
+.st-attack-detail-delete { color:var(--red) !important; border-color:rgba(208,94,94,.45) !important; background:rgba(208,94,94,.09) !important; }
 .st-attack-detail-delete:hover { background:rgba(208,94,94,.18) !important; }
 .st-attack-table th:last-child { min-width:92px; }
 .st-attack-table th:nth-child(1) { width:15%; }
@@ -2413,7 +2413,7 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
 .st-attack-detail-fields { flex-wrap:wrap; }
 .st-attack-detail-fields { display:flex; flex-direction:column; gap:8px; }
 .st-attack-detail-grid { display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:6px 10px; }
-.st-attack-detail-grid label, .st-attack-detail-row label { display:flex; flex-direction:column; gap:3px; font-size: 10px; color:#8b8172; }
+.st-attack-detail-grid label, .st-attack-detail-row label { display:flex; flex-direction:column; gap:3px; font-size: 10px; color:var(--dim); }
 .st-attack-detail-grid input { height:26px; padding:2px 5px; }
 .st-attack-detail-row { display:flex; align-items:flex-end; gap:8px; flex-wrap:wrap; }
 .st-attack-detail-row > label:not(.st-attack-source-field):not(.st-attack-import) { flex:0 0 96px; }
@@ -2422,7 +2422,7 @@ html[data-theme="light"] .st-attack-actions, html[data-theme="light"] .st-attack
 .st-attack-source-field input { height:26px; }
 .st-attack-import { flex:0 0 190px; }
 .st-attack-import select { width:100%; height:26px; padding:2px 5px; font-size: 10px; }
-.st-attack-effect-field { width:100%; font-size: 10px; color:#8b8172; }
+.st-attack-effect-field { width:100%; font-size: 10px; color:var(--dim); }
 .st-attack-effect-field textarea { width:100%; min-height:82px; resize:vertical; margin-top:3px; }
 .st-attack-detail-actions { display:flex; justify-content:flex-end; }
 .st-notes-input { min-height:170px; }

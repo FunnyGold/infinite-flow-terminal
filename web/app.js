@@ -1291,10 +1291,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.136';
+  const APP_VERSION = 'V1.137';
   const UPDATES = [
     {
-      version: 'V1.136', date: '2026-11-06', title: '规则书页配色收敛', current: true,
+      version: 'V1.137', date: '2026-11-06', title: 'ST 页配色复查与全站收尾', current: true,
+      notes: [
+        'ST 页文字色从 16 种收到 11 种，全部是语义变量',
+        '删除类按钮统一到危险红，状态绿、伤害数值金也归到变量',
+        '七个页面全部完成配色收敛'
+      ]
+    },
+    {
+      version: 'V1.136', date: '2026-11-06', title: '规则书页配色收敛',
       notes: [
         '规则书页文字色从 15 种收到 8 种，其中 6 种是语义变量',
         '目录树文字、书名、展开箭头统一到四级文字色',
