@@ -700,7 +700,7 @@
             <label>次数<input class="cell-input" type="number" min="1" data-st-attack="${id}" data-st-field="count" value="${esc(C.num(a.count))}"></label>
             <label>高速<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="highSpeed" value="${esc(C.num(a.highSpeed))}" title="高速：按顺序削减基础 / 闪避 / 洞察 / 格挡"></label>
             <label>破甲<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="armorPierce" value="${esc(C.num(a.armorPierce))}" title="破甲：按顺序削减盾牌 / 盔甲 / 天生防御"></label>
-            <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场 / 其他"></label>
+            <label>破魔<input class="cell-input" type="number" data-st-attack="${id}" data-st-field="magicPierce" value="${esc(C.num(a.magicPierce))}" title="破魔：按顺序削减亵渎 / 神圣 / 偏斜 / 力场（士气与其他加值不受影响）"></label>
           </div>
           <div class="st-attack-detail-row">
             <label>攻击·措手<select class="cell-input st-attack-select" data-st-attack="${id}" data-st-field="flatfootedGrade">${grades}</select></label>
@@ -776,7 +776,8 @@
     const groups = [
       ['基础 · 可被高速削减', ['base', 'dodge', 'insight', 'parry']],
       ['装备与天生 · 可被破甲削减', ['shield', 'armor', 'natural']],
-      ['加值 · 可被破魔削减', ['deflection', 'force', 'sacred', 'unholy', 'morale', 'other']],
+      ['加值 · 可被破魔削减', ['deflection', 'force', 'sacred', 'unholy']],
+      ['其他加值 · 不参与削减', ['morale', 'other']],
       ['抗性 · 抵消削减', ['antiHighSpeed', 'antiArmorPierce', 'antiMagicPierce']]
     ];
     const groupsHTML = groups.map(([cap, keys]) => `<section class="st-def-grp">
@@ -1326,10 +1327,18 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.157';
+  const APP_VERSION = 'V1.158';
   const UPDATES = [
     {
-      version: 'V1.157', date: '2026-11-07', title: '「清空面板」改名与空状态引导', current: true,
+      version: 'V1.158', date: '2026-11-15', title: '破魔不再削减士气与其他加值', current: true,
+      notes: [
+        '破魔只削减亵渎 / 神圣 / 偏斜 / 力场，顺序不变',
+        '士气与其他（招式、速度等加值）移到「其他加值 · 不参与削减」分组',
+        '此前界面把这两项列在破魔组里，与实际计算不符'
+      ]
+    },
+    {
+      version: 'V1.157', date: '2026-11-07', title: '「清空面板」改名与空状态引导',
       notes: [
         'ST 顶栏的「清空」改为「清空面板」并标成危险色，和检视栏的「清空防御」区分开',
         '能量池为空时给出引导文字，而不是只有一句「尚未建立」'

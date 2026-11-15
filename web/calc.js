@@ -143,7 +143,7 @@
     } else {
       apply(armorPierce, ['shield', 'armor', 'natural']);
     }
-    apply(magicPierce, ['unholy', 'sacred', 'deflection', 'force', 'other']);
+    apply(magicPierce, ['unholy', 'sacred', 'deflection', 'force']);
     const counterKeys = new Set(D.DEFENSE_ITEMS.filter(d => d.counter).map(d => d.key));
     const total = Object.entries(v).filter(([k]) => !counterKeys.has(k)).reduce((s, [, x]) => s + Math.max(0, x), 0);
     return { total, remaining: v, spent };
