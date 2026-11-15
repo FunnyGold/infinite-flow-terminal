@@ -773,12 +773,16 @@
     const selected = entries.some(e => e.id === t.sourceId) ? t.sourceId : '';
     const entry = entries.find(e => e.id === t.sourceId);
     const gradeSelect = (field, value) => `<select class="cell-input" data-st-target-grade="${field}" data-target-id="${esc(t.id)}">${D.EFFECT_GRADES.map(g => `<option value="${g.value}" ${g.value === (value || 'none') ? 'selected' : ''}>${g.label}</option>`).join('')}</select>`;
+    const pierceKeys = (kind, byRank) => D.DEFENSE_ITEMS
+      .filter(d => d.pierce === kind)
+      .sort((a, b) => byRank ? (a.pierceRank || 0) - (b.pierceRank || 0) : 0)
+      .map(d => d.key);
     const groups = [
-      ['基础 · 可被高速削减', ['base', 'dodge', 'insight', 'parry']],
-      ['装备与天生 · 可被破甲削减', ['shield', 'armor', 'natural']],
-      ['加值 · 可被破魔削减', ['deflection', 'force', 'sacred', 'unholy']],
-      ['其他加值 · 不参与削减', ['morale', 'other']],
-      ['抗性 · 抵消削减', ['antiHighSpeed', 'antiArmorPierce', 'antiMagicPierce']]
+      ['基础 · 可被高速削减', pierceKeys('fast', true)],
+      ['装备与天生 · 可被破甲削减', pierceKeys('armor', true)],
+      ['加值 · 可被破魔削减', pierceKeys('magic', true)],
+      ['其他加值 · 不参与削减', pierceKeys('none')],
+      ['抗性 · 抵消削减', pierceKeys('counter')]
     ];
     const groupsHTML = groups.map(([cap, keys]) => `<section class="st-def-grp">
         <h4>${cap}</h4>
@@ -1327,10 +1331,19 @@
   };
 
   const pending = new Map();
-  const APP_VERSION = 'V1.158';
+  const APP_VERSION = 'V1.159';
   const UPDATES = [
     {
-      version: 'V1.158', date: '2026-11-15', title: '破魔不再削减士气与其他加值', current: true,
+      version: 'V1.159', date: '2026-11-15', title: '防御分组成为全站统一规则', current: true,
+      notes: [
+        '高速 / 破甲 / 破魔的削减对象写进数据源，计算与界面都由同一份定义生成',
+        '人物卡防御表与战斗页「对方防御」加分组色点与图例',
+        'ST 检视栏按实际削减顺序排列，不再只是按类别罗列',
+        '手机端同步修正破魔削减范围'
+      ]
+    },
+    {
+      version: 'V1.158', date: '2026-11-15', title: '破魔不再削减士气与其他加值',
       notes: [
         '破魔只削减亵渎 / 神圣 / 偏斜 / 力场，顺序不变',
         '士气与其他（招式、速度等加值）移到「其他加值 · 不参与削减」分组',
@@ -3463,15 +3476,15 @@
             <table class="defense-table">
               <colgroup><col style="width:15%"><col style="width:6%"><col style="width:8%"><col style="width:6%"><col style="width:65%"></colgroup>
               <thead><tr><th>项目</th><th class="center">自动</th><th class="center">手动</th><th class="center">合计</th><th>来源 / 说明 <button class="def-th-help" data-action="defense-syntax-help" title="查看来源语法">?</button></th></tr></thead>
-              <tbody>${D.DEFENSE_ITEMS.map(d => `<tr>
-                <td class="def-name">${esc(d.name)}</td>
+<tbody>${D.DEFENSE_ITEMS.map(d => `<tr class="def-item def-p-${d.pierce || 'none'}">
+          <td class="def-name"><i class="def-dot"></i>${esc(d.name)}</td>
                 <td class="center def-auto" data-defense-auto="${d.key}">${fmt((computed.defense.items.find(i => i.key === d.key) || {}).auto || 0)}</td>
                 <td class="center">${nInput('defense.manual.' + d.key, state.defense.manual[d.key] || 0, 'cell-input defense-input')}</td>
                 <td class="center def-total" data-defense-total="${d.key}">${fmt(computed.defense.byKey[d.key] || 0)}</td>
                 <td class="def-desc"><input class="cell-input def-label-input" data-bind="defense.labels.${d.key}" value="${esc((state.defense.labels || {})[d.key] || '')}" placeholder="${esc(d.key === 'base' ? `${baseAName} / ${baseBName} 取${state.defense.baseMode === 'high' ? '高' : '低'}` : d.desc)}"></td>
               </tr>`).join('')}</tbody>
             </table>
-            <div class="defense-formula" id="defense-formula">${defenseFormulaHTML(computed)}</div>
+            <div class="def-legend"><span class="def-p-fast"><i class="def-dot"></i>高速削减</span><span class="def-p-armor"><i class="def-dot"></i>破甲削减</span><span class="def-p-magic"><i class="def-dot"></i>破魔削减</span><span class="def-p-none"><i class="def-dot"></i>不削减</span><span class="def-p-counter"><i class="def-dot"></i>抵消削减</span></div><div class="defense-formula" id="defense-formula">${defenseFormulaHTML(computed)}</div>
           </div>
           <div class="defense-note-row">
             <label>防御备注 / 附加成功<textarea data-expand data-expand-label="防御备注 / 附加成功" data-bind="defense.note" rows="2" placeholder="记录防御附加成功、特殊防御、条件加值或需要提醒 ST 的效果…">${esc(state.defense.note || '')}</textarea></label>
@@ -3754,15 +3767,16 @@
 
   function combatHTML() {
     const c = computed;
-    const targetFields = D.DEFENSE_ITEMS.map(d => `<div class="target-field"><label>${esc(d.name)}</label><input type="number" data-bind="targetDefense.values.${d.key}" value="${esc(state.targetDefense.values[d.key] || 0)}"></div>`).join('');
+    const targetFields = D.DEFENSE_ITEMS.map(d => `<div class="target-field def-p-${d.pierce || 'none'}"><label><i class="def-dot"></i>${esc(d.name)}</label><input type="number" data-bind="targetDefense.values.${d.key}" value="${esc(state.targetDefense.values[d.key] || 0)}"></div>`).join('');
     return `
       ${pageHeader('COMBAT CALCULATOR / 战斗', '战斗计算', '把对方的防御填一次，逐条比较当前攻击预设；攻击属性和技能、伤害上限都可以由 PL 自己配置。', `
         <button class="btn" data-action="apply-my-defense">套用本方防御</button>
         <button class="btn gold" data-action="goto-character">${ic('shield')} 防御构成</button>`)}
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">对方防御</div><span class="panel-sub">原值 · 不自动叠甲</span></div>
+        <div class="panel-head"><div class="panel-title">对方防御</div><span class="panel-sub">原值 · 不自动叠甲 · 色点为削减分组</span></div>
         <div class="panel-body">
           <div class="defense-target">${targetFields}</div>
+          <div class="def-legend"><span class="def-p-fast"><i class="def-dot"></i>高速削减</span><span class="def-p-armor"><i class="def-dot"></i>破甲削减</span><span class="def-p-magic"><i class="def-dot"></i>破魔削减</span><span class="def-p-none"><i class="def-dot"></i>不削减</span><span class="def-p-counter"><i class="def-dot"></i>抵消</span></div>
           <div class="target-toolbar">
             <label class="target-effect" title="${esc(EFFECT_TIPS.flatfooted)}">措手不及 ${selectInput('targetDefense.flatfootedGrade', D.EFFECT_GRADES, state.targetDefense.flatfootedGrade, 'cell-input effect-grade')}</label>
             <label class="target-effect" title="${esc(EFFECT_TIPS.contact)}">接触攻击 ${selectInput('targetDefense.contactGrade', D.EFFECT_GRADES, state.targetDefense.contactGrade, 'cell-input effect-grade')}</label>

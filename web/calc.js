@@ -128,22 +128,26 @@
       return amount;
     };
 
+    const pierceOrder = kind => D.DEFENSE_ITEMS
+      .filter(d => d.pierce === kind)
+      .sort((a, b) => (a.pierceRank || 0) - (b.pierceRank || 0))
+      .map(d => d.key);
     const flat = !!(flags && flags.flatfooted);
     const contact = !!(flags && flags.contact);
     const highSpeed = Math.max(0, num(attack.highSpeed) - Math.max(0, v.antiHighSpeed));
     const armorPierce = Math.max(0, num(attack.armorPierce) - Math.max(0, v.antiArmorPierce));
     const magicPierce = Math.max(0, num(attack.magicPierce) - Math.max(0, v.antiMagicPierce));
     if (flat) {
-      ['base', 'dodge', 'insight', 'parry'].forEach(k => { v[k] = 0; });
+      pierceOrder('fast').forEach(k => { v[k] = 0; });
     } else {
-      apply(highSpeed, ['base', 'dodge', 'insight', 'parry']);
+      apply(highSpeed, pierceOrder('fast'));
     }
     if (contact) {
-      ['natural', 'armor', 'shield'].forEach(k => { v[k] = 0; });
+      pierceOrder('armor').forEach(k => { v[k] = 0; });
     } else {
-      apply(armorPierce, ['shield', 'armor', 'natural']);
+      apply(armorPierce, pierceOrder('armor'));
     }
-    apply(magicPierce, ['unholy', 'sacred', 'deflection', 'force']);
+    apply(magicPierce, pierceOrder('magic'));
     const counterKeys = new Set(D.DEFENSE_ITEMS.filter(d => d.counter).map(d => d.key));
     const total = Object.entries(v).filter(([k]) => !counterKeys.has(k)).reduce((s, [, x]) => s + Math.max(0, x), 0);
     return { total, remaining: v, spent };

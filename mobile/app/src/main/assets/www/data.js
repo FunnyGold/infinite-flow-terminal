@@ -68,8 +68,8 @@
     { key: 'force', name: '力场', auto: false, desc: '力场护盾' },
     { key: 'sacred', name: '神圣', auto: false, desc: '神圣 / 光明加护' },
     { key: 'unholy', name: '亵渎', auto: false, desc: '亵渎 / 黑暗加护' },
-    { key: 'morale', name: '士气', auto: false, desc: '士气与精神加值' },
-    { key: 'other', name: '其他', auto: false, desc: '法术防御等' },
+    { key: 'morale', name: '士气', auto: false, desc: '士气与精神加值；不参与削减' },
+    { key: 'other', name: '其他', auto: false, desc: '招式、速度等其他加值；不参与削减' },
     { key: 'antiHighSpeed', name: '抵高速', auto: false, counter: true, desc: '抵消攻击的高速削减' },
     { key: 'antiArmorPierce', name: '抵破甲', auto: false, counter: true, desc: '抵消攻击的破甲削减' },
     { key: 'antiMagicPierce', name: '抵破魔', auto: false, counter: true, desc: '抵消攻击的破魔削减' }

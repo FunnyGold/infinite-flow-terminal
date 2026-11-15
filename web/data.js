@@ -57,22 +57,22 @@
   ];
 
   const DEFENSE_ITEMS = [
-    { key: 'base', name: '基础防御', auto: true, desc: '敏捷 / 感知取低' },
-    { key: 'dodge', name: '闪避', auto: true, desc: '传奇敏捷；其他另填' },
-    { key: 'insight', name: '洞察', auto: true, desc: '传奇感知；其他另填' },
-    { key: 'parry', name: '格挡', auto: false, desc: '白刃 / 肉搏格挡 = 技能等级' },
-    { key: 'natural', name: '天生防御', auto: false, desc: '种族、变异、天生护甲' },
-    { key: 'armor', name: '盔甲', auto: false, desc: '护甲与防具' },
-    { key: 'shield', name: '盾牌', auto: false, desc: '通常 = 盾牌体积' },
-    { key: 'deflection', name: '偏斜', auto: false, desc: '偏斜力场' },
-    { key: 'force', name: '力场', auto: false, desc: '力场护盾' },
-    { key: 'sacred', name: '神圣', auto: false, desc: '神圣 / 光明加护' },
-    { key: 'unholy', name: '亵渎', auto: false, desc: '亵渎 / 黑暗加护' },
-    { key: 'morale', name: '士气', auto: false, desc: '士气与精神加值；不参与削减' },
-    { key: 'other', name: '其他', auto: false, desc: '招式、速度等其他加值；不参与削减' },
-    { key: 'antiHighSpeed', name: '抵高速', auto: false, counter: true, desc: '抵消攻击的高速削减' },
-    { key: 'antiArmorPierce', name: '抵破甲', auto: false, counter: true, desc: '抵消攻击的破甲削减' },
-    { key: 'antiMagicPierce', name: '抵破魔', auto: false, counter: true, desc: '抵消攻击的破魔削减' }
+    { key: 'base', name: '基础防御', auto: true, pierce: 'fast', desc: '敏捷 / 感知取低' , pierceRank: 0},
+    { key: 'dodge', name: '闪避', auto: true, pierce: 'fast', desc: '传奇敏捷；其他另填' , pierceRank: 1},
+    { key: 'insight', name: '洞察', auto: true, pierce: 'fast', desc: '传奇感知；其他另填' , pierceRank: 2},
+    { key: 'parry', name: '格挡', auto: false, pierce: 'fast', desc: '白刃 / 肉搏格挡 = 技能等级' , pierceRank: 3},
+    { key: 'natural', name: '天生防御', auto: false, pierce: 'armor', desc: '种族、变异、天生护甲' , pierceRank: 2},
+    { key: 'armor', name: '盔甲', auto: false, pierce: 'armor', desc: '护甲与防具' , pierceRank: 1},
+    { key: 'shield', name: '盾牌', auto: false, pierce: 'armor', desc: '通常 = 盾牌体积' , pierceRank: 0},
+    { key: 'deflection', name: '偏斜', auto: false, pierce: 'magic', desc: '偏斜力场' , pierceRank: 2},
+    { key: 'force', name: '力场', auto: false, pierce: 'magic', desc: '力场护盾' , pierceRank: 3},
+    { key: 'sacred', name: '神圣', auto: false, pierce: 'magic', desc: '神圣 / 光明加护' , pierceRank: 1},
+    { key: 'unholy', name: '亵渎', auto: false, pierce: 'magic', desc: '亵渎 / 黑暗加护' , pierceRank: 0},
+    { key: 'morale', name: '士气', auto: false, pierce: 'none', desc: '士气与精神加值；不参与削减' },
+    { key: 'other', name: '其他', auto: false, pierce: 'none', desc: '招式、速度等其他加值；不参与削减' },
+    { key: 'antiHighSpeed', name: '抵高速', auto: false, counter: true, pierce: 'counter', desc: '抵消攻击的高速削减' },
+    { key: 'antiArmorPierce', name: '抵破甲', auto: false, counter: true, pierce: 'counter', desc: '抵消攻击的破甲削减' },
+    { key: 'antiMagicPierce', name: '抵破魔', auto: false, counter: true, pierce: 'counter', desc: '抵消攻击的破魔削减' }
   ];
 
   const DEFENSE_MAP = Object.fromEntries(DEFENSE_ITEMS.map(d => [d.key, d]));

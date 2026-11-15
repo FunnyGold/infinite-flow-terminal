@@ -2650,3 +2650,18 @@ textarea[data-expand] { cursor: text; }
 /* ---- 清空面板按钮（V1.157） ---- */
 .btn.danger-ghost { border-color: rgba(208,94,94,.35); color: var(--red); }
 .btn.danger-ghost:hover { border-color: rgba(208,94,94,.65); background: rgba(208,94,94,.12); color: #ffb0aa; }
+/* ---- 防御分组色标（V1.159） ---- */
+.def-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 7px; vertical-align: middle; background: var(--faint); box-shadow: 0 0 0 2px rgba(255,255,255,.04); }
+.def-p-fast .def-dot { background: #6fb3c8; }
+.def-p-armor .def-dot { background: #c98a4e; }
+.def-p-magic .def-dot { background: #9a7fc4; }
+.def-p-none .def-dot { background: #6f6a60; }
+.def-p-counter .def-dot { background: #7ca47b; }
+html[data-theme="light"] .def-p-fast .def-dot { background: #3f7c8e; }
+html[data-theme="light"] .def-p-armor .def-dot { background: #8a5a22; }
+html[data-theme="light"] .def-p-magic .def-dot { background: #6a4f96; }
+html[data-theme="light"] .def-p-none .def-dot { background: #9a938a; }
+html[data-theme="light"] .def-p-counter .def-dot { background: #4f7a4c; }
+
+.def-legend { display: flex; flex-wrap: wrap; gap: 14px; padding: 8px 0 2px; color: var(--dim); font-size: 10px; }
+.def-legend span { display: inline-flex; align-items: center; gap: 0; }
